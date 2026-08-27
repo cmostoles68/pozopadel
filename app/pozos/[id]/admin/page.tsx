@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { signOut } from "@/app/auth/actions";
-import AdminActions from "./AdminActions";
+import LiveTournamentHeader from "@/components/LiveTournamentHeader";
+import LeaderboardTable from "@/components/LeaderboardTable";
+import AdminControlPanel from "@/components/AdminControlPanel";
 
 export default async function AdminPage(props: PageProps<"/pozos/[id]/admin">) {
   const { id } = await props.params;
@@ -24,9 +25,9 @@ export default async function AdminPage(props: PageProps<"/pozos/[id]/admin">) {
 
   if (tournament.created_by !== user.id) redirect(`/pozos/${id}`);
 
-  const { data: players } = await supabase
+  const { data: tournamentPlayers } = await supabase
     .from("tournament_players")
-    .select("player_id, current_court, total_points, profiles(full_name, level)")
+    .select("*")
     .eq("tournament_id", id)
     .order("current_court");
 
@@ -37,63 +38,107 @@ export default async function AdminPage(props: PageProps<"/pozos/[id]/admin">) {
     .order("round_number", { ascending: false });
 
   const currentRound = rounds?.find((r) => r.status === "in_progress");
-  const pendingRound = rounds?.find((r) => r.status === "pending");
+
+  const { data: currentMatches } = currentRound
+    ? await supabase
+        .from("matches")
+        .select("*")
+        .eq("round_id", currentRound.id)
+    : { data: null };
+
+  const allRoundsFinished = currentMatches
+    ? currentMatches.every((m) => m.is_finished)
+    : false;
+
+  const { data: allRoundIds } = await supabase
+    .from("rounds")
+    .select("id")
+    .eq("tournament_id", id);
+
+  const roundIds = allRoundIds?.map((r) => r.id) ?? [];
+  const { data: allMatches } = roundIds.length
+    ? await supabase
+        .from("matches")
+        .select("*")
+        .in("round_id", roundIds)
+    : { data: [] };
+
+  const playerNames: Record<string, string> = {};
+  for (const tp of tournamentPlayers ?? []) {
+    const profile = tp as unknown as {
+      player_id: string;
+      profiles: { full_name: string } | null;
+    };
+    playerNames[profile.player_id] = profile.profiles?.full_name ?? "Jugador";
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-gray-200 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href={`/pozos/${id}`} className="text-gray-500 hover:text-foreground">
               ← Volver
             </Link>
             <h1 className="text-lg font-semibold text-foreground">Admin: {tournament.title}</h1>
           </div>
-          <form action={signOut}>
-            <button type="submit" className="text-sm text-gray-500 hover:text-foreground">
-              Salir
-            </button>
-          </form>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-8 space-y-8">
-        <section>
-          <h2 className="text-sm font-semibold text-foreground mb-3">Jugadores ({players?.length ?? 0})</h2>
-          {players && players.length > 0 ? (
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left px-3 py-2 font-medium text-gray-500">Pista</th>
-                    <th className="text-left px-3 py-2 font-medium text-gray-500">Nombre</th>
-                    <th className="text-right px-3 py-2 font-medium text-gray-500">Nivel</th>
-                    <th className="text-right px-3 py-2 font-medium text-gray-500">Puntos</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {players.map((p) => (
-                    <tr key={p.player_id} className="border-t border-gray-100">
-                      <td className="px-3 py-2 font-medium">{p.current_court}</td>
-                      <td className="px-3 py-2">
-                        {((p.profiles as unknown as { full_name: string })?.full_name) ?? "Jugador"}
-                      </td>
-                      <td className="px-3 py-2 text-right text-gray-500">
-                        {((p.profiles as unknown as { level: number })?.level) ?? "-"}
-                      </td>
-                      <td className="px-3 py-2 text-right font-medium">{p.total_points}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        <LiveTournamentHeader tournament={tournament} currentRound={currentRound} />
+
+        <AdminControlPanel
+          tournamentId={id}
+          tournamentStatus={tournament.status}
+          playerCount={tournamentPlayers?.length ?? 0}
+          numberOfCourts={tournament.number_of_courts}
+          hasCurrentRound={!!currentRound}
+          allRoundsFinished={allRoundsFinished}
+        />
+
+        {currentRound && currentMatches && currentMatches.length > 0 && (
+          <section>
+            <h2 className="text-sm font-semibold text-foreground mb-3">
+              Ronda {currentRound.round_number} - Partidos
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {currentMatches
+                .sort((a, b) => a.court_number - b.court_number)
+                .map((m) => (
+                  <div
+                    key={m.id}
+                    className={`border rounded-lg px-3 py-2 text-sm ${
+                      m.is_finished ? "border-gray-200 bg-gray-50" : "border-green-300 bg-green-50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">
+                        Pista {m.court_number}
+                      </span>
+                      <span className="font-bold">
+                        {m.score_team_a} - {m.score_team_b}
+                      </span>
+                    </div>
+                  </div>
+                ))}
             </div>
-          ) : (
-            <p className="text-sm text-gray-500">No hay jugadores inscritos.</p>
-          )}
+          </section>
+        )}
+
+        <section>
+          <h2 className="text-sm font-semibold text-foreground mb-3">
+            Jugadores ({tournamentPlayers?.length ?? 0})
+          </h2>
+          <LeaderboardTable
+            tournamentPlayers={tournamentPlayers ?? []}
+            allMatches={allMatches ?? []}
+            playerNames={playerNames}
+          />
         </section>
 
         <section>
-          <h2 className="text-sm font-semibold text-foreground mb-3">Rondas</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-3">Historial de Rondas</h2>
           {rounds && rounds.length > 0 ? (
             <div className="space-y-2">
               {rounds.map((r) => (
@@ -111,7 +156,11 @@ export default async function AdminPage(props: PageProps<"/pozos/[id]/admin">) {
                           : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
-                    {r.status === "in_progress" ? "En curso" : r.status === "finished" ? "Finalizada" : "Pendiente"}
+                    {r.status === "in_progress"
+                      ? "En curso"
+                      : r.status === "finished"
+                        ? "Finalizada"
+                        : "Pendiente"}
                   </span>
                 </div>
               ))}
@@ -120,15 +169,6 @@ export default async function AdminPage(props: PageProps<"/pozos/[id]/admin">) {
             <p className="text-sm text-gray-500">No hay rondas creadas.</p>
           )}
         </section>
-
-        <AdminActions
-          tournamentId={id}
-          tournamentStatus={tournament.status}
-          playerCount={players?.length ?? 0}
-          numberOfCourts={tournament.number_of_courts}
-          hasCurrentRound={!!currentRound}
-          hasPendingRound={!!pendingRound}
-        />
       </main>
     </div>
   );
