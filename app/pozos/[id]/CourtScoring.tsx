@@ -66,13 +66,6 @@ export default function CourtScoring({
             {error}
           </p>
         )}
-        {!completed && (
-          <FinalizeButton
-            canFinalize={false}
-            finalizing={finalizing}
-            onFinalize={handleFinalize}
-          />
-        )}
       </div>
     );
   }
