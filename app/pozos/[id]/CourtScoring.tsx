@@ -62,7 +62,7 @@ export default function CourtScoring({
     return (
       <div className="space-y-6">
         {error && (
-          <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <p className="text-lg text-red-500 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
             {error}
           </p>
         )}
@@ -93,8 +93,8 @@ export default function CourtScoring({
         {courts.map((court) => {
           const pairs = round.pairs.filter((p) => p.court_number === court);
           return (
-            <div key={court} className="border border-gray-200 rounded-lg p-3">
-              <div className="text-xs font-medium text-gray-500 mb-2">Pista {court}</div>
+            <div key={court} className="border border-gray-200 rounded-xl p-4">
+              <div className="text-base font-semibold text-gray-700 mb-2">Pista {court}</div>
               <div className="flex items-center justify-between">
                 {pairs.map((p, idx) => {
                   const info = pairById.get(p.drawn_pair_id);
@@ -103,7 +103,7 @@ export default function CourtScoring({
                   return (
                     <div
                       key={p.id}
-                      className={`flex items-center gap-2 text-sm ${
+                      className={`flex items-center gap-3 text-lg ${
                         isWinner ? "font-semibold text-emerald-600" : "text-gray-600"
                       }`}
                     >
@@ -112,12 +112,12 @@ export default function CourtScoring({
                         {info.player1_name}
                         {info.is_lefty ? " (z)" : ""} & {info.player2_name}
                       </span>
-                      {idx < pairs.length - 1 && <span className="text-gray-400 ml-2">vs</span>}
+                      {idx < pairs.length - 1 && <span className="text-gray-400 ml-3">vs</span>}
                     </div>
                   );
                 })}
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-base text-gray-500 mt-2">
                 {pairs
                   .slice()
                   .sort((a, b) => Number(b.winner_drawn_pair_id === b.drawn_pair_id) - Number(a.winner_drawn_pair_id === a.drawn_pair_id))
@@ -136,7 +136,7 @@ export default function CourtScoring({
       <div className="space-y-6">
         {completed && champion && <ChampionBanner champion={champion} />}
         {error && (
-          <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <p className="text-lg text-red-500 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
             {error}
           </p>
         )}
@@ -163,7 +163,7 @@ export default function CourtScoring({
       {completed && champion && <ChampionBanner champion={champion} />}
 
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">
+        <h2 className="text-2xl font-semibold text-foreground">
           Ronda {activeRound.round_number}
         </h2>
         {activeRound.round_number === 1 && (
@@ -176,7 +176,7 @@ export default function CourtScoring({
               router.refresh();
             }}
             disabled={redrawing}
-            className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
+            className="text-base text-red-500 hover:text-red-700 disabled:opacity-50"
           >
             Rehacer sorteo
           </button>
@@ -184,7 +184,7 @@ export default function CourtScoring({
       </div>
 
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+        <p className="text-lg text-red-500 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
           {error}
         </p>
       )}
@@ -239,12 +239,12 @@ export default function CourtScoring({
       </div>
 
       {allFinished && (
-        <p className="text-sm text-emerald-600 font-medium">Ronda completada</p>
+        <p className="text-lg text-emerald-600 font-medium">Ronda completada</p>
       )}
 
       {finishedRounds.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="text-xl font-semibold text-foreground">
             Rondas anteriores
           </h3>
           {finishedRounds.map(renderFinishedRound)}
@@ -257,7 +257,7 @@ export default function CourtScoring({
 function PairBadge({ number, className }: { number: number; className?: string }) {
   return (
     <span
-      className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-white text-xs font-bold shrink-0 ${
+      className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-white text-base font-bold shrink-0 ${
         className ?? "bg-primary"
       }`}
     >
@@ -270,18 +270,18 @@ function ChampionBanner({ champion }: { champion: PairInfo }) {
   return (
     <div
       data-testid="champion-banner"
-      className="rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-100 to-amber-50 p-6 text-center shadow-sm"
+      className="rounded-3xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-100 to-amber-50 p-8 text-center shadow-sm"
     >
-      <div className="text-xs uppercase tracking-widest text-amber-600 font-semibold">
+      <div className="text-base uppercase tracking-widest text-amber-600 font-semibold">
         🏆 Campeón del pozo
       </div>
-      <div className="mt-3 flex items-center justify-center gap-3">
-        <PairBadge number={champion.pair_number} className="bg-amber-500 w-10 h-10 text-base" />
-        <span className="text-2xl font-bold text-amber-800">
+      <div className="mt-4 flex items-center justify-center gap-4">
+        <PairBadge number={champion.pair_number} className="bg-amber-500 w-14 h-14 text-xl" />
+        <span className="text-3xl font-bold text-amber-800">
           {champion.player1_name} &amp; {champion.player2_name}
         </span>
       </div>
-      <p className="mt-2 text-xs text-amber-600">
+      <p className="mt-3 text-base text-amber-600">
         Ganadores de la pista 1 · Pareja {champion.pair_number}
       </p>
     </div>
@@ -303,7 +303,7 @@ function FinalizeButton({
         data-testid="finalize-pozo"
         onClick={onFinalize}
         disabled={!canFinalize || finalizing}
-        className="rounded-full bg-amber-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="rounded-full bg-amber-500 px-10 py-4 text-xl font-semibold text-white shadow-sm hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {finalizing ? "Finalizando..." : "Finalizar pozo"}
       </button>
@@ -351,10 +351,10 @@ function CourtCard({
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+    <div className="border border-gray-200 rounded-xl p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <div className="text-xs font-medium text-gray-500">Pista {court}</div>
-        <span className="text-xs text-gray-400">
+        <div className="text-lg font-semibold text-gray-700">Pista {court}</div>
+        <span className="text-base text-gray-400">
           Toca una pareja para marcar ganador
         </span>
       </div>
@@ -367,7 +367,7 @@ function CourtCard({
           <div
             key={p.id}
             data-testid={`court-${court}-pair-${info.pair_number}`}
-            className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-opacity ${
+            className={`flex items-center gap-4 border rounded-xl px-4 py-3 cursor-pointer transition-opacity ${
               loading ? "opacity-60" : ""
             } ${
               isWinner
@@ -380,12 +380,11 @@ function CourtCard({
             }}
           >
             <PairBadge number={info.pair_number} className={isWinner ? "bg-emerald-500" : "bg-primary"} />
-            <div className="text-sm flex-1 min-w-0">
-              <div className="font-medium truncate">
+            <div className="text-xl flex-1 min-w-0">
+              <div className="font-medium truncate text-lg">
                 {info.player1_name}
                 {info.is_lefty ? " (z)" : ""} & {info.player2_name}
               </div>
-              <div className="text-xs text-gray-400">Nv. {info.avg_level.toFixed(1)}</div>
             </div>
             <input
               type="number"
@@ -393,7 +392,7 @@ function CourtCard({
               data-testid={`court-${court}-score-${info.pair_number}`}
               value={scores[p.drawn_pair_id] ?? ""}
               placeholder="Puntos"
-              className="w-20 text-sm border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-24 text-xl border border-gray-200 rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-primary"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => {
                 const next = { ...scores, [p.drawn_pair_id]: e.target.value };
@@ -402,7 +401,7 @@ function CourtCard({
               }}
             />
             {isWinner && !loading && (
-              <span className="text-xs font-semibold text-emerald-600 shrink-0">
+              <span className="text-base font-semibold text-emerald-600 shrink-0">
                 Ganador
               </span>
             )}

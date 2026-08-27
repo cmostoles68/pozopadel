@@ -1,6 +1,19 @@
 @import "tailwindcss";
 
+@layer utilities {
+  .text-xs {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .text-sm {
+    font-size: 1.125rem;
+    line-height: 1.625rem;
+  }
+}
+
 :root {
+  font-size: 125%;
   --background: #f0f4f8;
   --foreground: #1a202c;
   --primary: #2563eb;
@@ -27,5 +40,14 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }

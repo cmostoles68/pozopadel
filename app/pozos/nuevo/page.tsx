@@ -36,19 +36,19 @@ function NuevoPozoForm() {
           <button onClick={() => router.back()} className="text-gray-500 hover:text-foreground">
             ← Volver
           </button>
-          <h1 className="text-lg font-semibold text-foreground">Nuevo Pozo</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Nuevo Pozo</h1>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8">
         {error && (
-          <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <div className="mb-4 text-lg text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
             {error}
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-foreground mb-1">
+            <label htmlFor="title" className="block text-lg font-medium text-foreground mb-1">
               Nombre del pozo
             </label>
             <input
@@ -57,12 +57,12 @@ function NuevoPozoForm() {
               type="text"
               required
               placeholder="Ej: Pozo Viernes"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           <div>
-            <label htmlFor="numberOfCourts" className="block text-sm font-medium text-foreground mb-1">
+            <label htmlFor="numberOfCourts" className="block text-lg font-medium text-foreground mb-1">
               Número de pistas
             </label>
             <input
@@ -73,12 +73,12 @@ function NuevoPozoForm() {
               max={20}
               required
               defaultValue={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           <div>
-            <label htmlFor="minutesPerRound" className="block text-sm font-medium text-foreground mb-1">
+            <label htmlFor="minutesPerRound" className="block text-lg font-medium text-foreground mb-1">
               Minutos por ronda
             </label>
             <input
@@ -89,14 +89,14 @@ function NuevoPozoForm() {
               max={90}
               required
               defaultValue={15}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-white py-2.5 rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+            className="w-full bg-primary text-white py-3.5 rounded-xl text-lg font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
           >
             {loading ? "Creando..." : "Crear Pozo"}
           </button>

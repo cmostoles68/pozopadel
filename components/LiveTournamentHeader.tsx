@@ -6,6 +6,18 @@ import type { Database } from "@/lib/database.types";
 type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 type Round = Database["public"]["Tables"]["rounds"]["Row"];
 
+function calcRemaining(startTime: string, minutes: number): string {
+  const start = new Date(startTime).getTime();
+  const end = start + minutes * 60_000;
+  const diff = end - Date.now();
+
+  if (diff <= 0) return "00:00";
+
+  const m = Math.floor(diff / 60_000);
+  const s = Math.floor((diff % 60_000) / 1000);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 interface LiveTournamentHeaderProps {
   tournament: Tournament;
   currentRound: Round | null;
@@ -15,33 +27,28 @@ export default function LiveTournamentHeader({
   tournament,
   currentRound,
 }: LiveTournamentHeaderProps) {
-  const [remaining, setRemaining] = useState<string | null>(null);
+  const active = Boolean(
+    currentRound?.start_time && tournament.status === "in_progress"
+  );
+
+  const [remaining, setRemaining] = useState<string>(() =>
+    active
+      ? calcRemaining(currentRound?.start_time ?? "", tournament.minutes_per_round)
+      : "00:00"
+  );
 
   useEffect(() => {
-    if (!currentRound?.start_time || tournament.status !== "in_progress") {
-      setRemaining(null);
-      return;
-    }
+    if (!active) return;
 
-    const startTime = currentRound.start_time;
+    const startTime = currentRound?.start_time ?? "";
     const minutes = tournament.minutes_per_round;
 
-    function calcRemaining() {
-      const start = new Date(startTime).getTime();
-      const end = start + minutes * 60_000;
-      const diff = end - Date.now();
-
-      if (diff <= 0) return "00:00";
-
-      const m = Math.floor(diff / 60_000);
-      const s = Math.floor((diff % 60_000) / 1000);
-      return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-    }
-
-    setRemaining(calcRemaining());
-    const id = setInterval(() => setRemaining(calcRemaining()), 1000);
+    const id = setInterval(
+      () => setRemaining(calcRemaining(startTime, minutes)),
+      1000
+    );
     return () => clearInterval(id);
-  }, [currentRound?.start_time, tournament.minutes_per_round, tournament.status, currentRound]);
+  }, [active, currentRound?.start_time, tournament.minutes_per_round, currentRound]);
 
   const statusConfig: Record<string, { label: string; color: string }> = {
     draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
@@ -52,8 +59,8 @@ export default function LiveTournamentHeader({
   const status = statusConfig[tournament.status] ?? statusConfig.draft;
 
   return (
-    <div className="flex flex-wrap items-center gap-3 text-sm">
-      <span className={`px-2 py-0.5 rounded-full font-medium ${status.color}`}>
+    <div className="flex flex-wrap items-center gap-4 text-lg">
+      <span className={`px-3 py-1 rounded-full font-medium ${status.color}`}>
         {status.label}
       </span>
       <span className="text-gray-500">
@@ -67,8 +74,8 @@ export default function LiveTournamentHeader({
           Ronda {currentRound.round_number}
         </span>
       )}
-      {remaining !== null && (
-        <span className="font-mono text-lg font-bold text-primary tabular-nums">
+      {active && (
+        <span className="font-mono text-2xl font-bold text-primary tabular-nums">
           {remaining}
         </span>
       )}

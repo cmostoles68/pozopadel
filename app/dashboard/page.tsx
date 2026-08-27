@@ -16,34 +16,41 @@ export default async function DashboardPage() {
       <header className="border-b border-gray-200 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <PadelRacket className="w-7 h-7" />
-            <span className="text-xl font-bold text-primary">PozoPadel</span>
+            <PadelRacket className="w-9 h-9" />
+            <span className="text-2xl font-bold text-primary">PozoPadel</span>
           </div>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-8">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           <Link
             href="/pozos/nuevo"
             className="flex flex-col items-center gap-2 border border-gray-200 rounded-xl p-6 hover:border-primary hover:bg-blue-50 transition-colors"
           >
             <span className="text-3xl">🏟️</span>
-            <span className="text-sm font-medium text-foreground">Nuevo Pozo</span>
+            <span className="text-base font-medium text-foreground">Nuevo Pozo</span>
           </Link>
           <Link
             href="/jugadores"
             className="flex flex-col items-center gap-2 border border-gray-200 rounded-xl p-6 hover:border-primary hover:bg-blue-50 transition-colors"
           >
             <span className="text-3xl">👥</span>
-            <span className="text-sm font-medium text-foreground">Jugadores</span>
+            <span className="text-base font-medium text-foreground">Jugadores</span>
           </Link>
           <Link
             href="/sorteo"
             className="flex flex-col items-center gap-2 border border-gray-200 rounded-xl p-6 hover:border-primary hover:bg-blue-50 transition-colors"
           >
             <span className="text-3xl">🎾</span>
-            <span className="text-sm font-medium text-foreground">Sortear</span>
+            <span className="text-base font-medium text-foreground">Sortear</span>
+          </Link>
+          <Link
+            href="/historico"
+            className="flex flex-col items-center gap-2 border border-gray-200 rounded-xl p-6 hover:border-primary hover:bg-blue-50 transition-colors"
+          >
+            <span className="text-3xl">📜</span>
+            <span className="text-base font-medium text-foreground">Histórico</span>
           </Link>
         </div>
 

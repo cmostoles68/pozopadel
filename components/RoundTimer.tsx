@@ -37,7 +37,7 @@ export default function RoundTimer({
     <div
       data-testid={`timer-round-${round}`}
       onClick={running ? stop : undefined}
-      className={`flex items-center gap-3 rounded-xl px-4 py-2 border ${
+      className={`flex items-center gap-4 rounded-2xl px-6 py-3 border ${
         running ? "cursor-pointer select-none" : ""
       } ${
         finished
@@ -48,11 +48,11 @@ export default function RoundTimer({
       }`}
     >
       <div className="text-right">
-        <div className="text-[10px] uppercase tracking-wider text-gray-500">
+        <div className="text-sm uppercase tracking-wider text-gray-500">
           Ronda {round}
         </div>
         <div
-          className={`font-mono text-4xl font-bold leading-none tabular-nums ${
+          className={`font-mono text-6xl font-bold leading-none tabular-nums ${
             finished ? "text-red-600 animate-pulse" : "text-foreground"
           }`}
         >
@@ -67,7 +67,7 @@ export default function RoundTimer({
           <button
             data-testid={`timer-round-${round}-start`}
             onClick={restart}
-            className="bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-semibold hover:bg-red-700 whitespace-nowrap"
+            className="bg-red-600 text-white px-5 py-2.5 rounded-xl text-base font-semibold hover:bg-red-700 whitespace-nowrap"
           >
             Reiniciar
           </button>
@@ -76,13 +76,13 @@ export default function RoundTimer({
             data-testid={`timer-round-${round}-start`}
             onClick={() => setStarted(true)}
             disabled={running}
-            className="bg-primary text-white px-3 py-1 rounded-lg text-xs font-semibold hover:bg-primary-dark disabled:opacity-50 whitespace-nowrap"
+            className="bg-primary text-white px-5 py-2.5 rounded-xl text-base font-semibold hover:bg-primary-dark disabled:opacity-50 whitespace-nowrap"
           >
             {running ? "En curso..." : "Iniciar"}
           </button>
         )}
         {finished && (
-          <span className="text-[10px] font-bold text-red-600 whitespace-nowrap">
+          <span className="text-sm font-bold text-red-600 whitespace-nowrap">
             ¡Tiempo completado!
           </span>
         )}

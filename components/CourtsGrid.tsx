@@ -95,7 +95,7 @@ export default function CourtsGrid({
                     min={0}
                     value={s.a}
                     onChange={(e) => updateScore(m.id, "a", parseInt(e.target.value) || 0)}
-                    className="w-14 text-center border border-gray-300 rounded px-1 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-16 text-center border border-gray-300 rounded px-2 py-2 text-base focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                   <span className="text-gray-400">-</span>
                   <input
@@ -103,13 +103,13 @@ export default function CourtsGrid({
                     min={0}
                     value={s.b}
                     onChange={(e) => updateScore(m.id, "b", parseInt(e.target.value) || 0)}
-                    className="w-14 text-center border border-gray-300 rounded px-1 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-16 text-center border border-gray-300 rounded px-2 py-2 text-base focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
                 <button
                   onClick={() => handleSubmit(m.id)}
                   disabled={pending}
-                  className="ml-auto bg-primary text-white text-xs px-3 py-1 rounded hover:bg-primary-dark transition-colors disabled:opacity-50"
+                  className="ml-auto bg-primary text-white text-sm px-4 py-2 rounded hover:bg-primary-dark transition-colors disabled:opacity-50"
                 >
                   Enviar
                 </button>

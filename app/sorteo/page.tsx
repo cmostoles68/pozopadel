@@ -27,12 +27,12 @@ export default async function SorteoPage() {
       <header className="border-b border-gray-200 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-gray-500 hover:text-foreground">
+            <Link href="/dashboard" className="text-lg text-gray-500 hover:text-foreground">
               ← Volver
             </Link>
             <div className="flex items-center gap-2">
-              <PadelRacket className="w-6 h-6" />
-              <h1 className="text-lg font-semibold text-foreground">Sortear Parejas</h1>
+              <PadelRacket className="w-8 h-8" />
+              <h1 className="text-2xl font-semibold text-foreground">Sortear Parejas</h1>
             </div>
           </div>
         </div>

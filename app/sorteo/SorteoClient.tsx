@@ -35,6 +35,19 @@ export default function SorteoClient({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentMethod, setCurrentMethod] = useState<DrawMethod | null>(activeMethod);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  function toggleExpand(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
 
   async function handleDraw(method: DrawMethod) {
     setError(null);
@@ -94,21 +107,26 @@ export default function SorteoClient({
                 key={opt.key}
                 onClick={() => handleDraw(opt.key)}
                 disabled={loading}
+                aria-label={opt.label}
                 className={`py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 border ${
                   isActive
                     ? "bg-primary text-white border-primary shadow-sm"
                     : "bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700"
                 }`}
               >
-                {loading && isActive ? "..." : opt.label}
+                <span className="block">
+                  {loading && isActive ? "..." : opt.label}
+                </span>
+                <span
+                  className={`block mt-1 text-xs font-normal ${
+                    isActive ? "text-blue-100" : "text-gray-400"
+                  }`}
+                >
+                  {opt.desc}
+                </span>
               </button>
             );
           })}
-        </div>
-        <div className="grid grid-cols-2 gap-3 text-xs text-gray-400 text-center -mt-1">
-          {METHOD_OPTIONS.map((opt) => (
-            <span key={opt.key}>{opt.desc}</span>
-          ))}
         </div>
       </div>
 
@@ -117,36 +135,63 @@ export default function SorteoClient({
           <h2 className="text-sm font-semibold text-foreground">
             Parejas sorteadas ({initialPairs.length})
           </h2>
-          {initialPairs.map((p) => (
-            <div
-              key={p.id}
-              className="border border-gray-200 rounded-lg px-4 py-3 flex items-center gap-3"
-            >
-              <span className="w-8 h-8 rounded-full bg-primary text-white text-sm font-bold flex items-center justify-center shrink-0">
-                {p.pair_number}
-              </span>
-              <div className="flex-1 text-sm">
-                <span className="font-medium text-foreground">
-                  {p.p1?.full_name ?? "?"}
-                  {p.p1?.dominant_hand === "LEFT" && (
-                    <span className="ml-1 text-xs text-blue-500">(z)</span>
-                  )}
-                </span>
-                <span className="text-gray-400 mx-2">&</span>
-                <span className="font-medium text-foreground">
-                  {p.p2?.full_name ?? "?"}
-                  {p.p2?.dominant_hand === "LEFT" && (
-                    <span className="ml-1 text-xs text-blue-500">(z)</span>
-                  )}
-                </span>
+          {initialPairs.map((p) => {
+            const isOpen = expanded.has(p.id);
+            return (
+              <div key={p.id} className="border border-gray-200 rounded-lg">
+                <button
+                  onClick={() => toggleExpand(p.id)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-gray-50 transition-colors"
+                >
+                  <span className="w-8 h-8 rounded-full bg-primary text-white text-sm font-bold flex items-center justify-center shrink-0">
+                    {p.pair_number}
+                  </span>
+                  <span className="flex-1 text-sm">
+                    <span className="font-medium text-foreground">
+                      {p.p1?.full_name ?? "?"}
+                      {p.p1?.dominant_hand === "LEFT" && (
+                        <span className="ml-1 text-xs text-blue-500">(z)</span>
+                      )}
+                    </span>
+                    <span className="text-gray-400 mx-2">&</span>
+                    <span className="font-medium text-foreground">
+                      {p.p2?.full_name ?? "?"}
+                      {p.p2?.dominant_hand === "LEFT" && (
+                        <span className="ml-1 text-xs text-blue-500">(z)</span>
+                      )}
+                    </span>
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {isOpen ? "Ocultar" : "Detalles"}
+                  </span>
+                </button>
+                {isOpen && (
+                  <div className="border-t border-gray-200 px-4 py-3 space-y-3">
+                    {[p.p1, p.p2].map((member, i) =>
+                      member ? (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between text-sm"
+                        >
+                          <span className="font-medium text-foreground">
+                            {member.full_name}
+                            {member.dominant_hand === "LEFT" && (
+                              <span className="ml-1 text-xs text-blue-500">(z)</span>
+                            )}
+                          </span>
+                          <span className="text-gray-500">
+                            {member.gender === "FEMALE" ? "Mujer" : "Hombre"} ·{" "}
+                            {member.dominant_hand === "LEFT" ? "Zurdo" : "Diestro"} · Nivel{" "}
+                            {member.level}
+                          </span>
+                        </div>
+                      ) : null
+                    )}
+                  </div>
+                )}
               </div>
-              {p.p1 && p.p2 && (
-                <span className="text-xs text-gray-500">
-                  Nivel {((Number(p.p1.level) + Number(p.p2.level)) / 2).toFixed(1)}
-                </span>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

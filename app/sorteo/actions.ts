@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getWinningPartnershipKeys } from "@/lib/partnership-history";
 
 type DrawMethod = "random" | "random_mix" | "level" | "level_mix";
 
@@ -26,12 +27,20 @@ function isLefty(p: Player): boolean {
   return p.dominant_hand === "LEFT";
 }
 
-function canPair(a: Player, b: Player): boolean {
+function leftyCompatible(a: Player, b: Player): boolean {
   return !(isLefty(a) && isLefty(b));
 }
 
-function pairPlayers(players: Player[], method: DrawMethod): Array<[Player, Player]> {
+function pairPlayers(
+  players: Player[],
+  method: DrawMethod,
+  disallowedPairs: Set<string> = new Set(),
+): Array<[Player, Player]> {
   const pairs: Array<[Player, Player]> = [];
+
+  const canPair = (a: Player, b: Player): boolean =>
+    leftyCompatible(a, b) &&
+    !disallowedPairs.has([a.id, b.id].sort().join("|"));
 
   if (method === "random" || method === "random_mix") {
     const males = shuffleArray(players.filter((p) => p.gender === "MALE"));
@@ -217,7 +226,10 @@ export async function drawPairs(method: DrawMethod) {
   // Borrar sorteos anteriores
   await supabase.from("drawn_pairs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
 
-  const paired = pairPlayers(players as Player[], method);
+  // Avoid re-forming pairs that keep winning together (from the match history).
+  const disallowedPairs = await getWinningPartnershipKeys(supabase);
+
+  const paired = pairPlayers(players as Player[], method, disallowedPairs);
 
   const pairsToInsert = paired.map(([a, b], i) => ({
     pair_number: i + 1,

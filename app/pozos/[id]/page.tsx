@@ -115,13 +115,13 @@ export default async function PozoPage(props: PageProps<"/pozos/[id]">) {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-gray-200 px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <Link href="/dashboard" className="text-gray-500 hover:text-foreground">
+      <header className="border-b border-gray-200 px-4 py-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <Link href="/dashboard" className="text-gray-500 hover:text-foreground text-lg">
               ← Volver
             </Link>
-            <h1 className="text-lg font-semibold text-foreground truncate">{tournament.title}</h1>
+            <h1 className="text-2xl font-semibold text-foreground truncate">{tournament.title}</h1>
           </div>
           {activePozoRound && (
             <RoundTimer
@@ -133,7 +133,7 @@ export default async function PozoPage(props: PageProps<"/pozos/[id]">) {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      <main className="max-w-5xl mx-auto px-6 py-10 space-y-8">
         <LiveTournamentHeader tournament={tournament} currentRound={currentRound} />
 
         <PairSelector

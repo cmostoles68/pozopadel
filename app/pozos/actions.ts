@@ -69,6 +69,30 @@ export async function deselectPair(tournamentId: string, drawnPairId: string) {
   return { ok: true };
 }
 
+export async function selectAllPairs(tournamentId: string) {
+  const supabase = await createClient();
+
+  const { data: pairs, error: pairsError } = await supabase
+    .from("drawn_pairs")
+    .select("id");
+  if (pairsError) return { error: pairsError.message };
+
+  const { data: selected } = await supabase
+    .from("tournament_drawn_pairs")
+    .select("drawn_pair_id")
+    .eq("tournament_id", tournamentId);
+  const selectedIds = new Set((selected ?? []).map((s) => s.drawn_pair_id));
+  const toInsert = (pairs ?? []).filter((p) => !selectedIds.has(p.id));
+
+  if (toInsert.length === 0) return { ok: true };
+
+  const { error } = await supabase
+    .from("tournament_drawn_pairs")
+    .insert(toInsert.map((p) => ({ tournament_id: tournamentId, drawn_pair_id: p.id })));
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
 export async function drawCourts(tournamentId: string) {
   const supabase = await createClient();
 
@@ -182,6 +206,12 @@ export async function saveCourtResult(
 ) {
   const supabase = await createClient();
 
+  const { data: round } = await supabase
+    .from("pozo_rounds")
+    .select("id, tournament_id, round_number")
+    .eq("id", roundId)
+    .single();
+
   const { data: rows } = await supabase
     .from("pozo_round_pairs")
     .select("id, drawn_pair_id")
@@ -206,7 +236,106 @@ export async function saveCourtResult(
     if (error) return { error: error.message };
   }
 
+  // Record the finished match in the global history (idempotent per
+  // tournament+round+court).
+  await recordMatchHistory(
+    supabase,
+    round?.tournament_id ?? null,
+    round?.id ?? null,
+    round?.round_number ?? null,
+    courtNumber,
+    rows.map((r) => r.drawn_pair_id),
+    winnerDrawnPairId,
+    scoreMap,
+  );
+
   return { ok: true };
+}
+
+async function recordMatchHistory(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tournamentId: string | null,
+  roundId: string | null,
+  roundNumber: number | null,
+  courtNumber: number,
+  drawnPairIds: string[],
+  winnerDrawnPairId: string,
+  scoreMap: Record<string, number>,
+) {
+  const { data: pairs } = await supabase
+    .from("drawn_pairs")
+    .select("id, player1_id, player2_id")
+    .in("id", drawnPairIds);
+
+  if (!pairs || pairs.length < 2) return;
+
+  const winner = pairs.find((p) => p.id === winnerDrawnPairId);
+  const loser = pairs.find((p) => p.id !== winnerDrawnPairId);
+  if (!winner || !loser) return;
+
+  const playerIds = [
+    winner.player1_id,
+    winner.player2_id,
+    loser.player1_id,
+    loser.player2_id,
+  ];
+  const { data: profileRows } = await supabase
+    .from("profiles")
+    .select("id, full_name, gender, dominant_hand, level")
+    .in("id", playerIds);
+
+  const profileById = new Map(
+    (profileRows ?? []).map((p) => [p.id, p] as const)
+  );
+
+  const dataFor = (id: string) => {
+    const p = profileById.get(id);
+    return {
+      name: p?.full_name ?? null,
+      gender: p?.gender ?? null,
+      hand: p?.dominant_hand ?? null,
+      level: p?.level != null ? Number(p.level) : null,
+    };
+  };
+
+  const w1 = dataFor(winner.player1_id);
+  const w2 = dataFor(winner.player2_id);
+  const l1 = dataFor(loser.player1_id);
+  const l2 = dataFor(loser.player2_id);
+
+  await supabase.from("pozo_match_history").upsert(
+    {
+      tournament_id: tournamentId,
+      round_id: roundId,
+      round_number: roundNumber,
+      court_number: courtNumber,
+      winner_player1_id: winner.player1_id,
+      winner_player2_id: winner.player2_id,
+      loser_player1_id: loser.player1_id,
+      loser_player2_id: loser.player2_id,
+      winner_player1_name: w1.name,
+      winner_player1_gender: w1.gender,
+      winner_player1_hand: w1.hand,
+      winner_player1_level: w1.level,
+      winner_player2_name: w2.name,
+      winner_player2_gender: w2.gender,
+      winner_player2_hand: w2.hand,
+      winner_player2_level: w2.level,
+      loser_player1_name: l1.name,
+      loser_player1_gender: l1.gender,
+      loser_player1_hand: l1.hand,
+      loser_player1_level: l1.level,
+      loser_player2_name: l2.name,
+      loser_player2_gender: l2.gender,
+      loser_player2_hand: l2.hand,
+      loser_player2_level: l2.level,
+      winner_drawn_pair_id: winner.id,
+      loser_drawn_pair_id: loser.id,
+      score_winner: scoreMap[winner.id] ?? null,
+      score_loser: scoreMap[loser.id] ?? null,
+    },
+    { onConflict: "tournament_id,round_id,court_number" },
+  );
 }
 
 export async function checkAndStartNextRound(tournamentId: string, roundId: string) {

@@ -22,6 +22,7 @@ test.describe.configure({ mode: "serial" });
 
 test.afterEach(async () => {
   try {
+    await client.query("DELETE FROM pozo_match_history WHERE tournament_id = ANY($1)", [createdTournaments]);
     await client.query("DELETE FROM tournaments WHERE id = ANY($1)", [createdTournaments]);
     await client.query("DELETE FROM drawn_pairs WHERE id = ANY($1)", [createdPairs]);
   } finally {
@@ -32,6 +33,7 @@ test.afterEach(async () => {
 
 test.afterAll(async () => {
   try {
+    await client.query("DELETE FROM pozo_match_history WHERE tournament_id = ANY($1)", [createdTournaments]);
     await client.query("DELETE FROM tournaments WHERE id = ANY($1)", [createdTournaments]);
     await client.query("DELETE FROM drawn_pairs WHERE id = ANY($1)", [createdPairs]);
   } finally {
@@ -125,6 +127,30 @@ test.describe("Pozo: selección de parejas y sorteo de pistas", () => {
 
     await page.getByRole("button", { name: "Quitar" }).click();
     await expect(page.getByText("Seleccionadas (1)")).not.toBeVisible();
+  });
+
+  test("selecciona todas las parejas de una vez", async ({ page }) => {
+    const { tournamentId, numbers } = await setupTournament(2, [0, 1, 2, 3]);
+    await page.goto(`/pozos/${tournamentId}`);
+
+    await page.getByRole("button", { name: "Seleccionar todas" }).click();
+
+    // The selected-pairs panel appears, indicating selection happened.
+    await expect(page.getByRole("button", { name: "Sorteo pistas" })).toBeVisible();
+
+    // Every one of the tournament's drawn pairs is now selected in the DB.
+    const { rows: drawn } = await client.query(
+      "SELECT id FROM drawn_pairs WHERE pair_number = ANY($1::int[])",
+      [numbers]
+    );
+    const { rows: selected } = await client.query(
+      "SELECT drawn_pair_id FROM tournament_drawn_pairs WHERE tournament_id = $1",
+      [tournamentId]
+    );
+    const selectedIds = new Set(selected.map((r: { drawn_pair_id: string }) => r.drawn_pair_id));
+    for (const d of drawn) {
+      expect(selectedIds.has(d.id)).toBe(true);
+    }
   });
 
   test("sorteo pistas asigna 2 parejas por pista", async ({ page }) => {
@@ -345,5 +371,101 @@ test.describe("Pozo: temporizador de ronda", () => {
     await timer.getByRole("button", { name: "Iniciar" }).click();
     await expect(timer).toContainText("¡Tiempo completado!");
     await expect(timer.getByRole("button", { name: "Reiniciar" })).toBeVisible();
+  });
+});
+
+test.describe("Pozo: histórico de partidos", () => {
+  test("guarda el resultado de cada pista en el historico con las parejas que la jugaron", async ({ page }) => {
+    const { tournamentId, numbers } = await setupTournament(1, [0, 1]);
+    await page.goto(`/pozos/${tournamentId}`);
+
+    for (const num of numbers) await clickSelect(page, num);
+    await page.getByRole("button", { name: "Sorteo pistas" }).click();
+    await expect(page.getByTestId("round-1")).toBeVisible();
+
+    const [w, l] = numbers;
+    await page.getByTestId(`court-1-score-${w}`).fill("6");
+    await page.getByTestId(`court-1-score-${l}`).fill("4");
+    await page.getByTestId(`court-1-pair-${w}`).click();
+    // With a single court, completing it immediately generates round 2.
+    await expect(page.getByTestId("round-2")).toBeVisible();
+
+    // Verify a history row was created for this court match.
+    const { rows } = await client.query(
+      `SELECT h.*, dpw.pair_number AS winner_num, dpl.pair_number AS loser_num
+         FROM pozo_match_history h
+         JOIN drawn_pairs dpw ON dpw.id = h.winner_drawn_pair_id
+         JOIN drawn_pairs dpl ON dpl.id = h.loser_drawn_pair_id
+        WHERE h.tournament_id = $1`,
+      [tournamentId]
+    );
+    expect(rows).toHaveLength(1);
+    expect(Number(rows[0].winner_num)).toBe(w);
+    expect(Number(rows[0].loser_num)).toBe(l);
+    expect(rows[0].score_winner).toBe(6);
+    expect(rows[0].score_loser).toBe(4);
+    // Denormalized player ids are recorded so the history survives re-draws.
+    expect(rows[0].winner_player1_id).toBeTruthy();
+    expect(rows[0].winner_player2_id).toBeTruthy();
+    expect(rows[0].loser_player1_id).toBeTruthy();
+    expect(rows[0].loser_player2_id).toBeTruthy();
+  });
+
+  test("el sorteo evita repetir parejas que siempre ganan en el historico", async ({ page }) => {
+    const [ana] = (await client.query("SELECT id FROM profiles WHERE full_name = $1", ["Ana Vega"])).rows;
+    const [andres] = (await client.query("SELECT id FROM profiles WHERE full_name = $1", ["Andrés Moreno"])).rows;
+    const [pablo] = (await client.query("SELECT id FROM profiles WHERE full_name = $1", ["Pablo Torres"])).rows;
+    const [sara] = (await client.query("SELECT id FROM profiles WHERE full_name = $1", ["Sara Gil"])).rows;
+    expect(ana && andres && pablo && sara).toBeTruthy();
+
+    // Record existing drawn_pairs so cleanup only removes the new draw's rows.
+    const before = await client.query("SELECT id FROM drawn_pairs");
+    const beforeIds = new Set(before.rows.map((r: { id: string }) => r.id));
+
+    // Fabricate 3 wins so the Ana+Andrés partnership has a 100% win rate.
+    const historyIds: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const { rows } = await client.query(
+        `INSERT INTO pozo_match_history
+           (tournament_id, round_id, round_number, court_number,
+            winner_player1_id, winner_player2_id, loser_player1_id, loser_player2_id,
+            score_winner, score_loser)
+         VALUES (NULL, NULL, NULL, 1, $1, $2, $3, $4, 6, 4)
+         RETURNING id`,
+        [ana.id, andres.id, pablo.id, sara.id]
+      );
+      historyIds.push(rows[0].id);
+    }
+
+    await page.goto("/sorteo");
+    await page.getByRole("button", { name: "Aleatorio", exact: true }).click();
+
+    // Wait until the random draw has run (new rows appear).
+    await expect
+      .poll(async () => {
+        const { rows } = await client.query(
+          "SELECT id FROM drawn_pairs WHERE id <> ALL($1::uuid[])",
+          [[...beforeIds]]
+        );
+        return rows.length > 0;
+      })
+      .toBe(true);
+
+    // Inspect how Ana was teamed in the new random draw.
+    const { rows } = await client.query(
+      `SELECT dp.player1_id, dp.player2_id
+         FROM drawn_pairs dp
+        WHERE dp.id <> ALL($1::uuid[])
+          AND (dp.player1_id = $2 OR dp.player2_id = $2)`,
+      [[...beforeIds], ana.id]
+    );
+    for (const r of rows) {
+      const partner = r.player1_id === ana.id ? r.player2_id : r.player1_id;
+      expect(partner).not.toBe(andres.id);
+    }
+
+    // Remove only the pairs created by this draw.
+    await client.query("DELETE FROM drawn_pairs WHERE id <> ALL($1::uuid[])", [[...beforeIds]]);
+    await client.query("DELETE FROM pozo_match_history WHERE id = ANY($1)", [historyIds]);
   });
 });
