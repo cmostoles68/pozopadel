@@ -26,13 +26,20 @@ export default function RoundTimer({
     setStarted(true);
   }
 
+  function stop() {
+    setLeft(0);
+  }
+
   const mm = String(Math.floor(left / 60)).padStart(2, "0");
   const ss = String(left % 60).padStart(2, "0");
 
   return (
     <div
       data-testid={`timer-round-${round}`}
+      onClick={running ? stop : undefined}
       className={`flex items-center gap-3 rounded-xl px-4 py-2 border ${
+        running ? "cursor-pointer select-none" : ""
+      } ${
         finished
           ? "border-red-300 bg-red-50"
           : running

@@ -46,6 +46,7 @@ export interface Database {
           status: string;
           number_of_courts: number;
           minutes_per_round: number;
+          champion_drawn_pair_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -55,6 +56,7 @@ export interface Database {
           status?: string;
           number_of_courts: number;
           minutes_per_round?: number;
+          champion_drawn_pair_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -64,6 +66,7 @@ export interface Database {
           status?: string;
           number_of_courts?: number;
           minutes_per_round?: number;
+          champion_drawn_pair_id?: string | null;
           created_at?: string;
         };
       };

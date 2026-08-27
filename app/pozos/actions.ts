@@ -288,3 +288,51 @@ export async function checkAndStartNextRound(tournamentId: string, roundId: stri
 
   return { ok: true, nextRoundNumber: nextRound.round_number };
 }
+
+export async function finalizePozo(tournamentId: string) {
+  const supabase = await createClient();
+
+  const { data: rounds } = await supabase
+    .from("pozo_rounds")
+    .select("id")
+    .eq("tournament_id", tournamentId)
+    .order("round_number", { ascending: false });
+
+  if (!rounds || rounds.length === 0) {
+    return { error: "No hay rondas para finalizar" };
+  }
+
+  // Discard the newest generated round; use the court-1 winner of the round
+  // before it (the last completed round).
+  const startIndex = rounds.length > 1 ? 1 : 0;
+
+  const champion = await (async function findChampion(): Promise<string | null> {
+    for (let i = startIndex; i < rounds.length; i++) {
+      const round = rounds[i];
+      const { data: court1 } = await supabase
+        .from("pozo_round_pairs")
+        .select("drawn_pair_id, winner_drawn_pair_id, is_finished")
+        .eq("round_id", round.id)
+        .eq("court_number", 1);
+
+      if (!court1 || court1.length < 2) continue;
+      if (!court1.every((p) => p.is_finished)) continue;
+
+      const winner = court1.find((p) => p.winner_drawn_pair_id === p.drawn_pair_id);
+      if (winner) return winner.drawn_pair_id;
+    }
+    return null;
+  })();
+
+  if (!champion) {
+    return { error: "La pista 1 todavía no tiene un ganador definido" };
+  }
+
+  const { error } = await supabase
+    .from("tournaments")
+    .update({ status: "completed", champion_drawn_pair_id: champion })
+    .eq("id", tournamentId);
+
+  if (error) return { error: error.message };
+  return { ok: true };
+}

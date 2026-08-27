@@ -205,7 +205,7 @@ test.describe("Pozo: registro de resultados y siguiente ronda", () => {
     await expect(round1.getByText("Pista 2")).toBeVisible();
     for (const num of numbers) {
       await expect(
-        page.getByRole("button", { name: "Guardar" }).first()
+        round1.getByTestId(`court-1-pair-${num}`).or(round1.getByTestId(`court-2-pair-${num}`))
       ).toBeVisible();
     }
   });
@@ -227,14 +227,9 @@ test.describe("Pozo: registro de resultados y siguiente ronda", () => {
       expect(pairNums).toHaveLength(2);
       // Convert to the drawn_pair number used in testids.
       const [w, l] = pairNums;
-      await page.getByTestId(`court-${court}-pair-${w}`).click();
       await page.getByTestId(`court-${court}-score-${w}`).fill("6");
       await page.getByTestId(`court-${court}-score-${l}`).fill("4");
-      await page.getByTestId(`court-${court}-save`).click();
-      if (court === 1) {
-        // Round 1 still active (only one court scored), court 1 marked finished.
-        await expect(page.getByTestId(`court-1-save`)).toHaveText("Actualizado");
-      }
+      await page.getByTestId(`court-${court}-pair-${w}`).click();
     }
 
     // Round 2 is generated once every court is scored.
@@ -270,6 +265,32 @@ test.describe("Pozo: registro de resultados y siguiente ronda", () => {
     await expect(page.getByTestId(`court-1-pair-${w}`)).toContainText("Ganador");
     await expect(page.getByTestId(`court-1-pair-${l}`)).not.toContainText("Ganador");
   });
+
+  test("finalizar pozo desprecia la nueva ronda y corona al ganador de la pista 1 de la anterior", async ({ page }) => {
+    const { tournamentId, numbers } = await setupTournament(1, [0, 1]);
+    await page.goto(`/pozos/${tournamentId}`);
+
+    for (const num of numbers) await clickSelect(page, num);
+    await page.getByRole("button", { name: "Sorteo pistas" }).click();
+
+    await expect(page.getByTestId("round-1")).toBeVisible();
+    const [w, l] = numbers;
+
+    // Complete round 1 on court 1; winner = w. This generates round 2.
+    await page.getByTestId(`court-1-score-${w}`).fill("6");
+    await page.getByTestId(`court-1-score-${l}`).fill("4");
+    await page.getByTestId(`court-1-pair-${w}`).click();
+    await expect(page.getByTestId("round-2")).toBeVisible();
+
+    // Finalize: the newly generated round 2 is discarded and court-1 champion
+    // of round 1 (pair w) is crowned.
+    const finalize = page.getByTestId("finalize-pozo");
+    await expect(finalize).toBeEnabled();
+    await finalize.click();
+
+    await expect(page.getByTestId("champion-banner")).toBeVisible();
+    await expect(page.getByTestId("champion-banner")).toContainText(String(w));
+  });
 });
 
 test.describe("Pozo: temporizador de ronda", () => {
@@ -289,6 +310,24 @@ test.describe("Pozo: temporizador de ronda", () => {
     // Press to start the countdown.
     await timer.getByRole("button", { name: "Iniciar" }).click();
     await expect(timer.getByRole("button", { name: "En curso..." })).toBeVisible();
+  });
+
+  test("al pulsar el temporizador en curso lo detiene y lo deja a 00:00", async ({ page }) => {
+    const { tournamentId, numbers } = await setupTournament(1, [0, 1], 15);
+    await page.goto(`/pozos/${tournamentId}`);
+
+    for (const num of numbers) await clickSelect(page, num);
+    await page.getByRole("button", { name: "Sorteo pistas" }).click();
+
+    const timer = page.getByTestId("timer-round-1");
+    await timer.getByRole("button", { name: "Iniciar" }).click();
+    await expect(timer.getByRole("button", { name: "En curso..." })).toBeVisible();
+
+    // Tapping the running timer stops it and resets it to 00:00.
+    await timer.click();
+    await expect(timer).toContainText("00:00");
+    await expect(timer).toContainText("¡Tiempo completado!");
+    await expect(timer.getByRole("button", { name: "Reiniciar" })).toBeVisible();
   });
 
   test("avisa al llegar a cero y se detiene", async ({ page }) => {

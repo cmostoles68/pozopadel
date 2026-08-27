@@ -107,6 +107,12 @@ export default async function PozoPage(props: PageProps<"/pozos/[id]">) {
 
   const activePozoRound = roundsData.find((r) => r.status === "in_progress");
 
+  const completed = tournament.status === "completed";
+  const champion =
+    completed && tournament.champion_drawn_pair_id
+      ? allPairs.find((p) => p.id === tournament.champion_drawn_pair_id) ?? null
+      : null;
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-gray-200 px-4 py-3">
@@ -142,6 +148,8 @@ export default async function PozoPage(props: PageProps<"/pozos/[id]">) {
           tournamentId={id}
           allPairs={allPairs}
           rounds={roundsData}
+          completed={completed}
+          champion={champion}
         />
 
         {currentRound && currentMatches && currentMatches.length > 0 && (

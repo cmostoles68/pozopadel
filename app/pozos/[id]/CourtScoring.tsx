@@ -6,6 +6,7 @@ import {
   saveCourtResult,
   checkAndStartNextRound,
   clearCourtDraw,
+  finalizePozo,
 } from "../actions";
 
 interface PairInfo {
@@ -37,22 +38,53 @@ export default function CourtScoring({
   tournamentId,
   allPairs,
   rounds,
+  completed,
+  champion,
 }: {
   tournamentId: string;
   allPairs: PairInfo[];
   rounds: RoundData[];
+  completed: boolean;
+  champion: PairInfo | null;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
   const [redrawing, setRedrawing] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
 
   const pairById = new Map(allPairs.map((p) => [p.id, p]));
 
   const activeRound = rounds.find((r) => r.status === "in_progress");
   const finishedRounds = rounds.filter((r) => r.status === "finished");
 
-  if (rounds.length === 0) return null;
+  if (rounds.length === 0) {
+    return (
+      <div className="space-y-6">
+        {error && (
+          <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </p>
+        )}
+        {!completed && (
+          <FinalizeButton
+            canFinalize={false}
+            finalizing={finalizing}
+            onFinalize={handleFinalize}
+          />
+        )}
+      </div>
+    );
+  }
+
+  async function handleFinalize() {
+    setFinalizing(true);
+    setError(null);
+    const res = await finalizePozo(tournamentId);
+    setFinalizing(false);
+    if (res.error) setError(res.error);
+    else router.refresh();
+  }
 
   function renderFinishedRound(round: RoundData) {
     const courts = Array.from(new Set(round.pairs.map((p) => p.court_number))).sort();
@@ -102,6 +134,19 @@ export default function CourtScoring({
   if (!activeRound) {
     return (
       <div className="space-y-6">
+        {completed && champion && <ChampionBanner champion={champion} />}
+        {error && (
+          <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </p>
+        )}
+        {!completed && (
+          <FinalizeButton
+            canFinalize={finishedRounds.length > 0}
+            finalizing={finalizing}
+            onFinalize={handleFinalize}
+          />
+        )}
         {finishedRounds.map(renderFinishedRound)}
       </div>
     );
@@ -115,6 +160,8 @@ export default function CourtScoring({
 
   return (
     <div className="space-y-6" data-testid={`round-${activeRound.round_number}`}>
+      {completed && champion && <ChampionBanner champion={champion} />}
+
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">
           Ronda {activeRound.round_number}
@@ -142,17 +189,23 @@ export default function CourtScoring({
         </p>
       )}
 
+      {!completed && (
+        <FinalizeButton
+          canFinalize={finishedRounds.length > 0}
+          finalizing={finalizing}
+          onFinalize={handleFinalize}
+        />
+      )}
+
       <div className="space-y-3">
         {courts.map((court) => {
           const pairs = activeRound.pairs.filter((p) => p.court_number === court);
-          const finished = pairs.length >= 2 && pairs.every((p) => p.is_finished);
           return (
             <CourtCard
               key={`${activeRound.id}-${court}`}
               court={court}
               pairs={pairs}
               pairById={pairById}
-              finished={finished}
               loading={loading === `${court}`}
               onResult={async (winnerId, scores) => {
                 setLoading(`${court}`);
@@ -174,11 +227,11 @@ export default function CourtScoring({
                     activeRound.id
                   );
                   if (next.error) setError(next.error);
+                  if (next.nextRoundNumber) router.refresh();
                 } catch (e) {
                   setError(e instanceof Error ? e.message : "Error al guardar");
                 }
                 setLoading(null);
-                router.refresh();
               }}
             />
           );
@@ -213,18 +266,61 @@ function PairBadge({ number, className }: { number: number; className?: string }
   );
 }
 
+function ChampionBanner({ champion }: { champion: PairInfo }) {
+  return (
+    <div
+      data-testid="champion-banner"
+      className="rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-100 to-amber-50 p-6 text-center shadow-sm"
+    >
+      <div className="text-xs uppercase tracking-widest text-amber-600 font-semibold">
+        🏆 Campeón del pozo
+      </div>
+      <div className="mt-3 flex items-center justify-center gap-3">
+        <PairBadge number={champion.pair_number} className="bg-amber-500 w-10 h-10 text-base" />
+        <span className="text-2xl font-bold text-amber-800">
+          {champion.player1_name} &amp; {champion.player2_name}
+        </span>
+      </div>
+      <p className="mt-2 text-xs text-amber-600">
+        Ganadores de la pista 1 · Pareja {champion.pair_number}
+      </p>
+    </div>
+  );
+}
+
+function FinalizeButton({
+  canFinalize,
+  finalizing,
+  onFinalize,
+}: {
+  canFinalize: boolean;
+  finalizing: boolean;
+  onFinalize: () => void;
+}) {
+  return (
+    <div className="flex justify-center pt-2">
+      <button
+        data-testid="finalize-pozo"
+        onClick={onFinalize}
+        disabled={!canFinalize || finalizing}
+        className="rounded-full bg-amber-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {finalizing ? "Finalizando..." : "Finalizar pozo"}
+      </button>
+    </div>
+  );
+}
+
 function CourtCard({
   court,
   pairs,
   pairById,
-  finished,
   loading,
   onResult,
 }: {
   court: number;
   pairs: RoundCourtPair[];
   pairById: Map<string, PairInfo>;
-  finished: boolean;
   loading: boolean;
   onResult: (
     winnerId: string,
@@ -243,9 +339,25 @@ function CourtCard({
     return initial;
   });
 
+  function persist(nextWinner: string | null, nextScores: Record<string, string>) {
+    if (!nextWinner) return;
+    onResult(
+      nextWinner,
+      pairs.map((p) => ({
+        drawnPairId: p.drawn_pair_id,
+        score: parseInt(nextScores[p.drawn_pair_id] ?? "0", 10) || 0,
+      }))
+    );
+  }
+
   return (
     <div className="border border-gray-200 rounded-lg p-3 space-y-2">
-      <div className="text-xs font-medium text-gray-500">Pista {court}</div>
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-medium text-gray-500">Pista {court}</div>
+        <span className="text-xs text-gray-400">
+          Toca una pareja para marcar ganador
+        </span>
+      </div>
 
       {pairs.map((p) => {
         const info = pairById.get(p.drawn_pair_id);
@@ -255,12 +367,17 @@ function CourtCard({
           <div
             key={p.id}
             data-testid={`court-${court}-pair-${info.pair_number}`}
-            className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${
+            className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-opacity ${
+              loading ? "opacity-60" : ""
+            } ${
               isWinner
                 ? "border-emerald-400 bg-emerald-50"
                 : "border-gray-200 hover:border-gray-300"
             }`}
-            onClick={() => setWinnerId(p.drawn_pair_id)}
+            onClick={() => {
+              setWinnerId(p.drawn_pair_id);
+              persist(p.drawn_pair_id, scores);
+            }}
           >
             <PairBadge number={info.pair_number} className={isWinner ? "bg-emerald-500" : "bg-primary"} />
             <div className="text-sm flex-1 min-w-0">
@@ -278,11 +395,13 @@ function CourtCard({
               placeholder="Puntos"
               className="w-20 text-sm border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-primary"
               onClick={(e) => e.stopPropagation()}
-              onChange={(e) =>
-                setScores({ ...scores, [p.drawn_pair_id]: e.target.value })
-              }
+              onChange={(e) => {
+                const next = { ...scores, [p.drawn_pair_id]: e.target.value };
+                setScores(next);
+                if (winnerId) persist(winnerId, next);
+              }}
             />
-            {isWinner && (
+            {isWinner && !loading && (
               <span className="text-xs font-semibold text-emerald-600 shrink-0">
                 Ganador
               </span>
@@ -290,31 +409,6 @@ function CourtCard({
           </div>
         );
       })}
-
-      <div className="flex items-center justify-end pt-1">
-        <span className="text-xs text-gray-400 mr-auto">
-          Toca el número de la pareja para marcar ganador
-        </span>
-        <button
-          data-testid={`court-${court}-save`}
-          onClick={() => {
-            if (!winnerId) return;
-            const parsed = pairs.map((p) => ({
-              drawnPairId: p.drawn_pair_id,
-              score: parseInt(scores[p.drawn_pair_id] ?? "0", 10) || 0,
-            }));
-            onResult(winnerId, parsed);
-          }}
-          disabled={!winnerId || loading}
-          className={`text-xs font-medium px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${
-            finished
-              ? "bg-gray-100 text-gray-500"
-              : "bg-primary text-white hover:bg-primary-dark"
-          }`}
-        >
-          {finished ? "Actualizado" : loading ? "Guardando..." : "Guardar"}
-        </button>
-      </div>
     </div>
   );
 }
