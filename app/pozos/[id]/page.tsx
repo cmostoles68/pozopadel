@@ -4,6 +4,8 @@ import Link from "next/link";
 import LiveTournamentHeader from "@/components/LiveTournamentHeader";
 import TournamentView from "./TournamentView";
 import PairSelector from "./PairSelector";
+import CourtScoring from "./CourtScoring";
+import RoundTimer from "@/components/RoundTimer";
 
 export default async function PozoPage(props: PageProps<"/pozos/[id]">) {
   const { id } = await props.params;
@@ -81,16 +83,47 @@ export default async function PozoPage(props: PageProps<"/pozos/[id]">) {
     };
   });
 
+  const { data: pozoRounds } = await supabase
+    .from("pozo_rounds")
+    .select("*")
+    .eq("tournament_id", id)
+    .order("round_number");
+
+  const pozoRoundIds = (pozoRounds ?? []).map((r) => r.id);
+  const { data: pozoRoundPairs } = pozoRoundIds.length
+    ? await supabase
+        .from("pozo_round_pairs")
+        .select("*")
+        .in("round_id", pozoRoundIds)
+        .order("court_number")
+    : { data: [] };
+
+  const roundsData = (pozoRounds ?? []).map((r) => ({
+    id: r.id,
+    round_number: r.round_number,
+    status: r.status,
+    pairs: (pozoRoundPairs ?? []).filter((p) => p.round_id === r.id),
+  }));
+
+  const activePozoRound = roundsData.find((r) => r.status === "in_progress");
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-gray-200 px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
             <Link href="/dashboard" className="text-gray-500 hover:text-foreground">
               ← Volver
             </Link>
-            <h1 className="text-lg font-semibold text-foreground">{tournament.title}</h1>
+            <h1 className="text-lg font-semibold text-foreground truncate">{tournament.title}</h1>
           </div>
+          {activePozoRound && (
+            <RoundTimer
+              key={activePozoRound.id}
+              minutes={tournament.minutes_per_round}
+              round={activePozoRound.round_number}
+            />
+          )}
         </div>
       </header>
 
@@ -103,6 +136,12 @@ export default async function PozoPage(props: PageProps<"/pozos/[id]">) {
           selectedPairs={selectedPairs ?? []}
           numberOfCourts={tournament.number_of_courts}
           status={tournament.status}
+        />
+
+        <CourtScoring
+          tournamentId={id}
+          allPairs={allPairs}
+          rounds={roundsData}
         />
 
         {currentRound && currentMatches && currentMatches.length > 0 && (

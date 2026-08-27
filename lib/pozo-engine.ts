@@ -19,6 +19,43 @@ export interface RoundResult {
   loser: Pair;
 }
 
+export interface PairCourtResult {
+  court_number: number;
+  winner_drawn_pair_id: string;
+  loser_drawn_pair_id: string;
+}
+
+export function calculatePairMovements(
+  results: PairCourtResult[],
+  numberOfCourts: number,
+): { drawn_pair_id: string; court_number: number }[] {
+  const movements: { drawn_pair_id: string; court_number: number }[] = [];
+
+  for (const result of results) {
+    const court = result.court_number;
+
+    if (numberOfCourts <= 1) {
+      movements.push({ drawn_pair_id: result.winner_drawn_pair_id, court_number: 1 });
+      movements.push({ drawn_pair_id: result.loser_drawn_pair_id, court_number: 1 });
+    } else if (court === 1) {
+      // Pista Rey: winner stays, loser → Court 2
+      movements.push({ drawn_pair_id: result.winner_drawn_pair_id, court_number: 1 });
+      movements.push({ drawn_pair_id: result.loser_drawn_pair_id, court_number: 2 });
+    } else if (court < numberOfCourts) {
+      // Intermediate courts: winner → N-1, loser → N+1
+      movements.push({ drawn_pair_id: result.winner_drawn_pair_id, court_number: court - 1 });
+      movements.push({ drawn_pair_id: result.loser_drawn_pair_id, court_number: court + 1 });
+    } else {
+      // Last court: winner → previous court, loser stays
+      movements.push({ drawn_pair_id: result.winner_drawn_pair_id, court_number: court - 1 });
+      movements.push({ drawn_pair_id: result.loser_drawn_pair_id, court_number: court });
+    }
+  }
+
+  return movements;
+}
+
+
 export interface PlayerRow {
   player_id: string;
   level: number;

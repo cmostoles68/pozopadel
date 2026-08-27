@@ -206,6 +206,64 @@ export interface Database {
           created_at?: string;
         };
       };
+      pozo_rounds: {
+        Row: {
+          id: string;
+          tournament_id: string;
+          round_number: number;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tournament_id: string;
+          round_number: number;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tournament_id?: string;
+          round_number?: number;
+          status?: string;
+          created_at?: string;
+        };
+      };
+      pozo_round_pairs: {
+        Row: {
+          id: string;
+          round_id: string;
+          drawn_pair_id: string;
+          court_number: number;
+          winner_drawn_pair_id: string | null;
+          score_a: number | null;
+          score_b: number | null;
+          is_finished: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          round_id: string;
+          drawn_pair_id: string;
+          court_number: number;
+          winner_drawn_pair_id?: string | null;
+          score_a?: number | null;
+          score_b?: number | null;
+          is_finished?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          round_id?: string;
+          drawn_pair_id?: string;
+          court_number?: number;
+          winner_drawn_pair_id?: string | null;
+          score_a?: number | null;
+          score_b?: number | null;
+          is_finished?: boolean;
+          created_at?: string;
+        };
+      };
     };
   };
 }

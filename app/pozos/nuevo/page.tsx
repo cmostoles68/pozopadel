@@ -1,11 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createPozo } from "../actions";
 
 export default function NuevoPozoPage() {
+  return (
+    <Suspense fallback={null}>
+      <NuevoPozoForm />
+    </Suspense>
+  );
+}
+
+function NuevoPozoForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -31,6 +41,11 @@ export default function NuevoPozoPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8">
+        {error && (
+          <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-foreground mb-1">
@@ -70,8 +85,8 @@ export default function NuevoPozoPage() {
               id="minutesPerRound"
               name="minutesPerRound"
               type="number"
-              min={5}
-              max={60}
+              min={1}
+              max={90}
               required
               defaultValue={15}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
