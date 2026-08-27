@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signInWithMagicLink, signInWithGoogle } from "../actions";
+import PadelRacket from "@/components/PadelRacket";
 
 export default function LoginPage({
   searchParams,
@@ -26,11 +27,24 @@ export default function LoginPage({
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-foreground">PozoPadel</h1>
-          <p className="text-sm text-gray-500 mt-2">Gestión de torneos de pádel</p>
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Court background decoration */}
+      <div className="absolute inset-0 bg-court-blue opacity-5" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-full bg-court-line opacity-20" />
+      <div className="absolute top-1/2 left-0 w-full h-px bg-court-line opacity-20" />
+
+      <div className="w-full max-w-sm space-y-6 relative z-10">
+        {/* Logo */}
+        <div className="flex flex-col items-center gap-3">
+          <PadelRacket className="w-20 h-20" />
+          <div className="text-center">
+            <h1 className="text-4xl font-extrabold text-court-blue tracking-tight">
+              PozoPadel
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Torneos de pádel en vivo
+            </p>
+          </div>
         </div>
 
         {error && (
@@ -57,13 +71,13 @@ export default function LoginPage({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary text-white py-2.5 rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+              className="w-full bg-primary text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors disabled:opacity-50 shadow-sm"
             >
               {loading ? "Enviando..." : "Enviar enlace de acceso"}
             </button>
@@ -82,7 +96,7 @@ export default function LoginPage({
         <form action={signInWithGoogle}>
           <button
             type="submit"
-            className="w-full border border-gray-300 bg-white text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+            className="w-full border border-gray-300 bg-white text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 shadow-sm"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path

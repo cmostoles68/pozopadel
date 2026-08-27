@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PozoPadel",
-  description: "Gestión de torneos de pádel tipo Pozo",
+  title: "PozoPadel - Torneos de Pádel en Vivo",
+  description: "Gestiona y compite en torneos de pádel tipo Pozo en tiempo real",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

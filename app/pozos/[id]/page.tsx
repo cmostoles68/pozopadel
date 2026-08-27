@@ -1,21 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
-import { joinPozo } from "../actions";
 import LiveTournamentHeader from "@/components/LiveTournamentHeader";
-import CourtsGrid from "@/components/CourtsGrid";
-import LeaderboardTable from "@/components/LeaderboardTable";
 import TournamentView from "./TournamentView";
+import PairSelector from "./PairSelector";
 
 export default async function PozoPage(props: PageProps<"/pozos/[id]">) {
   const { id } = await props.params;
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/auth/login");
 
   const { data: tournament } = await supabase
     .from("tournaments")
@@ -24,19 +16,6 @@ export default async function PozoPage(props: PageProps<"/pozos/[id]">) {
     .single();
 
   if (!tournament) notFound();
-
-  const { data: isPlayer } = await supabase
-    .from("tournament_players")
-    .select("id")
-    .eq("tournament_id", id)
-    .eq("player_id", user.id)
-    .maybeSingle();
-
-  const { data: tournamentPlayers } = await supabase
-    .from("tournament_players")
-    .select("*")
-    .eq("tournament_id", id)
-    .order("current_court");
 
   const { data: currentRound } = await supabase
     .from("rounds")
@@ -55,34 +34,52 @@ export default async function PozoPage(props: PageProps<"/pozos/[id]">) {
         .order("court_number")
     : { data: [] };
 
-  const { data: allMatches } = await supabase
-    .from("matches")
-    .select("*")
-    .eq("round_id", id);
+  const playerNames: Record<string, string> = {};
 
-  const { data: allRoundIds } = await supabase
-    .from("rounds")
-    .select("id")
+  const { data: drawnPairsRaw } = await supabase
+    .from("drawn_pairs")
+    .select("*")
+    .order("pair_number");
+
+  const { data: selectedPairs } = await supabase
+    .from("tournament_drawn_pairs")
+    .select("*")
     .eq("tournament_id", id);
 
-  const roundIds = allRoundIds?.map((r) => r.id) ?? [];
-  const { data: allMatchesComplete } = roundIds.length
-    ? await supabase
-        .from("matches")
-        .select("*")
-        .in("round_id", roundIds)
-    : { data: [] };
-
-  const playerNames: Record<string, string> = {};
-  for (const tp of tournamentPlayers ?? []) {
-    const profile = tp as unknown as {
-      player_id: string;
-      profiles: { full_name: string } | null;
-    };
-    playerNames[profile.player_id] = profile.profiles?.full_name ?? "Jugador";
+  const allPlayerIds = new Set<string>();
+  for (const dp of drawnPairsRaw ?? []) {
+    allPlayerIds.add(dp.player1_id);
+    allPlayerIds.add(dp.player2_id);
   }
 
-  const isOwner = tournament.created_by === user.id;
+  const { data: pairProfiles } = allPlayerIds.size
+    ? await supabase
+        .from("profiles")
+        .select("id, full_name, level, dominant_hand")
+        .in("id", Array.from(allPlayerIds))
+    : { data: [] };
+
+  const profileMap: Record<string, { full_name: string; level: number; dominant_hand: string }> = {};
+  for (const p of pairProfiles ?? []) {
+    profileMap[p.id] = p;
+  }
+
+  const allPairs = (drawnPairsRaw ?? []).map((dp) => {
+    const p1 = profileMap[dp.player1_id];
+    const p2 = profileMap[dp.player2_id];
+    const avg = p1 && p2 ? (p1.level + p2.level) / 2 : 0;
+    const isLefty = p1?.dominant_hand === "LEFT" || p2?.dominant_hand === "LEFT";
+    return {
+      id: dp.id,
+      pair_number: dp.pair_number,
+      player1_id: dp.player1_id,
+      player2_id: dp.player2_id,
+      player1_name: p1?.full_name ?? "Jugador",
+      player2_name: p2?.full_name ?? "Jugador",
+      avg_level: avg,
+      is_lefty: isLefty,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,30 +91,19 @@ export default async function PozoPage(props: PageProps<"/pozos/[id]">) {
             </Link>
             <h1 className="text-lg font-semibold text-foreground">{tournament.title}</h1>
           </div>
-          {isOwner && (
-            <Link
-              href={`/pozos/${id}/admin`}
-              className="text-sm text-primary hover:text-primary-dark"
-            >
-              Admin
-            </Link>
-          )}
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <LiveTournamentHeader tournament={tournament} currentRound={currentRound} />
 
-        {!isPlayer && tournament.status === "draft" && (
-          <form action={joinPozo.bind(null, id)}>
-            <button
-              type="submit"
-              className="bg-primary text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
-            >
-              Unirse al pozo
-            </button>
-          </form>
-        )}
+        <PairSelector
+          tournamentId={id}
+          allPairs={allPairs}
+          selectedPairs={selectedPairs ?? []}
+          numberOfCourts={tournament.number_of_courts}
+          status={tournament.status}
+        />
 
         {currentRound && currentMatches && currentMatches.length > 0 && (
           <TournamentView
@@ -128,21 +114,6 @@ export default async function PozoPage(props: PageProps<"/pozos/[id]">) {
           />
         )}
 
-        <div>
-          <h2 className="text-sm font-semibold text-foreground mb-3">Clasificación</h2>
-          <LeaderboardTable
-            tournamentPlayers={tournamentPlayers ?? []}
-            allMatches={allMatchesComplete ?? []}
-            playerNames={playerNames}
-          />
-        </div>
-
-        {(!tournamentPlayers || tournamentPlayers.length === 0) &&
-          tournament.status === "draft" && (
-            <p className="text-sm text-gray-500 text-center py-8">
-              Esperando jugadores...
-            </p>
-          )}
       </main>
     </div>
   );

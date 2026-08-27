@@ -9,14 +9,6 @@ export async function updateMatchScore(
 ) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "No autenticado" };
-  }
-
   const { error } = await supabase
     .from("matches")
     .update({

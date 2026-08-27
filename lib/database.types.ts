@@ -157,6 +157,55 @@ export interface Database {
           updated_at?: string;
         };
       };
+      drawn_pairs: {
+        Row: {
+          id: string;
+          pair_number: number;
+          player1_id: string;
+          player2_id: string;
+          draw_method: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          pair_number: number;
+          player1_id: string;
+          player2_id: string;
+          draw_method?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          pair_number?: number;
+          player1_id?: string;
+          player2_id?: string;
+          draw_method?: string;
+          created_at?: string;
+        };
+      };
+      tournament_drawn_pairs: {
+        Row: {
+          id: string;
+          tournament_id: string;
+          drawn_pair_id: string;
+          court_number: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tournament_id: string;
+          drawn_pair_id: string;
+          court_number?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tournament_id?: string;
+          drawn_pair_id?: string;
+          court_number?: number | null;
+          created_at?: string;
+        };
+      };
     };
   };
 }

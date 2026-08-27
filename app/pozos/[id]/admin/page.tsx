@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import LiveTournamentHeader from "@/components/LiveTournamentHeader";
 import LeaderboardTable from "@/components/LeaderboardTable";
@@ -9,12 +9,6 @@ export default async function AdminPage(props: PageProps<"/pozos/[id]/admin">) {
   const { id } = await props.params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/auth/login");
-
   const { data: tournament } = await supabase
     .from("tournaments")
     .select("*")
@@ -22,8 +16,6 @@ export default async function AdminPage(props: PageProps<"/pozos/[id]/admin">) {
     .single();
 
   if (!tournament) notFound();
-
-  if (tournament.created_by !== user.id) redirect(`/pozos/${id}`);
 
   const { data: tournamentPlayers } = await supabase
     .from("tournament_players")

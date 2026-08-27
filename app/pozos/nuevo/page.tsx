@@ -12,8 +12,11 @@ export default function NuevoPozoPage() {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.currentTarget);
-    await createPozo(formData);
-    setLoading(false);
+    try {
+      await createPozo(formData);
+    } catch {
+      setLoading(false);
+    }
   }
 
   return (
