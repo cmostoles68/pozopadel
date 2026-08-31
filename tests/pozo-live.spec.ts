@@ -49,12 +49,6 @@ test("registrar marcador en el pozo live actualiza el ranking en vivo", async ({
 }) => {
   // Fixture: a fresh in_progress tournament with a round 1 already drawn on
   // two courts (court 1: pair 1 vs pair 2, court 2: pair 3 vs pair 4).
-  const owner = await client.query(
-    "SELECT id FROM profiles WHERE full_name = $1",
-    ["Carlos Ruiz"]
-  );
-  expect(owner.rows).toHaveLength(1);
-
   const { rows: pairRows } = await client.query(
     "SELECT id, pair_number FROM drawn_pairs ORDER BY pair_number"
   );
@@ -69,7 +63,7 @@ test("registrar marcador en el pozo live actualiza el ranking en vivo", async ({
   const tournament = await client.query(
     `INSERT INTO tournaments (id, title, created_by, status, number_of_courts)
      VALUES ($1, 'Pozo E2E Live', $2, 'in_progress', 2) RETURNING id`,
-    [tournamentId, owner.rows[0].id]
+    [tournamentId, randomUUID()]
   );
   createdTournaments.push(tournament.rows[0].id);
 

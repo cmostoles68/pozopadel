@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { Client } from "pg";
+import { randomUUID } from "crypto";
 
 const DB = {
   host: "127.0.0.1",
@@ -54,14 +55,9 @@ async function setupTournament(courts: number, pairIndexes: number[], minutes = 
   seq += 1;
   const stamp = Date.now() + "-" + seq;
 
-  // Get a test user (first player in PAIRS) as created_by
-  const creator = await client.query("SELECT id FROM profiles WHERE full_name = $1", ["Ana Vega"]);
-  const createdBy = creator.rows[0]?.id;
-  if (!createdBy) throw new Error("Test user (Ana Vega) not found");
-
   const { rows } = await client.query(
     "INSERT INTO tournaments (title, number_of_courts, minutes_per_round, status, created_by) VALUES ($1, $2, $3, 'draft', $4) RETURNING id",
-    [`pozo-test-${stamp}`, courts, minutes, createdBy]
+    [`pozo-test-${stamp}`, courts, minutes, randomUUID()]
   );
   const tournamentId = rows[0].id;
   createdTournaments.push(tournamentId);
