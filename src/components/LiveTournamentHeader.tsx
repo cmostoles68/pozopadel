@@ -51,7 +51,7 @@ export default function LiveTournamentHeader({
   }, [active, currentRound?.start_time, tournament.minutes_per_round, currentRound]);
 
   const statusConfig: Record<string, { label: string; active: boolean }> = {
-    draft: { label: "Borrador", active: false },
+    draft: { label: "Jugándose", active: false },
     in_progress: { label: "En curso", active: true },
     completed: { label: "Finalizado", active: false },
   };

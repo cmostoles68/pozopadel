@@ -58,8 +58,8 @@
   --color-accent: #c3f400;
   --color-secondary-fixed-dim: var(--secondary-container-dark);
 
-  --font-display: var(--font-chivo);
-  --font-sans: var(--font-plus-jakarta);
+  --font-display: var(--font-chivo), "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-plus-jakarta), "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 
   --radius-DEFAULT: 1rem;
   --radius-lg: 2rem;
@@ -69,15 +69,22 @@
 body {
   background: var(--background);
   color: var(--on-surface);
-  font-family: var(--font-sans), sans-serif;
+  font-family: var(--font-sans);
   font-size: 1rem;
   line-height: 1.5;
+  font-weight: 500;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-synthesis-weight: none;
 }
 
 /* ----- Stitch custom utilities ----- */
 html {
-  font-size: 200%;
+  font-size: 112%;
+}
+
+body {
+  font-size: 1rem;
 }
 .glass-panel {
   background: rgba(27, 38, 59, 0.6);

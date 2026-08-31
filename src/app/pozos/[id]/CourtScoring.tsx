@@ -5,12 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   saveCourtResult,
   checkAndStartNextRound,
-  clearCourtDraw,
   finalizePozo,
 } from "../actions";
 import type { PairInfo, RoundData } from "./types";
 import ChampionBanner from "./ChampionBanner";
-import LiveRanking from "./LiveRanking";
 import CourtCard from "./CourtCard";
 
 export default function CourtScoring({
@@ -29,7 +27,6 @@ export default function CourtScoring({
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
-  const [redrawing, setRedrawing] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
 
   const pairById = new Map(allPairs.map((p) => [p.id, p]));
@@ -86,26 +83,8 @@ export default function CourtScoring({
     <div className="space-y-8" data-testid={`round-${activeRound.round_number}`}>
       {completed && champion && <ChampionBanner champion={champion} />}
 
-      <div className="flex items-center justify-between">
-        <h3 className="font-display text-2xl text-on-surface">
-          Ronda {activeRound.round_number}
-        </h3>
-        <div className="flex items-center gap-3">
-          {activeRound.round_number === 1 && (
-            <button
-              onClick={async () => {
-                setRedrawing(true);
-                setError(null);
-                await clearCourtDraw(tournamentId);
-                setRedrawing(false);
-                router.refresh();
-              }}
-              disabled={redrawing || completed}
-              className="text-sm text-error hover:text-error/80 disabled:opacity-50"
-            >
-              Rehacer sorteo
-            </button>
-          )}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             data-testid="finalize-pozo"
             onClick={handleFinalize}
@@ -115,6 +94,9 @@ export default function CourtScoring({
             {finalizing ? "Finalizando..." : "Finalizar pozo"}
           </button>
         </div>
+        <h3 className="font-display text-2xl text-on-surface">
+          Ronda {activeRound.round_number}
+        </h3>
       </div>
 
       {error && <ErrorNotice message={error} />}
@@ -146,6 +128,7 @@ export default function CourtScoring({
                       setLoading(null);
                       return;
                     }
+                    window.dispatchEvent(new CustomEvent("pozo-timer-stop"));
                     const next = await checkAndStartNextRound(
                       tournamentId,
                       activeRound.id
@@ -160,10 +143,6 @@ export default function CourtScoring({
               />
             );
           })}
-        </div>
-
-        <div className="lg:col-span-4">
-          <LiveRanking activeRound={activeRound} pairById={pairById} />
         </div>
       </div>
 
@@ -203,29 +182,32 @@ function renderFinishedRound(round: RoundData, pairById: Map<string, PairInfo>) 
               Number(b.winner_drawn_pair_id === b.drawn_pair_id) -
               Number(a.winner_drawn_pair_id === a.drawn_pair_id)
           );
-        const winner = pairs.find((p) => p.winner_drawn_pair_id === p.drawn_pair_id);
         return (
           <div key={court} className="glass-panel rounded-2xl p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="font-display text-lg text-on-surface">Pista {court}</div>
-              {winner && (
-                <WinnerLabel winnerId={winner.drawn_pair_id} pairById={pairById} />
-              )}
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
               {pairs.map((p, idx) => {
                 const info = pairById.get(p.drawn_pair_id);
                 if (!info) return null;
                 const isWinner = p.winner_drawn_pair_id === p.drawn_pair_id;
                 return (
-                  <div key={p.id} className="flex items-center gap-3">
-                    <span
-                      className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-white font-bold shrink-0 ${
-                        isWinner ? "bg-secondary-fixed-dim" : "bg-surface-highest"
-                      }`}
-                    >
-                      {info.pair_number}
-                    </span>
+                  <div key={p.id} className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-white font-bold shrink-0 ${
+                          isWinner ? "bg-secondary-fixed-dim" : "bg-surface-highest"
+                        }`}
+                      >
+                        {info.pair_number}
+                      </span>
+                      {isWinner && (
+                        <span className="material-symbols-outlined text-[18px] text-secondary-fixed-dim">
+                          sports_tennis
+                        </span>
+                      )}
+                    </div>
                     <span
                       className={
                         isWinner ? "text-on-surface font-semibold" : "text-on-surface-variant"
@@ -235,7 +217,9 @@ function renderFinishedRound(round: RoundData, pairById: Map<string, PairInfo>) 
                       {info.is_lefty ? " (z)" : ""} & {info.player2_name}
                     </span>
                     {idx < ordered.length - 1 && (
-                      <span className="text-on-surface-variant ml-2 text-sm">vs</span>
+                      <span className="text-on-surface-variant text-sm font-medium mx-0.5">
+                        vs
+                      </span>
                     )}
                   </div>
                 );
@@ -251,18 +235,3 @@ function renderFinishedRound(round: RoundData, pairById: Map<string, PairInfo>) 
   );
 }
 
-function WinnerLabel({
-  winnerId,
-  pairById,
-}: {
-  winnerId: string;
-  pairById: Map<string, PairInfo>;
-}) {
-  const winnerInfo = pairById.get(winnerId);
-  if (!winnerInfo) return null;
-  return (
-    <span className="text-xs text-secondary-fixed-dim font-bold uppercase tracking-wide">
-      {winnerInfo.player1_name} & {winnerInfo.player2_name} ganan
-    </span>
-  );
-}

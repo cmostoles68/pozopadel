@@ -132,8 +132,9 @@ export default function CourtCard({
             if (winnerId) persist(winnerId, scores);
           }}
           disabled={disabled || loading || !winnerId}
-          className="rounded-full bg-secondary-container text-on-secondary-container px-6 py-2 text-sm hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 rounded-full bg-secondary-container text-on-secondary-container px-3 py-2 text-xs font-medium hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
+          <span className="material-symbols-outlined text-base">sports_tennis</span>
           {loading ? "Guardando..." : "Registrar Marcador"}
         </button>
       </div>

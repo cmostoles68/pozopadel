@@ -101,7 +101,7 @@ test.describe("Pozo: selección de parejas y sorteo de pistas", () => {
     const { tournamentId, numbers } = await setupTournament(2, [0, 1]);
     await page.goto(`/pozos/${tournamentId}`);
 
-    await expect(page.getByText("Sorteo de parejas")).toBeVisible();
+    await expect(page.getByText(/Parejas disponibles/)).toBeVisible();
     for (const num of numbers) {
       await expect(badge(page, num)).toBeVisible();
     }

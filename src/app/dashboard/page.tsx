@@ -5,9 +5,6 @@ import { createServices } from "@/infrastructure/service-factory";
 
 const CARDS = [
   { href: "/pozos/nuevo", icon: "add_circle", label: "Nuevo Torneo" },
-  { href: "/jugadores", icon: "group", label: "Jugadores" },
-  { href: "/sorteo", icon: "shuffle", label: "Sorteo" },
-  { href: "/historico", icon: "bar_chart", label: "Histórico" },
 ];
 
 export default async function DashboardPage() {
@@ -17,7 +14,7 @@ export default async function DashboardPage() {
   return (
     <AppShell>
       <div className="max-w-4xl mx-auto space-y-10">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 max-w-sm gap-4">
           {CARDS.map((card) => (
             <Link
               key={card.href}
