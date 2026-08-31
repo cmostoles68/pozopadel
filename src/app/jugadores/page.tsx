@@ -1,12 +1,36 @@
 import AppShell from "@/components/AppShell";
 import PlayerForm from "./PlayerForm";
-import PlayerRow from "./PlayerRow";
+import PlayersList from "./PlayersList";
 import DeleteAllPlayers from "./DeleteAllPlayers";
 import { createServices } from "@/infrastructure/service-factory";
+import { countChampionshipsByDrawnPairIds } from "@/domain/stats/championships";
 
 export default async function JugadoresPage() {
-  const { playerService } = await createServices();
+  const { playerService, tournamentRepo, drawService } = await createServices();
   const players = await playerService.getAll();
+
+  const [tournaments, allPairs] = await Promise.all([
+    tournamentRepo.findAll(),
+    drawService.getDrawnPairsWithProfiles(),
+  ]);
+
+  const pairMembersById = new Map<string, [string, string]>();
+  for (const p of allPairs) {
+    pairMembersById.set(p.id, [p.player1_id, p.player2_id]);
+  }
+
+  const championshipCount = countChampionshipsByDrawnPairIds(
+    tournaments.map((t) => t.champion_drawn_pair_id),
+    pairMembersById,
+  );
+
+  const playerRows = (players ?? []).map((p) => ({
+    id: p.id,
+    full_name: p.full_name,
+    gender: p.gender,
+    dominant_hand: p.dominant_hand,
+    level: p.level,
+  }));
 
   return (
     <AppShell>
@@ -26,11 +50,10 @@ export default async function JugadoresPage() {
         <PlayerForm />
 
         {players && players.length > 0 ? (
-          <div className="space-y-3">
-            {players.map((p) => (
-              <PlayerRow key={p.id} player={p} />
-            ))}
-          </div>
+          <PlayersList
+            players={playerRows}
+            championshipCount={championshipCount}
+          />
         ) : (
           <p className="text-sm text-on-surface-variant text-center py-8">
             Aún no hay jugadores. Añade el primero.

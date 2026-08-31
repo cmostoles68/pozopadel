@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Auto-generated / non-source folders
     "supabase/.temp/**",
     "node_modules/**",
+    // Dev tooling scripts (Node CJS)
+    "scripts/**",
   ]),
   {
     // Adapters translate untyped DB rows into typed domain entities (anti-corruption boundary).

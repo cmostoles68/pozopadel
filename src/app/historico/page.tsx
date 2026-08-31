@@ -1,7 +1,8 @@
 import AppShell from "@/components/AppShell";
-import IncorporateButton from "./IncorporateButton";
+import HistoricoPlayersList from "./HistoricoPlayersList";
 import { createServices } from "@/infrastructure/service-factory";
 import type { PlayerSnap } from "@/domain/entities/player";
+import { countChampionshipsByPairIds } from "@/domain/stats/championships";
 
 export default async function HistoricoPage() {
   const { matchHistoryRepo, tournamentRepo, supabase } = await createServices();
@@ -50,6 +51,13 @@ export default async function HistoricoPage() {
       },
     });
   }
+
+  const championPairs: [string, string][] = [];
+  for (const champion of championOf.values()) {
+    if (!champion) continue;
+    championPairs.push([champion.p1.id, champion.p2.id]);
+  }
+  const championshipCount = countChampionshipsByPairIds(championPairs);
 
   const matches = history.map((h) => ({
     id: h.id,
@@ -146,40 +154,11 @@ export default async function HistoricoPage() {
               Aún no hay jugadores registrados en el histórico.
             </p>
           ) : (
-            <div className="space-y-3">
-              {uniquePlayers.map((p) => {
-                const inSession = profileIds.has(p.id);
-                return (
-                  <div
-                    key={p.id}
-                    className="glass-panel flex items-center justify-between rounded-2xl px-4 py-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container text-base font-bold flex items-center justify-center shrink-0">
-                        {(p.name ?? "?").charAt(0).toUpperCase()}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="font-medium text-on-surface truncate">
-                          {p.name ?? "Sin nombre"}
-                        </div>
-                        <div className="text-sm text-on-surface-variant">
-                          {p.gender === "FEMALE" ? "Mujer" : "Hombre"} ·{" "}
-                          {p.hand === "LEFT" ? "Zurdo" : "Diestro"} · Nivel{" "}
-                          {p.level != null ? p.level : "-"}
-                        </div>
-                      </div>
-                    </div>
-                    {inSession ? (
-                      <span className="rounded-full bg-secondary-container/20 text-on-secondary-container px-4 py-1.5 text-sm font-medium">
-                        En esta sesión
-                      </span>
-                    ) : (
-                      <IncorporateButton playerId={p.id} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <HistoricoPlayersList
+              players={uniquePlayers}
+              championshipCount={championshipCount}
+              profileIds={profileIds}
+            />
           )}
         </section>
 
