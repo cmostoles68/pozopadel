@@ -13,7 +13,11 @@ interface CourtsGridProps {
   matches: Match[];
   playerNames: PlayerNameMap;
   roundStatus: string;
-  onSubmitScore?: (matchId: string, scoreA: number, scoreB: number) => Promise<void>;
+  onSubmitScore?: (
+    matchId: string,
+    scoreA: number,
+    scoreB: number
+  ) => Promise<void>;
 }
 
 export default function CourtsGrid({
@@ -22,7 +26,9 @@ export default function CourtsGrid({
   roundStatus,
   onSubmitScore,
 }: CourtsGridProps) {
-  const [scores, setScores] = useState<Record<string, { a: number; b: number }>>(() => {
+  const [scores, setScores] = useState<
+    Record<string, { a: number; b: number }>
+  >(() => {
     const initial: Record<string, { a: number; b: number }> = {};
     for (const m of matches) {
       initial[m.id] = { a: m.score_team_a, b: m.score_team_b };
@@ -31,10 +37,17 @@ export default function CourtsGrid({
   });
   const [pending, startTransition] = useTransition();
 
-  function updateScore(matchId: string, team: "a" | "b", value: number) {
+  function updateScore(
+    matchId: string,
+    team: "a" | "b",
+    value: number
+  ) {
     setScores((prev) => ({
       ...prev,
-      [matchId]: { ...prev[matchId], [team]: Math.max(0, value) },
+      [matchId]: {
+        ...prev[matchId],
+        [team]: Math.max(0, value),
+      },
     }));
   }
 
@@ -55,34 +68,42 @@ export default function CourtsGrid({
         return (
           <div
             key={m.id}
-            className={`border rounded-lg p-4 ${
+            className={`glass-panel rounded-2xl p-4 ${
               m.is_finished
-                ? "border-gray-200 bg-gray-50"
+                ? ""
                 : isKing
-                  ? "border-accent bg-amber-50"
-                  : "border-primary bg-green-50"
+                  ? "border-secondary-container/50"
+                  : "border-primary/30"
             }`}
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-foreground">
-                {isKing ? "👑 Pista Rey" : `Pista ${m.court_number}`}
+              <span className="text-sm font-semibold text-on-surface">
+                {isKing
+                  ? "Pista Rey"
+                  : `Pista ${m.court_number}`}
               </span>
               {m.is_finished ? (
-                <span className="text-xs text-gray-500">Finalizado</span>
+                <span className="text-xs text-on-surface-variant">
+                  Finalizado
+                </span>
               ) : roundStatus === "in_progress" ? (
-                <span className="text-xs text-primary font-medium">En curso</span>
+                <span className="text-xs text-secondary-fixed-dim font-medium">
+                  En curso
+                </span>
               ) : null}
             </div>
 
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">
-                  {playerNames[m.player1_id] ?? "A"} / {playerNames[m.player2_id] ?? "A"}
+                <span className="text-on-surface-variant">
+                  {playerNames[m.player1_id] ?? "A"} /{" "}
+                  {playerNames[m.player2_id] ?? "A"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">
-                  {playerNames[m.player3_id] ?? "B"} / {playerNames[m.player4_id] ?? "B"}
+                <span className="text-on-surface-variant">
+                  {playerNames[m.player3_id] ?? "B"} /{" "}
+                  {playerNames[m.player4_id] ?? "B"}
                 </span>
               </div>
             </div>
@@ -94,22 +115,34 @@ export default function CourtsGrid({
                     type="number"
                     min={0}
                     value={s.a}
-                    onChange={(e) => updateScore(m.id, "a", parseInt(e.target.value) || 0)}
-                    className="w-16 text-center border border-gray-300 rounded px-2 py-2 text-base focus:outline-none focus:ring-1 focus:ring-primary"
+                    onChange={(e) =>
+                      updateScore(
+                        m.id,
+                        "a",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
+                    className="w-16 text-center bg-surface-highest border border-outline-variant rounded-lg px-2 py-2 text-base text-on-surface focus:outline-none focus:ring-1 focus:ring-secondary-container"
                   />
-                  <span className="text-gray-400">-</span>
+                  <span className="text-on-surface-variant">-</span>
                   <input
                     type="number"
                     min={0}
                     value={s.b}
-                    onChange={(e) => updateScore(m.id, "b", parseInt(e.target.value) || 0)}
-                    className="w-16 text-center border border-gray-300 rounded px-2 py-2 text-base focus:outline-none focus:ring-1 focus:ring-primary"
+                    onChange={(e) =>
+                      updateScore(
+                        m.id,
+                        "b",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
+                    className="w-16 text-center bg-surface-highest border border-outline-variant rounded-lg px-2 py-2 text-base text-on-surface focus:outline-none focus:ring-1 focus:ring-secondary-container"
                   />
                 </div>
                 <button
                   onClick={() => handleSubmit(m.id)}
                   disabled={pending}
-                  className="ml-auto bg-primary text-white text-sm px-4 py-2 rounded hover:bg-primary-dark transition-colors disabled:opacity-50"
+                  className="ml-auto bg-primary text-on-primary text-sm px-4 py-2 rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50"
                 >
                   Enviar
                 </button>
@@ -117,7 +150,7 @@ export default function CourtsGrid({
             )}
 
             {m.is_finished && (
-              <div className="mt-3 text-center text-lg font-bold text-foreground">
+              <div className="mt-3 text-center text-lg font-bold text-on-surface font-display">
                 {m.score_team_a} - {m.score_team_b}
               </div>
             )}

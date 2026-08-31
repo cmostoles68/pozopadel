@@ -28,7 +28,7 @@ export default function DeleteTournament({
     <button
       onClick={handleDelete}
       disabled={loading}
-      className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50"
+      className="text-sm text-error hover:text-on-surface disabled:opacity-50"
     >
       {loading ? "..." : "Eliminar"}
     </button>

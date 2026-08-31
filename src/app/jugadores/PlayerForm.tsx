@@ -27,30 +27,33 @@ export default function PlayerForm() {
   return (
     <div>
       {error && (
-        <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
+        <div className="mb-3 text-sm text-error bg-error-container/20 border border-error/30 rounded-xl px-4 py-2">
           {error}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="border border-gray-200 rounded-xl p-4 space-y-4">
-        <h3 className="font-semibold text-foreground">Nuevo jugador</h3>
+      <form
+        onSubmit={handleSubmit}
+        className="glass-panel rounded-2xl p-4 space-y-4"
+      >
+        <h3 className="font-semibold text-on-surface">Nuevo jugador</h3>
         <div className="grid grid-cols-2 gap-4">
           <input
             name="full_name"
             type="text"
             required
             placeholder="Nombre completo"
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 bg-surface-highest border border-outline-variant rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-secondary-container"
           />
           <select
             name="gender"
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 bg-surface-highest border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary-container"
           >
             <option value="MALE">Hombre</option>
             <option value="FEMALE">Mujer</option>
           </select>
           <select
             name="dominant_hand"
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 bg-surface-highest border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary-container"
           >
             <option value="RIGHT">Diestro</option>
             <option value="LEFT">Zurdo</option>
@@ -62,13 +65,13 @@ export default function PlayerForm() {
             max={10}
             step={0.5}
             defaultValue={3.5}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 bg-surface-highest border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary-container"
           />
         </div>
         <button
           type="submit"
           disabled={loading}
-          className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-dark disabled:opacity-50"
+          className="bg-primary text-on-primary px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-container disabled:opacity-50"
         >
           {loading ? "Añadiendo..." : "Añadir jugador"}
         </button>

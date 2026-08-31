@@ -1,71 +1,56 @@
 import Link from "next/link";
-import PadelRacket from "@/components/PadelRacket";
+import AppShell from "@/components/AppShell";
 import DeleteTournament from "./DeleteTournament";
 import { createServices } from "@/infrastructure/service-factory";
+
+const CARDS = [
+  { href: "/pozos/nuevo", icon: "add_circle", label: "Nuevo Pozo" },
+  { href: "/jugadores", icon: "group", label: "Jugadores" },
+  { href: "/sorteo", icon: "shuffle", label: "Sortear" },
+  { href: "/historico", icon: "bar_chart", label: "Histórico" },
+];
 
 export default async function DashboardPage() {
   const { tournamentService } = await createServices();
   const tournaments = await tournamentService.getAll();
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-gray-200 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <PadelRacket className="w-9 h-9" />
-            <span className="text-2xl font-bold text-primary">PozoPadel</span>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-2xl mx-auto px-4 py-8 space-y-8">
-        <div className="grid grid-cols-4 gap-3">
-          <Link
-            href="/pozos/nuevo"
-            className="flex flex-col items-center gap-2 border border-gray-200 rounded-xl p-6 hover:border-primary hover:bg-blue-50 transition-colors"
-          >
-            <span className="text-3xl">🏟️</span>
-            <span className="text-base font-medium text-foreground">Nuevo Pozo</span>
-          </Link>
-          <Link
-            href="/jugadores"
-            className="flex flex-col items-center gap-2 border border-gray-200 rounded-xl p-6 hover:border-primary hover:bg-blue-50 transition-colors"
-          >
-            <span className="text-3xl">👥</span>
-            <span className="text-base font-medium text-foreground">Jugadores</span>
-          </Link>
-          <Link
-            href="/sorteo"
-            className="flex flex-col items-center gap-2 border border-gray-200 rounded-xl p-6 hover:border-primary hover:bg-blue-50 transition-colors"
-          >
-            <span className="text-3xl">🎾</span>
-            <span className="text-base font-medium text-foreground">Sortear</span>
-          </Link>
-          <Link
-            href="/historico"
-            className="flex flex-col items-center gap-2 border border-gray-200 rounded-xl p-6 hover:border-primary hover:bg-blue-50 transition-colors"
-          >
-            <span className="text-3xl">📜</span>
-            <span className="text-base font-medium text-foreground">Histórico</span>
-          </Link>
+    <AppShell>
+      <div className="max-w-4xl mx-auto space-y-10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {CARDS.map((card) => (
+            <Link
+              key={card.href}
+              href={card.href}
+              className="glass-panel rounded-2xl p-6 flex flex-col items-center gap-3 hover:border-secondary-container transition-colors"
+            >
+              <span className="material-symbols-outlined text-secondary-container text-3xl">
+                {card.icon}
+              </span>
+              <span className="text-sm font-medium text-on-surface">
+                {card.label}
+              </span>
+            </Link>
+          ))}
         </div>
 
-        <div>
-          <h2 className="text-lg font-semibold text-foreground mb-3">Torneos</h2>
-
+        <section>
+          <h2 className="font-display text-xl font-bold text-on-surface mb-4">
+            Torneos
+          </h2>
           {tournaments && tournaments.length > 0 ? (
             <div className="space-y-3">
               {tournaments.map((t) => (
                 <Link
                   key={t.id}
                   href={`/pozos/${t.id}`}
-                  className="block border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors"
+                  className="glass-panel block rounded-2xl p-4 hover:border-secondary-container transition-colors"
                 >
                   <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-foreground">{t.title}</h3>
+                    <h3 className="font-medium text-on-surface">{t.title}</h3>
                     <DeleteTournament id={t.id} title={t.title} />
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-on-surface-variant mt-1">
                     {t.number_of_courts} pistas &middot; Creado{" "}
                     {new Date(t.created_at).toLocaleDateString("es-ES")}
                   </p>
@@ -73,12 +58,12 @@ export default async function DashboardPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 text-center py-8">
+            <p className="text-sm text-on-surface-variant text-center py-8">
               Aún no hay torneos. Crea uno para empezar.
             </p>
           )}
-        </div>
-      </main>
-    </div>
+        </section>
+      </div>
+    </AppShell>
   );
 }

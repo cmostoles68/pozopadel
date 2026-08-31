@@ -1,5 +1,4 @@
-import Link from "next/link";
-import PadelRacket from "@/components/PadelRacket";
+import AppShell from "@/components/AppShell";
 import IncorporateButton from "./IncorporateButton";
 import { createServices } from "@/infrastructure/service-factory";
 import type { PlayerSnap } from "@/domain/entities/player";
@@ -14,9 +13,14 @@ export default async function HistoricoPage() {
   const { data: profiles } = await supabase.from("profiles").select("id");
 
   const tById = new Map(tournaments.map((t) => [t.id, t]));
-  const profileIds = new Set((profiles ?? []).map((p) => (p as { id: string }).id));
+  const profileIds = new Set(
+    (profiles ?? []).map((p) => (p as { id: string }).id)
+  );
 
-  const championOf = new Map<string, { p1: PlayerSnap; p2: PlayerSnap } | null>();
+  const championOf = new Map<
+    string,
+    { p1: PlayerSnap; p2: PlayerSnap } | null
+  >();
   for (const t of tournaments) {
     if (!t.champion_drawn_pair_id) {
       championOf.set(t.id, null);
@@ -30,8 +34,20 @@ export default async function HistoricoPage() {
       continue;
     }
     championOf.set(t.id, {
-      p1: { id: row.winner_player1_id, name: row.winner_player1_name, gender: null, hand: null, level: null },
-      p2: { id: row.winner_player2_id, name: row.winner_player2_name, gender: null, hand: null, level: null },
+      p1: {
+        id: row.winner_player1_id,
+        name: row.winner_player1_name,
+        gender: null,
+        hand: null,
+        level: null,
+      },
+      p2: {
+        id: row.winner_player2_id,
+        name: row.winner_player2_name,
+        gender: null,
+        hand: null,
+        level: null,
+      },
     });
   }
 
@@ -43,22 +59,70 @@ export default async function HistoricoPage() {
     scoreWinner: h.score_winner,
     scoreLoser: h.score_loser,
     winner: [
-      { id: h.winner_player1_id, name: h.winner_player1_name, gender: h.winner_player1_gender, hand: h.winner_player1_hand, level: h.winner_player1_level },
-      { id: h.winner_player2_id, name: h.winner_player2_name, gender: h.winner_player2_gender, hand: h.winner_player2_hand, level: h.winner_player2_level },
+      {
+        id: h.winner_player1_id,
+        name: h.winner_player1_name,
+        gender: h.winner_player1_gender,
+        hand: h.winner_player1_hand,
+        level: h.winner_player1_level,
+      },
+      {
+        id: h.winner_player2_id,
+        name: h.winner_player2_name,
+        gender: h.winner_player2_gender,
+        hand: h.winner_player2_hand,
+        level: h.winner_player2_level,
+      },
     ] as [PlayerSnap, PlayerSnap],
     loser: [
-      { id: h.loser_player1_id, name: h.loser_player1_name, gender: h.loser_player1_gender, hand: h.loser_player1_hand, level: h.loser_player1_level },
-      { id: h.loser_player2_id, name: h.loser_player2_name, gender: h.loser_player2_gender, hand: h.loser_player2_hand, level: h.loser_player2_level },
+      {
+        id: h.loser_player1_id,
+        name: h.loser_player1_name,
+        gender: h.loser_player1_gender,
+        hand: h.loser_player1_hand,
+        level: h.loser_player1_level,
+      },
+      {
+        id: h.loser_player2_id,
+        name: h.loser_player2_name,
+        gender: h.loser_player2_gender,
+        hand: h.loser_player2_hand,
+        level: h.loser_player2_level,
+      },
     ] as [PlayerSnap, PlayerSnap],
   }));
 
   const players = new Map<string, PlayerSnap>();
   for (const h of history) {
     const candidates = [
-      { id: h.winner_player1_id, name: h.winner_player1_name, gender: h.winner_player1_gender, hand: h.winner_player1_hand, level: h.winner_player1_level },
-      { id: h.winner_player2_id, name: h.winner_player2_name, gender: h.winner_player2_gender, hand: h.winner_player2_hand, level: h.winner_player2_level },
-      { id: h.loser_player1_id, name: h.loser_player1_name, gender: h.loser_player1_gender, hand: h.loser_player1_hand, level: h.loser_player1_level },
-      { id: h.loser_player2_id, name: h.loser_player2_name, gender: h.loser_player2_gender, hand: h.loser_player2_hand, level: h.loser_player2_level },
+      {
+        id: h.winner_player1_id,
+        name: h.winner_player1_name,
+        gender: h.winner_player1_gender,
+        hand: h.winner_player1_hand,
+        level: h.winner_player1_level,
+      },
+      {
+        id: h.winner_player2_id,
+        name: h.winner_player2_name,
+        gender: h.winner_player2_gender,
+        hand: h.winner_player2_hand,
+        level: h.winner_player2_level,
+      },
+      {
+        id: h.loser_player1_id,
+        name: h.loser_player1_name,
+        gender: h.loser_player1_gender,
+        hand: h.loser_player1_hand,
+        level: h.loser_player1_level,
+      },
+      {
+        id: h.loser_player2_id,
+        name: h.loser_player2_name,
+        gender: h.loser_player2_gender,
+        hand: h.loser_player2_hand,
+        level: h.loser_player2_level,
+      },
     ];
     for (const c of candidates) {
       const cur = players.get(c.id);
@@ -71,26 +135,14 @@ export default async function HistoricoPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-gray-200 px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <Link href="/dashboard" className="text-lg text-gray-500 hover:text-foreground">
-            ← Volver
-          </Link>
-          <div className="flex items-center gap-2">
-            <PadelRacket className="w-8 h-8" />
-            <h1 className="text-2xl font-semibold text-foreground">Histórico</h1>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+    <AppShell>
+      <div className="max-w-3xl mx-auto space-y-10">
         <section>
-          <h2 className="text-xl font-semibold text-foreground mb-3">
+          <h1 className="font-display text-2xl font-bold text-on-surface mb-4">
             Jugadores ({uniquePlayers.length})
-          </h2>
+          </h1>
           {uniquePlayers.length === 0 ? (
-            <p className="text-lg text-gray-500 text-center py-6">
+            <p className="text-sm text-on-surface-variant text-center py-6">
               Aún no hay jugadores registrados en el histórico.
             </p>
           ) : (
@@ -100,17 +152,17 @@ export default async function HistoricoPage() {
                 return (
                   <div
                     key={p.id}
-                    className="flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3"
+                    className="glass-panel flex items-center justify-between rounded-2xl px-4 py-3"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="w-10 h-10 rounded-full bg-primary text-white text-base font-bold flex items-center justify-center shrink-0">
+                      <span className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container text-base font-bold flex items-center justify-center shrink-0">
                         {(p.name ?? "?").charAt(0).toUpperCase()}
                       </span>
                       <div className="min-w-0">
-                        <div className="font-medium text-lg text-foreground truncate">
+                        <div className="font-medium text-on-surface truncate">
                           {p.name ?? "Sin nombre"}
                         </div>
-                        <div className="text-base text-gray-400">
+                        <div className="text-sm text-on-surface-variant">
                           {p.gender === "FEMALE" ? "Mujer" : "Hombre"} ·{" "}
                           {p.hand === "LEFT" ? "Zurdo" : "Diestro"} · Nivel{" "}
                           {p.level != null ? p.level : "-"}
@@ -118,7 +170,7 @@ export default async function HistoricoPage() {
                       </div>
                     </div>
                     {inSession ? (
-                      <span className="rounded-lg bg-green-50 text-green-700 px-4 py-2 text-base font-medium">
+                      <span className="rounded-full bg-secondary-container/20 text-on-secondary-container px-4 py-1.5 text-sm font-medium">
                         En esta sesión
                       </span>
                     ) : (
@@ -132,18 +184,22 @@ export default async function HistoricoPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold text-foreground mb-3">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-4">
             Partidos ({matches.length})
           </h2>
           {matches.length === 0 ? (
-            <p className="text-lg text-gray-500 text-center py-6">
+            <p className="text-sm text-on-surface-variant text-center py-6">
               Aún no hay partidos jugados.
             </p>
           ) : (
             <div className="space-y-4">
               {matches.map((m) => {
-                const t = m.tournamentId ? tById.get(m.tournamentId) : null;
-                const champion = m.tournamentId ? championOf.get(m.tournamentId) ?? null : null;
+                const t = m.tournamentId
+                  ? tById.get(m.tournamentId)
+                  : null;
+                const champion = m.tournamentId
+                  ? (championOf.get(m.tournamentId) ?? null)
+                  : null;
                 const winnerIsChampion =
                   !!champion &&
                   champion.p1.id === m.winner[0].id &&
@@ -151,18 +207,23 @@ export default async function HistoricoPage() {
                 return (
                   <div
                     key={m.id}
-                    className={`border rounded-xl p-4 ${
-                      winnerIsChampion ? "border-amber-300 bg-amber-50" : "border-gray-200"
+                    className={`glass-panel rounded-2xl p-4 ${
+                      winnerIsChampion
+                        ? "border-amber-500/40"
+                        : ""
                     }`}
                   >
-                    <div className="flex items-center justify-between text-base text-gray-500 mb-2">
+                    <div className="flex items-center justify-between text-sm text-on-surface-variant mb-2">
                       <span>
                         {t ? `Pozo: ${t.title}` : "Pozo eliminado"}
-                        {m.roundNumber != null && ` · Ronda ${m.roundNumber}`} · Pista{" "}
-                        {m.courtNumber}
+                        {m.roundNumber != null &&
+                          ` · Ronda ${m.roundNumber}`}{" "}
+                        · Pista {m.courtNumber}
                       </span>
                       {winnerIsChampion && (
-                        <span className="text-amber-600 font-semibold">🏆 Pareja campeona</span>
+                        <span className="text-amber-500 font-semibold">
+                          Pareja campeona
+                        </span>
                       )}
                     </div>
 
@@ -173,8 +234,14 @@ export default async function HistoricoPage() {
                         winner
                         highlight={winnerIsChampion}
                       />
-                      <span className="text-gray-400 font-medium">vs</span>
-                      <PairRow players={m.loser} score={m.scoreLoser} winner={false} />
+                      <span className="text-on-surface-variant font-medium">
+                        vs
+                      </span>
+                      <PairRow
+                        players={m.loser}
+                        score={m.scoreLoser}
+                        winner={false}
+                      />
                     </div>
                   </div>
                 );
@@ -182,8 +249,8 @@ export default async function HistoricoPage() {
             </div>
           )}
         </section>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }
 
@@ -201,25 +268,25 @@ function PairRow({
   return (
     <div className="flex items-center gap-3 min-w-0 flex-1">
       <span
-        className={`w-9 h-9 rounded-full text-white text-sm font-bold flex items-center justify-center shrink-0 ${
+        className={`w-9 h-9 rounded-full text-sm font-bold flex items-center justify-center shrink-0 ${
           highlight
-            ? "bg-amber-500"
+            ? "bg-amber-500 text-on-secondary-container"
             : winner
-              ? "bg-emerald-500"
-              : "bg-gray-400"
+              ? "bg-secondary-container text-on-secondary-container"
+              : "bg-surface-high text-on-surface-variant"
         }`}
       >
         {(players[0].name ?? "?").charAt(0).toUpperCase()}
       </span>
       <div className="min-w-0 flex-1">
         <div
-          className={`font-medium truncate ${
-            winner ? "text-emerald-700" : "text-gray-600"
-          } ${highlight ? "!text-amber-800" : ""} text-base`}
+          className={`font-medium truncate text-sm ${
+            winner ? "text-on-surface" : "text-on-surface-variant"
+          } ${highlight ? "!text-amber-500" : ""}`}
         >
           {players[0].name ?? "?"} & {players[1].name ?? "?"}
         </div>
-        <div className="text-sm text-gray-400">
+        <div className="text-xs text-on-surface-variant">
           {winner ? "Ganadores" : "Perdedores"} · {score ?? 0}
         </div>
       </div>

@@ -37,27 +37,27 @@ export default function RoundTimer({
     <div
       data-testid={`timer-round-${round}`}
       onClick={running ? stop : undefined}
-      className={`flex items-center gap-4 rounded-2xl px-6 py-3 border ${
+      className={`glass-panel flex items-center gap-4 rounded-2xl px-6 py-3 ${
         running ? "cursor-pointer select-none" : ""
-      } ${
-        finished
-          ? "border-red-300 bg-red-50"
-          : running
-          ? "border-gray-200 bg-background shadow-sm"
-          : "border-gray-200 bg-gray-50"
       }`}
     >
       <div className="text-right">
-        <div className="text-sm uppercase tracking-wider text-gray-500">
+        <div className="text-sm uppercase tracking-wider text-on-surface-variant">
           Ronda {round}
         </div>
         <div
           className={`font-mono text-6xl font-bold leading-none tabular-nums ${
-            finished ? "text-red-600 animate-pulse" : "text-foreground"
+            finished
+              ? "text-error animate-pulse"
+              : running
+                ? "text-secondary-fixed-dim"
+                : "text-on-surface"
           }`}
         >
           {mm}
-          <span className={running ? "opacity-100" : "opacity-40"}>:</span>
+          <span className={running ? "opacity-100" : "opacity-40"}>
+            :
+          </span>
           {ss}
         </div>
       </div>
@@ -67,7 +67,7 @@ export default function RoundTimer({
           <button
             data-testid={`timer-round-${round}-start`}
             onClick={restart}
-            className="bg-red-600 text-white px-5 py-2.5 rounded-xl text-base font-semibold hover:bg-red-700 whitespace-nowrap"
+            className="bg-error text-on-error px-5 py-2.5 rounded-xl text-base font-semibold hover:bg-error-container whitespace-nowrap"
           >
             Reiniciar
           </button>
@@ -76,13 +76,13 @@ export default function RoundTimer({
             data-testid={`timer-round-${round}-start`}
             onClick={() => setStarted(true)}
             disabled={running}
-            className="bg-primary text-white px-5 py-2.5 rounded-xl text-base font-semibold hover:bg-primary-dark disabled:opacity-50 whitespace-nowrap"
+            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl text-base font-semibold hover:bg-primary-container disabled:opacity-50 whitespace-nowrap"
           >
             {running ? "En curso..." : "Iniciar"}
           </button>
         )}
         {finished && (
-          <span className="text-sm font-bold text-red-600 whitespace-nowrap">
+          <span className="text-sm font-bold text-error whitespace-nowrap">
             ¡Tiempo completado!
           </span>
         )}

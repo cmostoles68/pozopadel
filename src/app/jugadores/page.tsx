@@ -1,5 +1,4 @@
-import Link from "next/link";
-import PadelRacket from "@/components/PadelRacket";
+import AppShell from "@/components/AppShell";
 import PlayerForm from "./PlayerForm";
 import PlayerRow from "./PlayerRow";
 import DeleteAllPlayers from "./DeleteAllPlayers";
@@ -10,26 +9,20 @@ export default async function JugadoresPage() {
   const players = await playerService.getAll();
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-gray-200 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-lg text-gray-500 hover:text-foreground">
-              ← Volver
-            </Link>
-            <div className="flex items-center gap-2">
-              <PadelRacket className="w-8 h-8" />
-              <h1 className="text-2xl font-semibold text-foreground">Jugadores</h1>
-            </div>
+    <AppShell>
+      <div className="max-w-2xl mx-auto space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-on-surface">
+              Jugadores
+            </h1>
+            <p className="text-sm text-on-surface-variant mt-1">
+              {players?.length ?? 0} jugadores
+            </p>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-lg text-gray-500">{players?.length ?? 0} jugadores</span>
-            <DeleteAllPlayers />
-          </div>
+          <DeleteAllPlayers />
         </div>
-      </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-8 space-y-8">
         <PlayerForm />
 
         {players && players.length > 0 ? (
@@ -39,11 +32,11 @@ export default async function JugadoresPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-500 text-center py-8">
+          <p className="text-sm text-on-surface-variant text-center py-8">
             Aún no hay jugadores. Añade el primero.
           </p>
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

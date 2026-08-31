@@ -50,32 +50,38 @@ export default function LiveTournamentHeader({
     return () => clearInterval(id);
   }, [active, currentRound?.start_time, tournament.minutes_per_round, currentRound]);
 
-  const statusConfig: Record<string, { label: string; color: string }> = {
-    draft: { label: "Borrador", color: "bg-gray-100 text-gray-600" },
-    in_progress: { label: "En curso", color: "bg-green-100 text-green-700" },
-    completed: { label: "Finalizado", color: "bg-blue-100 text-blue-700" },
+  const statusConfig: Record<string, { label: string; active: boolean }> = {
+    draft: { label: "Borrador", active: false },
+    in_progress: { label: "En curso", active: true },
+    completed: { label: "Finalizado", active: false },
   };
 
   const status = statusConfig[tournament.status] ?? statusConfig.draft;
 
   return (
-    <div className="flex flex-wrap items-center gap-4 text-lg">
-      <span className={`px-3 py-1 rounded-full font-medium ${status.color}`}>
+    <div className="flex flex-wrap items-center gap-3 text-sm">
+      <span
+        className={`px-3 py-1 rounded-full border text-xs font-medium ${
+          status.active
+            ? "bg-secondary-container/20 text-secondary-fixed-dim border-secondary-container/50"
+            : "bg-surface-high/40 text-on-surface-variant border-outline-variant/40"
+        }`}
+      >
         {status.label}
       </span>
-      <span className="text-gray-500">
+      <span className="text-on-surface-variant">
         {tournament.number_of_courts} pistas
       </span>
-      <span className="text-gray-500">
+      <span className="text-on-surface-variant">
         {tournament.minutes_per_round} min/ronda
       </span>
       {currentRound && (
-        <span className="font-medium text-foreground">
+        <span className="font-semibold text-on-surface">
           Ronda {currentRound.round_number}
         </span>
       )}
       {active && (
-        <span className="font-mono text-2xl font-bold text-primary tabular-nums">
+        <span className="font-mono text-2xl font-bold text-secondary-fixed-dim tabular-nums">
           {remaining}
         </span>
       )}

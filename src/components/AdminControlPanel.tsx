@@ -25,9 +25,12 @@ export default function AdminControlPanel({
   const [error, setError] = useState<string | null>(null);
 
   const minPlayers = numberOfCourts * 2;
-  const canStart = tournamentStatus === "draft" && playerCount >= minPlayers;
+  const canStart =
+    tournamentStatus === "draft" && playerCount >= minPlayers;
   const canAdvance =
-    tournamentStatus === "in_progress" && hasCurrentRound && allRoundsFinished;
+    tournamentStatus === "in_progress" &&
+    hasCurrentRound &&
+    allRoundsFinished;
   const canFinish = tournamentStatus === "in_progress";
 
   async function apiCall(endpoint: string) {
@@ -69,11 +72,13 @@ export default function AdminControlPanel({
   }
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-sm font-semibold text-foreground">Control del Torneo</h2>
+    <div className="glass-panel rounded-2xl p-4 space-y-4">
+      <h2 className="font-display text-sm font-semibold text-on-surface">
+        Control del Torneo
+      </h2>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+        <div className="bg-error-container/20 border border-error/30 text-error text-sm rounded-xl p-3">
           {error}
         </div>
       )}
@@ -83,7 +88,7 @@ export default function AdminControlPanel({
           <button
             onClick={handleStart}
             disabled={isPending}
-            className="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-primary-container transition-colors disabled:opacity-50"
           >
             {isPending ? "Iniciando..." : "Iniciar Pozo"}
           </button>
@@ -93,9 +98,11 @@ export default function AdminControlPanel({
           <button
             onClick={handleAdvanceRound}
             disabled={isPending}
-            className="bg-accent text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50"
+            className="bg-secondary-container text-on-secondary-container px-5 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50"
           >
-            {isPending ? "Procesando..." : "Avanzar Siguiente Ronda"}
+            {isPending
+              ? "Procesando..."
+              : "Avanzar Siguiente Ronda"}
           </button>
         )}
 
@@ -103,7 +110,7 @@ export default function AdminControlPanel({
           <button
             onClick={handleFinishTournament}
             disabled={isPending}
-            className="border border-red-300 text-red-600 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+            className="border border-error/50 text-error px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-error-container/20 transition-colors disabled:opacity-50"
           >
             {isPending ? "Finalizando..." : "Finalizar Pozo"}
           </button>
@@ -111,8 +118,9 @@ export default function AdminControlPanel({
       </div>
 
       {tournamentStatus === "draft" && playerCount < minPlayers && (
-        <p className="text-sm text-gray-500">
-          Necesitas al menos {minPlayers} jugadores para iniciar ({playerCount} inscritos).
+        <p className="text-sm text-on-surface-variant">
+          Necesitas al menos {minPlayers} jugadores para iniciar (
+          {playerCount} inscritos).
         </p>
       )}
     </div>

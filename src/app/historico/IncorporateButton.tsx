@@ -4,7 +4,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { reincorporatePlayer } from "./actions";
 
-export default function IncorporateButton({ playerId }: { playerId: string }) {
+export default function IncorporateButton({
+  playerId,
+}: {
+  playerId: string;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,11 +30,13 @@ export default function IncorporateButton({ playerId }: { playerId: string }) {
       <button
         onClick={handleClick}
         disabled={loading}
-        className="text-sm text-primary hover:text-primary-dark disabled:opacity-50 font-medium"
+        className="text-sm text-primary hover:text-on-surface disabled:opacity-50 font-medium"
       >
         {loading ? "Reincorporando..." : "Reincorporar"}
       </button>
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {error && (
+        <p className="text-xs text-error mt-1">{error}</p>
+      )}
     </div>
   );
 }

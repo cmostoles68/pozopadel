@@ -31,14 +31,20 @@ export default function TournamentView({
 }: TournamentViewProps) {
   const router = useRouter();
 
-  async function handleSubmitScore(matchId: string, scoreA: number, scoreB: number) {
+  async function handleSubmitScore(
+    matchId: string,
+    scoreA: number,
+    scoreB: number
+  ) {
     await updateMatchScore(matchId, scoreA, scoreB);
     router.refresh();
   }
 
   return (
     <div>
-      <h2 className="text-sm font-semibold text-foreground mb-3">Pistas</h2>
+      <h2 className="font-display text-sm font-bold text-on-surface mb-3">
+        Pistas
+      </h2>
       <CourtsGrid
         matches={matches}
         playerNames={playerNames}

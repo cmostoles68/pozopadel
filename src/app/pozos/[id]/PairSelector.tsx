@@ -42,13 +42,23 @@ export default function PairSelector({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedIds = new Set(selectedPairs.map((sp) => sp.drawn_pair_id));
-  const hasDrawn = selectedPairs.some((sp) => sp.court_number !== null);
+  const selectedIds = new Set(
+    selectedPairs.map((sp) => sp.drawn_pair_id)
+  );
+  const hasDrawn = selectedPairs.some(
+    (sp) => sp.court_number !== null
+  );
 
-  const selectedList = selectedPairs.filter((sp) => sp.court_number === null);
+  const selectedList = selectedPairs.filter(
+    (sp) => sp.court_number === null
+  );
 
-  const selectedDrawnPairs = allPairs.filter((p) => selectedIds.has(p.id));
-  const availablePairs = allPairs.filter((p) => !selectedIds.has(p.id));
+  const selectedDrawnPairs = allPairs.filter((p) =>
+    selectedIds.has(p.id)
+  );
+  const availablePairs = allPairs.filter(
+    (p) => !selectedIds.has(p.id)
+  );
 
   async function handleToggle(pairId: string) {
     setLoading(true);
@@ -97,7 +107,7 @@ export default function PairSelector({
 
   function PairBadge({ number }: { number: number }) {
     return (
-      <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary text-white text-base font-bold shrink-0">
+      <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary-container text-on-primary-container text-base font-bold shrink-0">
         {number}
       </span>
     );
@@ -105,18 +115,18 @@ export default function PairSelector({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-semibold text-foreground">
+      <h2 className="font-display text-2xl font-bold text-on-surface">
         Sorteo de parejas
       </h2>
 
       {error && (
-        <p className="text-lg text-red-500 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+        <p className="glass-panel rounded-2xl border-error/30 px-4 py-3 text-sm text-error">
           {error}
         </p>
       )}
 
       {allPairs.length === 0 && (
-        <p className="text-lg text-gray-500 text-center py-6">
+        <p className="text-sm text-on-surface-variant text-center py-6">
           No hay parejas sorteadas. Ve a{" "}
           <a href="/sorteo" className="text-primary hover:underline">
             Sortear
@@ -128,13 +138,13 @@ export default function PairSelector({
       {!hasDrawn && selectedList.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold text-foreground">
+            <h3 className="font-display text-xl font-bold text-on-surface">
               Seleccionadas ({selectedList.length})
             </h3>
             <button
               onClick={handleDraw}
               disabled={loading}
-              className="bg-primary text-white px-6 py-3 rounded-xl text-base font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+              className="bg-secondary-container text-on-secondary-container px-6 py-3 rounded-xl text-base font-medium hover:opacity-90 transition-colors disabled:opacity-50"
             >
               Sorteo pistas
             </button>
@@ -142,19 +152,20 @@ export default function PairSelector({
           {selectedDrawnPairs.map((pair) => (
             <div
               key={pair.id}
-              className="flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3"
+              className="glass-panel flex items-center justify-between rounded-2xl px-4 py-3"
             >
               <div className="text-lg flex items-center gap-3">
                 <PairBadge number={pair.pair_number} />
-                <span className="font-medium">
+                <span className="font-medium text-on-surface">
                   {pair.player1_name}
-                  {pair.is_lefty ? " (z)" : ""} & {pair.player2_name}
+                  {pair.is_lefty ? " (z)" : ""} &{" "}
+                  {pair.player2_name}
                 </span>
               </div>
               <button
                 onClick={() => handleToggle(pair.id)}
                 disabled={loading}
-                className="text-base text-red-500 hover:text-red-700 disabled:opacity-50"
+                className="text-base text-primary hover:text-on-surface disabled:opacity-50"
               >
                 Quitar
               </button>
@@ -166,13 +177,13 @@ export default function PairSelector({
       {!hasDrawn && availablePairs.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xl font-semibold text-foreground">
+            <h3 className="font-display text-xl font-bold text-on-surface">
               Parejas disponibles ({availablePairs.length})
             </h3>
             <button
               onClick={handleSelectAll}
               disabled={loading}
-              className="text-base text-primary hover:text-primary-dark disabled:opacity-50 font-medium"
+              className="text-base text-primary hover:text-on-surface disabled:opacity-50 font-medium"
             >
               Seleccionar todas
             </button>
@@ -181,19 +192,20 @@ export default function PairSelector({
             {availablePairs.map((pair) => (
               <div
                 key={pair.id}
-                className="flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3"
+                className="glass-panel flex items-center justify-between rounded-2xl px-4 py-3"
               >
                 <div className="text-lg flex items-center gap-3">
                   <PairBadge number={pair.pair_number} />
-                  <span className="font-medium">
+                  <span className="font-medium text-on-surface">
                     {pair.player1_name}
-                    {pair.is_lefty ? " (z)" : ""} & {pair.player2_name}
+                    {pair.is_lefty ? " (z)" : ""} &{" "}
+                    {pair.player2_name}
                   </span>
                 </div>
                 <button
                   onClick={() => handleToggle(pair.id)}
                   disabled={loading}
-                  className="text-base text-primary hover:text-primary-dark disabled:opacity-50 font-medium"
+                  className="text-base text-primary hover:text-on-surface disabled:opacity-50 font-medium"
                 >
                   Seleccionar
                 </button>

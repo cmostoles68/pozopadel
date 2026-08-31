@@ -1,19 +1,21 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createPozo } from "../actions";
+import AppShell from "@/components/AppShell";
 
 export default function NuevoPozoPage() {
   return (
-    <Suspense fallback={null}>
-      <NuevoPozoForm />
-    </Suspense>
+    <AppShell>
+      <Suspense fallback={null}>
+        <NuevoPozoForm />
+      </Suspense>
+    </AppShell>
   );
 }
 
 function NuevoPozoForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const [loading, setLoading] = useState(false);
@@ -30,78 +32,81 @@ function NuevoPozoForm() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-gray-200 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-gray-500 hover:text-foreground">
-            ← Volver
-          </button>
-          <h1 className="text-2xl font-semibold text-foreground">Nuevo Pozo</h1>
+    <div className="max-w-2xl mx-auto space-y-8">
+      <h1 className="font-display text-2xl font-bold text-on-surface">
+        Nuevo Pozo
+      </h1>
+
+      {error && (
+        <div className="glass-panel rounded-2xl border-error/30 px-4 py-3 text-sm text-error">
+          {error}
         </div>
-      </header>
+      )}
 
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        {error && (
-          <div className="mb-4 text-lg text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-            {error}
-          </div>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="title" className="block text-lg font-medium text-foreground mb-1">
-              Nombre del pozo
-            </label>
-            <input
-              id="title"
-              name="title"
-              type="text"
-              required
-              placeholder="Ej: Pozo Viernes"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="numberOfCourts" className="block text-lg font-medium text-foreground mb-1">
-              Número de pistas
-            </label>
-            <input
-              id="numberOfCourts"
-              name="numberOfCourts"
-              type="number"
-              min={1}
-              max={20}
-              required
-              defaultValue={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="minutesPerRound" className="block text-lg font-medium text-foreground mb-1">
-              Minutos por ronda
-            </label>
-            <input
-              id="minutesPerRound"
-              name="minutesPerRound"
-              type="number"
-              min={1}
-              max={90}
-              required
-              defaultValue={15}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-white py-3.5 rounded-xl text-lg font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+      <form onSubmit={handleSubmit} className="glass-panel rounded-2xl p-6 space-y-6">
+        <div>
+          <label
+            htmlFor="title"
+            className="block text-sm font-medium text-on-surface mb-2"
           >
-            {loading ? "Creando..." : "Crear Pozo"}
-          </button>
-        </form>
-      </main>
+            Nombre del pozo
+          </label>
+          <input
+            id="title"
+            name="title"
+            type="text"
+            required
+            placeholder="Ej: Pozo Viernes"
+            className="w-full px-4 py-3 bg-surface-highest border border-outline-variant rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-secondary-container"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="numberOfCourts"
+            className="block text-sm font-medium text-on-surface mb-2"
+          >
+            Número de pistas
+          </label>
+          <input
+            id="numberOfCourts"
+            name="numberOfCourts"
+            type="number"
+            min={1}
+            max={20}
+            required
+            defaultValue={3}
+            className="w-full px-4 py-3 bg-surface-highest border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary-container"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="minutesPerRound"
+            className="block text-sm font-medium text-on-surface mb-2"
+          >
+            Minutos por ronda
+          </label>
+          <input
+            id="minutesPerRound"
+            name="minutesPerRound"
+            type="number"
+            min={1}
+            max={90}
+            required
+            defaultValue={15}
+            className="w-full px-4 py-3 bg-surface-highest border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary-container"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-primary text-on-primary py-3.5 rounded-xl text-lg font-medium hover:bg-primary-container transition-colors disabled:opacity-50"
+        >
+          {loading ? "Creando..." : "Crear Pozo"}
+        </button>
+      </form>
     </div>
   );
 }

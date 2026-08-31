@@ -44,30 +44,57 @@ export default function PlayerRow({ player }: { player: Player }) {
 
   if (editing) {
     return (
-      <form onSubmit={handleSave} className="border border-primary rounded-xl p-4 space-y-3">
-        {error && <p className="text-sm text-red-600">{error}</p>}
+      <form
+        onSubmit={handleSave}
+        className="glass-panel border-primary rounded-2xl p-4 space-y-3"
+      >
+        {error && <p className="text-sm text-error">{error}</p>}
         <div className="grid grid-cols-2 gap-3">
           <input
             name="full_name"
             defaultValue={player.full_name}
             required
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 bg-surface-highest border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary-container"
           />
-          <select name="gender" defaultValue={player.gender} className="px-3 py-2 border border-gray-300 rounded-lg">
+          <select
+            name="gender"
+            defaultValue={player.gender}
+            className="px-3 py-2 bg-surface-highest border border-outline-variant rounded-xl text-on-surface"
+          >
             <option value="MALE">Hombre</option>
             <option value="FEMALE">Mujer</option>
           </select>
-          <select name="dominant_hand" defaultValue={player.dominant_hand} className="px-3 py-2 border border-gray-300 rounded-lg">
+          <select
+            name="dominant_hand"
+            defaultValue={player.dominant_hand}
+            className="px-3 py-2 bg-surface-highest border border-outline-variant rounded-xl text-on-surface"
+          >
             <option value="RIGHT">Diestro</option>
             <option value="LEFT">Zurdo</option>
           </select>
-          <input name="level" type="number" min={1} max={10} step={0.5} defaultValue={player.level} className="px-3 py-2 border border-gray-300 rounded-lg" />
+          <input
+            name="level"
+            type="number"
+            min={1}
+            max={10}
+            step={0.5}
+            defaultValue={player.level}
+            className="px-3 py-2 bg-surface-highest border border-outline-variant rounded-xl text-on-surface"
+          />
         </div>
         <div className="flex gap-2">
-          <button type="submit" disabled={loading} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-dark disabled:opacity-50">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-primary text-on-primary px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-container disabled:opacity-50"
+          >
             {loading ? "Guardando..." : "Guardar"}
           </button>
-          <button type="button" onClick={() => setEditing(false)} className="text-gray-500 hover:text-foreground px-4 py-2 rounded-lg text-sm">
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="text-on-surface-variant hover:text-on-surface px-4 py-2 rounded-xl text-sm"
+          >
             Cancelar
           </button>
         </div>
@@ -76,25 +103,35 @@ export default function PlayerRow({ player }: { player: Player }) {
   }
 
   return (
-    <div className="flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3">
+    <div className="glass-panel flex items-center justify-between rounded-2xl px-4 py-3">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="w-10 h-10 rounded-full bg-primary text-white text-base font-bold flex items-center justify-center shrink-0">
+        <span className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container text-base font-bold flex items-center justify-center shrink-0">
           {player.full_name.charAt(0).toUpperCase()}
         </span>
         <div className="min-w-0">
-          <div className="font-medium text-foreground">{player.full_name}</div>
-          <div className="text-sm text-gray-400">
+          <div className="font-medium text-on-surface">
+            {player.full_name}
+          </div>
+          <div className="text-sm text-on-surface-variant">
             {player.gender === "FEMALE" ? "Mujer" : "Hombre"} ·{" "}
-            {player.dominant_hand === "LEFT" ? "Zurdo" : "Diestro"} · Nivel{" "}
-            {player.level}
+            {player.dominant_hand === "LEFT" ? "Zurdo" : "Diestro"} ·
+            Nivel {player.level}
           </div>
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <button onClick={() => setEditing(true)} disabled={loading} className="text-sm text-primary hover:text-primary-dark disabled:opacity-50">
+        <button
+          onClick={() => setEditing(true)}
+          disabled={loading}
+          className="text-sm text-primary hover:text-on-surface disabled:opacity-50"
+        >
           Editar
         </button>
-        <button onClick={handleDelete} disabled={loading} className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50">
+        <button
+          onClick={handleDelete}
+          disabled={loading}
+          className="text-sm text-error hover:text-on-surface disabled:opacity-50"
+        >
           {loading ? "..." : "Eliminar"}
         </button>
       </div>
