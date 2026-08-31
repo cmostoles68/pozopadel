@@ -110,6 +110,32 @@ src/
 
 > **Deuda técnica conocida:** coexisten **dos motores de torneo** — un flujo *legacy* (`rounds`/`matches`, motor `legacy-round-engine`) y el flujo *pozo* (`pozo_rounds`, motor `round-engine`). La migración del `pozo` moderno está en curso; ver [MOTORES.md](MOTORES.md).
 
+## Principios de auditoría y arquitectura
+
+La versión final de la auditoría queda resumida en estos cuatro principios:
+
+1. **Principio de flujo único**
+   - Un único flujo de negocio activo para cada caso de uso.
+   - No conviven dos motores de negocio que resuelven lo mismo.
+   - El flujo legacy debe quedarse archivado o eliminado, no activo.
+
+2. **Principio de verdad del dominio**
+   - El dominio debe ser la fuente única de reglas y decisiones.
+   - La UI y la infraestructura no deben inventar lógica ni decidir reglas del negocio.
+   - Los algoritmos y entidades del dominio deben ser los únicos árbitros de la validez.
+
+3. **Principio de caso de uso único**
+   - Cada operación debe estar expresada por un caso de uso claro y estable.
+   - La aplicación debe orquestar casos de uso y no mezclar responsabilidades.
+   - Un servicio debe responder a una intención de negocio, no a varios impulsos distintos.
+
+4. **Principio de eliminación de deuda y duplicidad**
+   - El código muerto, duplicado y legacy debe ser retirado o aislado.
+   - Si dos implementaciones resuelven lo mismo, se elige una sola y se elimina la otra.
+   - La auditoría exige limpieza constante, no meras correcciones puntuales.
+
+Estos cuatro principios son la base para hacer del proyecto una arquitectura sostenible, con baja ambigüedad, menos riesgo y mejor mantenibilidad.
+
 ## Pruebas
 
 ```bash

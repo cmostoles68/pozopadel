@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import LiveTournamentHeader from "@/components/LiveTournamentHeader";
 import RoundTimer from "@/components/RoundTimer";
-import TournamentView from "./TournamentView";
 import PairSelector from "./PairSelector";
 import CourtScoring from "./CourtScoring";
 import { createServices } from "@/infrastructure/service-factory";
@@ -18,12 +17,6 @@ export default async function PozoPage(props: { params: Promise<{ id: string }> 
 
   const tournament = await tournamentService.getById(id);
   if (!tournament) notFound();
-
-  const { round: currentRound, matches: currentMatches } =
-    (await tournamentService.getCurrentLegacyRoundWithMatches(id)) ?? {
-      round: null,
-      matches: [],
-    };
 
   const [allPairs, selectedPairs] = await Promise.all([
     drawService.getDrawnPairsWithProfiles(),
@@ -59,7 +52,7 @@ export default async function PozoPage(props: { params: Promise<{ id: string }> 
               {tournament.title}
             </h2>
             <div className="mt-3">
-              <LiveTournamentHeader tournament={tournament} currentRound={currentRound} />
+              <LiveTournamentHeader tournament={tournament} currentRound={null} />
             </div>
             {activePozoRound && !completed && (
               <div className="mt-3">
@@ -87,14 +80,6 @@ export default async function PozoPage(props: { params: Promise<{ id: string }> 
           completed={completed}
           champion={champion}
         />
-
-        {currentRound && currentMatches && currentMatches.length > 0 && (
-          <TournamentView
-            matches={currentMatches}
-            playerNames={{}}
-            roundStatus={currentRound.status}
-          />
-        )}
       </div>
     </AppShell>
   );
