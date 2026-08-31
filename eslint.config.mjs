@@ -12,7 +12,17 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Auto-generated / non-source folders
+    "supabase/.temp/**",
+    "node_modules/**",
   ]),
+  {
+    // Adapters translate untyped DB rows into typed domain entities (anti-corruption boundary).
+    files: ["src/infrastructure/**"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
