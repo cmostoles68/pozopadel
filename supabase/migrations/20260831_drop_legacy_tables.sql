@@ -17,10 +17,6 @@ DROP POLICY IF EXISTS "Admin write rounds" ON public.rounds;
 DROP POLICY IF EXISTS "Public tournament_players read" ON public.tournament_players;
 DROP POLICY IF EXISTS "Auth players join" ON public.tournament_players;
 
--- Remove publication subscriptions
-ALTER PUBLICATION IF EXISTS supabase_realtime DROP TABLE IF EXISTS matches;
-ALTER PUBLICATION IF EXISTS supabase_realtime DROP TABLE IF EXISTS rounds;
-
 -- Drop legacy tables (in order to respect FK constraints)
 DROP TABLE IF EXISTS public.matches CASCADE;
 DROP TABLE IF EXISTS public.rounds CASCADE;
