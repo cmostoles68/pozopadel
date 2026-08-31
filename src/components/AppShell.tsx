@@ -11,7 +11,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", icon: "dashboard", label: "Dashboard" },
+  { href: "/dashboard", icon: "dashboard", label: "Torneos" },
   { href: "/jugadores", icon: "group", label: "Jugadores" },
   { href: "/sorteo", icon: "shuffle", label: "Sorteo" },
   { href: "/historico", icon: "bar_chart", label: "Histórico" },
@@ -55,13 +55,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col bg-surface-lowest h-screen w-64 fixed left-0 top-0 z-40 border-r border-outline-variant/10">
         <div className="p-6 flex flex-col items-center border-b border-outline-variant/10">
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-secondary-container mb-2 shadow-[0_0_15px_rgba(195,244,0,0.3)] flex items-center justify-center bg-primary-container">
-            <span className="material-symbols-outlined text-secondary-container text-3xl">sports_tennis</span>
+          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-secondary-container mb-3 shadow-[0_0_20px_rgba(195,244,0,0.3)] flex items-center justify-center bg-primary-container">
+            <span className="material-symbols-outlined text-secondary-container text-5xl">sports_tennis</span>
           </div>
-          <h1 className="font-display text-lg text-secondary-fixed-dim text-center font-bold">
+          <h1 className="font-display text-xl text-secondary-fixed-dim text-center font-bold tracking-tight">
             PadelElite
           </h1>
-          <p className="text-xs text-on-surface-variant mt-1">Admin Portal</p>
         </div>
 
         <div className="flex-1 py-4 overflow-y-auto">

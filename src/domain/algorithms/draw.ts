@@ -252,3 +252,13 @@ export function getWinningPartnershipKeys(
   const records = computeWinningPartnerships(history, minMatches, minWinRate);
   return new Set(records.map((r) => [r.a, r.b].sort().join("|")));
 }
+
+export function getDrawValidationError(playerCount: number): string | null {
+  if (playerCount < 4) {
+    return "Necesitas al menos 4 jugadores (número par) para sortear.";
+  }
+  if (playerCount % 2 !== 0) {
+    return "El número de jugadores debe ser par para sortear.";
+  }
+  return null;
+}

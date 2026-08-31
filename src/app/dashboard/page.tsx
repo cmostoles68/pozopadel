@@ -4,9 +4,9 @@ import DeleteTournament from "./DeleteTournament";
 import { createServices } from "@/infrastructure/service-factory";
 
 const CARDS = [
-  { href: "/pozos/nuevo", icon: "add_circle", label: "Nuevo Pozo" },
+  { href: "/pozos/nuevo", icon: "add_circle", label: "Nuevo Torneo" },
   { href: "/jugadores", icon: "group", label: "Jugadores" },
-  { href: "/sorteo", icon: "shuffle", label: "Sortear" },
+  { href: "/sorteo", icon: "shuffle", label: "Sorteo" },
   { href: "/historico", icon: "bar_chart", label: "Histórico" },
 ];
 

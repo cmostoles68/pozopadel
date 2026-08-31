@@ -6,7 +6,7 @@ import type { ITournamentRepository } from "@/domain/repositories/tournament.rep
 import type { DrawMethod } from "@/domain/entities/pair";
 import type { TournamentDrawnPair } from "@/domain/entities/pair";
 import type { DrawPairsResult, DrawCourtsResult } from "../dto/draw.dto";
-import { pairPlayers, shuffleArray } from "@/domain/algorithms/draw";
+import { pairPlayers, shuffleArray, getDrawValidationError } from "@/domain/algorithms/draw";
 
 export class DrawService {
   constructor(
@@ -20,8 +20,10 @@ export class DrawService {
 
   async drawPairs(method: DrawMethod): Promise<DrawPairsResult> {
     const players = await this.playerRepo.findProfiles();
-    if (players.length < 2) {
-      return { error: "Se necesitan al menos 2 jugadores para sortear parejas." };
+
+    const validationError = getDrawValidationError(players.length);
+    if (validationError) {
+      return { error: validationError };
     }
 
     await this.drawnPairRepo.deleteAll();

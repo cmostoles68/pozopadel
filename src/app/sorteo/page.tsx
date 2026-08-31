@@ -14,7 +14,7 @@ export default async function SorteoPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
           <h1 className="font-display text-2xl font-bold text-on-surface">
-            Sortear Parejas
+            Sorteo
           </h1>
         </div>
         <SorteoClient
