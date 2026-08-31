@@ -17,16 +17,20 @@ export async function createPozo(formData: FormData) {
     );
   }
 
+  let tournament;
   try {
-    const tournament = await tournamentService.create({
+    tournament = await tournamentService.create({
       title,
       numberOfCourts,
       minutesPerRound,
     });
-    redirect(`/pozos/${tournament.id}`);
   } catch (e: unknown) {
-    redirect("/pozos/nuevo?error=" + encodeURIComponent(e instanceof Error ? e.message : "Error"));
+    return redirect(
+      "/pozos/nuevo?error=" + encodeURIComponent(e instanceof Error ? e.message : "Error")
+    );
   }
+
+  redirect(`/pozos/${tournament.id}`);
 }
 
 export async function joinPozo(tournamentId: string) {

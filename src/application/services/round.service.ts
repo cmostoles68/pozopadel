@@ -199,15 +199,17 @@ export class RoundService {
       return { error: "No hay rondas para finalizar" };
     }
 
-    const startIndex = rounds.length > 1 ? 1 : 0;
-
+    // El campeón es quien gana la pista rey (1) en la última ronda jugada.
+    // findByTournament ordena por round_number ascendente; recorremos de la
+    // más reciente hacia atrás hasta encontrar una con ganador definido en la
+    // pista rey (descarta la posible nueva ronda aún sin resultado).
     let champion: string | null = null;
-    for (let i = startIndex; i < rounds.length; i++) {
-      const round = rounds[i];
-      const court1Pairs = await this.pozoRoundRepo.findCourtPairs(round.id, 1);
+    for (let i = rounds.length - 1; i >= 0; i--) {
+      const court1Pairs = await this.pozoRoundRepo.findCourtPairs(rounds[i].id, 1);
       if (court1Pairs.length < 2) continue;
-      if (!court1Pairs.every((p) => p.is_finished)) continue;
-      const winner = court1Pairs.find((p) => p.winner_drawn_pair_id === p.drawn_pair_id);
+      const winner = court1Pairs.find(
+        (p) => p.winner_drawn_pair_id === p.drawn_pair_id && p.is_finished,
+      );
       if (winner) {
         champion = winner.drawn_pair_id;
         break;

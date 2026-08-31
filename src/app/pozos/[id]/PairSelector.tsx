@@ -115,10 +115,6 @@ export default function PairSelector({
 
   return (
     <div className="space-y-4">
-      <h2 className="font-display text-2xl font-bold text-on-surface">
-        Sorteo de parejas
-      </h2>
-
       {error && (
         <p className="glass-panel rounded-2xl border-error/30 px-4 py-3 text-sm text-error">
           {error}
@@ -144,7 +140,7 @@ export default function PairSelector({
             <button
               onClick={handleDraw}
               disabled={loading}
-              className="bg-secondary-container text-on-secondary-container px-6 py-3 rounded-xl text-base font-medium hover:opacity-90 transition-colors disabled:opacity-50"
+              className="bg-secondary-container text-on-secondary-container px-6 py-3 rounded-xl text-base font-medium hover:bg-white transition-colors disabled:opacity-50"
             >
               Sorteo pistas
             </button>

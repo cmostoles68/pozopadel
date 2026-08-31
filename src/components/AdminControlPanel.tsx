@@ -88,7 +88,7 @@ export default function AdminControlPanel({
           <button
             onClick={handleStart}
             disabled={isPending}
-            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-primary-container transition-colors disabled:opacity-50"
+            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-white transition-colors disabled:opacity-50"
           >
             {isPending ? "Iniciando..." : "Iniciar Pozo"}
           </button>
@@ -98,7 +98,7 @@ export default function AdminControlPanel({
           <button
             onClick={handleAdvanceRound}
             disabled={isPending}
-            className="bg-secondary-container text-on-secondary-container px-5 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50"
+            className="bg-secondary-container text-on-secondary-container px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-white transition-colors disabled:opacity-50"
           >
             {isPending
               ? "Procesando..."

@@ -102,7 +102,7 @@ function NuevoPozoForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-primary text-on-primary py-3.5 rounded-xl text-lg font-medium hover:bg-primary-container transition-colors disabled:opacity-50"
+          className="w-full bg-primary text-on-primary py-3.5 rounded-xl text-lg font-medium hover:bg-white transition-colors disabled:opacity-50"
         >
           {loading ? "Creando..." : "Crear Pozo"}
         </button>

@@ -41,7 +41,8 @@ export default async function JugadoresPage() {
               Jugadores
             </h1>
             <p className="text-sm text-on-surface-variant mt-1">
-              {players?.length ?? 0} jugadores
+              {players?.length ?? 0}
+              {" "}jugadores
             </p>
           </div>
           <DeleteAllPlayers />

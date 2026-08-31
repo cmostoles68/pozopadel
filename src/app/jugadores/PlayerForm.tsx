@@ -71,7 +71,7 @@ export default function PlayerForm() {
         <button
           type="submit"
           disabled={loading}
-          className="bg-primary text-on-primary px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-container disabled:opacity-50"
+          className="bg-secondary-container text-on-secondary-container px-4 py-2 rounded-xl text-sm font-medium hover:bg-white disabled:opacity-50"
         >
           {loading ? "Añadiendo..." : "Añadir jugador"}
         </button>

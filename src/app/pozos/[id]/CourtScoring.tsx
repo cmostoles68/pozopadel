@@ -65,7 +65,7 @@ export default function CourtScoring({
               data-testid="finalize-pozo"
               onClick={handleFinalize}
               disabled={finalizing}
-              className="rounded-full bg-secondary-container px-10 py-4 font-display text-lg text-on-secondary-container hover:bg-secondary-fixed-dim disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="rounded-full bg-secondary-container px-10 py-4 font-display text-lg text-on-secondary-container hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {finalizing ? "Finalizando..." : "Finalizar pozo"}
             </button>
@@ -83,28 +83,38 @@ export default function CourtScoring({
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-testid={`round-${activeRound.round_number}`}>
       {completed && champion && <ChampionBanner champion={champion} />}
 
       <div className="flex items-center justify-between">
         <h3 className="font-display text-2xl text-on-surface">
           Ronda {activeRound.round_number}
         </h3>
-        {activeRound.round_number === 1 && (
+        <div className="flex items-center gap-3">
+          {activeRound.round_number === 1 && (
+            <button
+              onClick={async () => {
+                setRedrawing(true);
+                setError(null);
+                await clearCourtDraw(tournamentId);
+                setRedrawing(false);
+                router.refresh();
+              }}
+              disabled={redrawing || completed}
+              className="text-sm text-error hover:text-error/80 disabled:opacity-50"
+            >
+              Rehacer sorteo
+            </button>
+          )}
           <button
-            onClick={async () => {
-              setRedrawing(true);
-              setError(null);
-              await clearCourtDraw(tournamentId);
-              setRedrawing(false);
-              router.refresh();
-            }}
-            disabled={redrawing}
-            className="text-sm text-error hover:text-error/80 disabled:opacity-50"
+            data-testid="finalize-pozo"
+            onClick={handleFinalize}
+            disabled={finalizing || completed}
+            className="rounded-full bg-secondary-container px-6 py-2.5 font-display text-base text-on-secondary-container hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            Rehacer sorteo
+            {finalizing ? "Finalizando..." : "Finalizar pozo"}
           </button>
-        )}
+        </div>
       </div>
 
       {error && <ErrorNotice message={error} />}
@@ -120,6 +130,7 @@ export default function CourtScoring({
                 pairs={pairs}
                 pairById={pairById}
                 loading={loading === `${court}`}
+                disabled={completed}
                 onResult={async (winnerId, scores) => {
                   setLoading(`${court}`);
                   setError(null);

@@ -1,6 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+function playAlarm() {
+  try {
+    const ctx = new (window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext)();
+    const notes = [880, 880, 1100, 1100];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      const start = ctx.currentTime + i * 0.35;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.4, start + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.3);
+    });
+  } catch {
+    /* el audio no está disponible en este entorno */
+  }
+}
 
 export default function RoundTimer({
   minutes,
@@ -11,11 +36,19 @@ export default function RoundTimer({
 }) {
   const [left, setLeft] = useState(minutes * 60);
   const [started, setStarted] = useState(false);
+  const alarmPlayed = useRef(false);
 
   useEffect(() => {
     if (!started || left <= 0) return;
     const t = setTimeout(() => setLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
+  }, [left, started]);
+
+  useEffect(() => {
+    if (started && left === 0 && !alarmPlayed.current) {
+      alarmPlayed.current = true;
+      playAlarm();
+    }
   }, [left, started]);
 
   const running = started && left > 0;
@@ -24,6 +57,7 @@ export default function RoundTimer({
   function restart() {
     setLeft(minutes * 60);
     setStarted(true);
+    alarmPlayed.current = false;
   }
 
   function stop() {
@@ -76,7 +110,7 @@ export default function RoundTimer({
             data-testid={`timer-round-${round}-start`}
             onClick={() => setStarted(true)}
             disabled={running}
-            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl text-base font-semibold hover:bg-primary-container disabled:opacity-50 whitespace-nowrap"
+            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl text-base font-semibold hover:bg-white disabled:opacity-50 whitespace-nowrap"
           >
             {running ? "En curso..." : "Iniciar"}
           </button>

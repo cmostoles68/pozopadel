@@ -114,7 +114,7 @@ test("registrar marcador en el pozo live actualiza el ranking en vivo", async ({
 
   const court1 = page.getByTestId("court-1-pair-1").locator("xpath=ancestor::section[1]");
   await court1
-    .getByRole("button", { name: "Registrar marcador & mover" })
+    .getByRole("button", { name: "Registrar Marcador" })
     .click();
 
   // The save must persist to the DB (court 1 finished, winner + score set).

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import LiveTournamentHeader from "@/components/LiveTournamentHeader";
+import RoundTimer from "@/components/RoundTimer";
 import TournamentView from "./TournamentView";
 import PairSelector from "./PairSelector";
 import CourtScoring from "./CourtScoring";
@@ -41,6 +42,8 @@ export default async function PozoPage(props: { params: Promise<{ id: string }> 
     pairs: pozoRoundPairs[i],
   }));
 
+  const activePozoRound = roundsData.find((r) => r.status === "in_progress");
+
   const completed = tournament.status === "completed";
   const champion =
     completed && tournament.champion_drawn_pair_id
@@ -58,6 +61,15 @@ export default async function PozoPage(props: { params: Promise<{ id: string }> 
             <div className="mt-3">
               <LiveTournamentHeader tournament={tournament} currentRound={currentRound} />
             </div>
+            {activePozoRound && !completed && (
+              <div className="mt-3">
+                <RoundTimer
+                  key={activePozoRound.id}
+                  minutes={tournament.minutes_per_round}
+                  round={activePozoRound.round_number}
+                />
+              </div>
+            )}
           </div>
         </header>
 

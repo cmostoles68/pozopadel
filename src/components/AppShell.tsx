@@ -41,7 +41,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               className={`p-2 rounded-full transition-colors ${
                 isActive(pathname, item.href)
                   ? "bg-secondary-container text-on-secondary-container"
-                  : "text-on-surface-variant hover:bg-surface-high/40"
+                  : "text-on-surface-variant hover:bg-white hover:text-on-secondary-container"
               }`}
             >
               <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
@@ -71,7 +71,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               className={`mx-2 my-1 flex items-center px-4 py-3 rounded-full transition-all duration-200 ${
                 isActive(pathname, item.href)
                   ? "bg-secondary-container text-on-secondary-container font-bold"
-                  : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high/40"
+                  : "text-on-surface-variant hover:bg-white hover:text-on-secondary-container"
               }`}
             >
               <span className="material-symbols-outlined mr-4">{item.icon}</span>

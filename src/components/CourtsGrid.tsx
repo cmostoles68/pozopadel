@@ -142,7 +142,7 @@ export default function CourtsGrid({
                 <button
                   onClick={() => handleSubmit(m.id)}
                   disabled={pending}
-                  className="ml-auto bg-primary text-on-primary text-sm px-4 py-2 rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50"
+                  className="ml-auto bg-primary text-on-primary text-sm px-4 py-2 rounded-xl hover:bg-white transition-colors disabled:opacity-50"
                 >
                   Enviar
                 </button>

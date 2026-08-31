@@ -76,6 +76,9 @@ body {
 }
 
 /* ----- Stitch custom utilities ----- */
+html {
+  font-size: 200%;
+}
 .glass-panel {
   background: rgba(27, 38, 59, 0.6);
   backdrop-filter: blur(20px);

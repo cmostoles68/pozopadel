@@ -85,7 +85,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-on-primary py-3 rounded-xl font-medium hover:bg-primary-container transition-colors disabled:opacity-50"
+            className="w-full bg-primary text-on-primary py-3 rounded-xl font-medium hover:bg-white transition-colors disabled:opacity-50"
           >
             {loading
               ? "Enviando..."

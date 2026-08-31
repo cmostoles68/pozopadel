@@ -171,7 +171,7 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
   ): Promise<PozoRoundPair[]> {
     const { data } = await this.supabase
       .from("pozo_round_pairs")
-      .select("id, drawn_pair_id")
+      .select("*")
       .eq("round_id", roundId)
       .eq("court_number", courtNumber);
     return (data ?? []) as PozoRoundPair[];

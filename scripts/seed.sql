@@ -94,6 +94,18 @@ BEGIN
   INSERT INTO public.profiles (full_name, gender, dominant_hand, level)
   VALUES ('David Navarro', 'MALE', 'LEFT', 3.0) RETURNING id INTO p8;
 
+  -- Perfiles de test (dependencias de los tests E2E)
+  INSERT INTO public.profiles (full_name, gender, dominant_hand, level)
+  VALUES
+    ('Ana Vega',       'FEMALE', 'RIGHT', 6.0),
+    ('Andrés Moreno',  'MALE',   'RIGHT', 6.5),
+    ('Juan García',    'MALE',   'LEFT',  5.0),
+    ('Elena Castro',   'FEMALE', 'RIGHT', 4.0),
+    ('Pedro Martín',   'MALE',   'RIGHT', 4.5),
+    ('Lucía Romero',   'FEMALE', 'LEFT',  4.0),
+    ('Pablo Torres',   'MALE',   'RIGHT', 3.5),
+    ('Sara Gil',       'FEMALE', 'RIGHT', 3.0);
+
   -- Parejas sorteadas
   INSERT INTO public.drawn_pairs (pair_number, player1_id, player2_id, draw_method)
   VALUES (1, p1, p2, 'level') RETURNING id INTO pair1;
