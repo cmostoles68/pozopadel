@@ -87,8 +87,8 @@ export default function SorteoClient({
       {pairs.length === 0 ? (
         <div className="space-y-4">
           <p className="text-sm text-on-surface-variant text-center py-4">
-            {playerCount < 2
-              ? "Necesitas al menos 2 jugadores para sortear."
+            {playerCount < 4 || playerCount % 2 !== 0
+              ? "Necesitas al menos 4 jugadores (número par) para sortear."
               : "No hay parejas sorteadas. Elige un método de sorteo:"}
           </p>
           <div className="grid grid-cols-2 gap-3">
@@ -96,7 +96,7 @@ export default function SorteoClient({
               <button
                 key={m.value}
                 onClick={() => handleDraw(m.value)}
-                disabled={loading || playerCount < 2}
+                disabled={loading || playerCount < 4 || playerCount % 2 !== 0}
                 className="glass-panel rounded-xl p-4 hover:border-secondary-container transition-colors disabled:opacity-50"
               >
                 <span className="font-medium text-on-surface">
