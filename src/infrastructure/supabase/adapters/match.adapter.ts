@@ -1,64 +1,9 @@
-import type {
-  ILegacyMatchRepository,
-  IMatchHistoryRepository,
-} from "@/domain/repositories/match.repository";
-import type { LegacyMatch, MatchHistoryRow } from "@/domain/entities/match";
+import type { IMatchHistoryRepository } from "@/domain/repositories/match.repository";
+import type { MatchHistoryRow } from "@/domain/entities/match";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ok, err } from "@/domain/result";
 
 type Database = any;
-
-export class SupabaseLegacyMatchAdapter implements ILegacyMatchRepository {
-  constructor(private supabase: SupabaseClient<Database>) {}
-
-  async findByRound(roundId: string): Promise<LegacyMatch[]> {
-    const { data } = await this.supabase
-      .from("matches")
-      .select("*")
-      .eq("round_id", roundId)
-      .order("court_number");
-    return (data ?? []) as LegacyMatch[];
-  }
-
-  async insertMatches(
-    matches: {
-      round_id: string;
-      court_number: number;
-      player1_id: string;
-      player2_id: string;
-      player3_id: string;
-      player4_id: string;
-    }[]
-  ): Promise<void> {
-    const { error } = await this.supabase.from("matches").insert(matches);
-    if (error) throw new Error(error.message);
-  }
-
-  async updateScore(
-    matchId: string,
-    scoreA: number,
-    scoreB: number
-  ): Promise<void> {
-    const { error } = await this.supabase
-      .from("matches")
-      .update({
-        score_team_a: scoreA,
-        score_team_b: scoreB,
-        is_finished: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", matchId);
-    if (error) throw new Error(error.message);
-  }
-
-  async findAllByTournamentRounds(roundIds: string[]): Promise<LegacyMatch[]> {
-    if (roundIds.length === 0) return [];
-    const { data } = await this.supabase
-      .from("matches")
-      .select("*")
-      .in("round_id", roundIds);
-    return (data ?? []) as LegacyMatch[];
-  }
-}
 
 export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
   constructor(private supabase: SupabaseClient<Database>) {}
@@ -86,7 +31,7 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
     score_winner: number | null;
     score_loser: number | null;
     user_uuid: string;
-  }): Promise<void> {
+  }) {
     const d = (id: string) => {
       const p = data.playerData.get(id);
       return {
@@ -102,7 +47,7 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
     const l1 = d(data.loser_player1_id);
     const l2 = d(data.loser_player2_id);
 
-    await this.supabase.from("pozo_match_history").upsert(
+    const { error } = await this.supabase.from("pozo_match_history").upsert(
       {
         tournament_id: data.tournament_id,
         round_id: data.round_id,
@@ -136,37 +81,40 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
       },
       { onConflict: "tournament_id,round_id,court_number" },
     );
+    if (error) return err(error.message);
+    return ok(undefined);
   }
 
-  async findAll(userUuid: string): Promise<MatchHistoryRow[]> {
+  async findAll(userUuid: string) {
     const { data } = await this.supabase
       .from("pozo_match_history")
       .select("*")
       .eq("user_uuid", userUuid)
       .order("created_at", { ascending: false });
-    return (data ?? []) as MatchHistoryRow[];
+    return ok((data ?? []) as MatchHistoryRow[]);
   }
 
-  async findByTournament(tournamentId: string): Promise<MatchHistoryRow[]> {
+  async findByTournament(tournamentId: string, userUuid: string) {
     const { data } = await this.supabase
       .from("pozo_match_history")
       .select("*")
-      .eq("tournament_id", tournamentId);
-    return (data ?? []) as MatchHistoryRow[];
+      .eq("tournament_id", tournamentId)
+      .eq("user_uuid", userUuid);
+    return ok((data ?? []) as MatchHistoryRow[]);
   }
 
   async findWinningPartnerships(
     userUuid: string,
     minMatches = 2,
     minWinRate = 0.7,
-  ): Promise<{ a: string; b: string; wins: number; total: number; winRate: number }[]> {
+  ) {
     const { data: history } = await this.supabase
       .from("pozo_match_history")
       .select(
         "winner_player1_id, winner_player2_id, loser_player1_id, loser_player2_id",
       )
       .eq("user_uuid", userUuid);
-    if (!history || history.length === 0) return [];
+    if (!history || history.length === 0) return ok([]);
 
     const key = (a: string, b: string) => [a, b].sort().join("|");
     const wins = new Map<string, number>();
@@ -193,6 +141,6 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
         result.push({ a, b, wins: w, total, winRate });
       }
     }
-    return result;
+    return ok(result);
   }
 }

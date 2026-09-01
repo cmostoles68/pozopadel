@@ -128,7 +128,6 @@ export default function CourtScoring({
                       setLoading(null);
                       return;
                     }
-                    window.dispatchEvent(new CustomEvent("pozo-timer-stop"));
                     const next = await checkAndStartNextRound(
                       tournamentId,
                       activeRound.id

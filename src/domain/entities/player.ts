@@ -16,13 +16,6 @@ export interface PlayerProfile {
   dominant_hand: string;
 }
 
-export interface PlayerRow {
-  player_id: string;
-  level: number;
-  current_court: number;
-  total_points: number;
-}
-
 export interface PlayerSnap {
   id: string;
   name: string | null;

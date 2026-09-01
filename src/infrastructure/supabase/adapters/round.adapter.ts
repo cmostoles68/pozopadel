@@ -1,107 +1,24 @@
-import type {
-  ILegacyRoundRepository,
-  IPozoRoundRepository,
-} from "@/domain/repositories/round.repository";
-import type { LegacyRound, PozoRound } from "@/domain/entities/round";
-import type { LegacyMatch, PozoRoundPair } from "@/domain/entities/match";
+import type { IPozoRoundRepository } from "@/domain/repositories/round.repository";
+import type { PozoRound } from "@/domain/entities/round";
+import type { PozoRoundPair } from "@/domain/entities/match";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ok, err } from "@/domain/result";
 
 type Database = any;
-
-export class SupabaseLegacyRoundAdapter implements ILegacyRoundRepository {
-  constructor(private supabase: SupabaseClient<Database>) {}
-
-  async findCurrentByTournament(tournamentId: string): Promise<LegacyRound | null> {
-    const { data } = await this.supabase
-      .from("rounds")
-      .select("*")
-      .eq("tournament_id", tournamentId)
-      .in("status", ["in_progress", "pending"])
-      .order("round_number", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    return (data as LegacyRound) ?? null;
-  }
-
-  async findCurrentRoundWithMatches(
-    tournamentId: string
-  ): Promise<{ round: LegacyRound; matches: LegacyMatch[] } | null> {
-    const round = await this.findCurrentByTournament(tournamentId);
-    if (!round) return null;
-    const { data: matches } = await this.supabase
-      .from("matches")
-      .select("*")
-      .eq("round_id", round.id)
-      .order("court_number");
-    return { round, matches: (matches ?? []) as LegacyMatch[] };
-  }
-
-  async createRound(data: {
-    tournament_id: string;
-    round_number: number;
-    status: string;
-    start_time?: string;
-  }): Promise<LegacyRound> {
-    const { data: round, error } = await this.supabase
-      .from("rounds")
-      .insert(data)
-      .select()
-      .single();
-    if (error || !round) throw new Error(error?.message ?? "Failed to create round");
-    return round as LegacyRound;
-  }
-
-  async updateStatus(roundId: string, status: string): Promise<void> {
-    const { error } = await this.supabase
-      .from("rounds")
-      .update({ status })
-      .eq("id", roundId);
-    if (error) throw new Error(error.message);
-  }
-
-  async findByTournament(tournamentId: string): Promise<LegacyRound[]> {
-    const { data } = await this.supabase
-      .from("rounds")
-      .select("*")
-      .eq("tournament_id", tournamentId)
-      .order("round_number", { ascending: false });
-    return (data ?? []) as LegacyRound[];
-  }
-
-  async findLastRound(tournamentId: string): Promise<LegacyRound | null> {
-    const { data } = await this.supabase
-      .from("rounds")
-      .select("*")
-      .eq("tournament_id", tournamentId)
-      .order("round_number", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    return (data as LegacyRound) ?? null;
-  }
-
-  async findById(roundId: string): Promise<LegacyRound | null> {
-    const { data } = await this.supabase
-      .from("rounds")
-      .select("*")
-      .eq("id", roundId)
-      .single();
-    return (data as LegacyRound) ?? null;
-  }
-}
 
 export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
   constructor(private supabase: SupabaseClient<Database>) {}
 
-  async findByTournament(tournamentId: string): Promise<PozoRound[]> {
+  async findByTournament(tournamentId: string) {
     const { data } = await this.supabase
       .from("pozo_rounds")
       .select("*")
       .eq("tournament_id", tournamentId)
       .order("round_number");
-    return (data ?? []) as PozoRound[];
+    return ok((data ?? []) as PozoRound[]);
   }
 
-  async findActiveByTournament(tournamentId: string): Promise<PozoRound | null> {
+  async findActiveByTournament(tournamentId: string) {
     const { data } = await this.supabase
       .from("pozo_rounds")
       .select("*")
@@ -110,23 +27,23 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
       .order("round_number", { ascending: false })
       .limit(1)
       .maybeSingle();
-    return (data as PozoRound) ?? null;
+    return ok((data as PozoRound | null) ?? null);
   }
 
-  async findById(id: string): Promise<PozoRound | null> {
+  async findById(id: string) {
     const { data } = await this.supabase
       .from("pozo_rounds")
       .select("*")
       .eq("id", id)
       .single();
-    return (data as PozoRound) ?? null;
+    return ok((data as PozoRound | null) ?? null);
   }
 
   async createRound(data: {
     tournament_id: string;
     round_number: number;
     status?: string;
-  }): Promise<PozoRound> {
+  }) {
     const { data: round, error } = await this.supabase
       .from("pozo_rounds")
       .insert({
@@ -136,52 +53,54 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
       })
       .select()
       .single();
-    if (error || !round) throw new Error(error?.message ?? "No se pudo crear la ronda");
-    return round as PozoRound;
+    if (error || !round) return err(error?.message ?? "No se pudo crear la ronda");
+    return ok(round as PozoRound);
   }
 
-  async updateStatus(roundId: string, status: string): Promise<void> {
+  async updateStatus(roundId: string, status: string) {
     const { error } = await this.supabase
       .from("pozo_rounds")
       .update({ status })
       .eq("id", roundId);
-    if (error) throw new Error(error.message);
+    if (error) return err(error.message);
+    return ok(undefined);
   }
 
-  async deleteByTournament(tournamentId: string): Promise<void> {
+  async deleteByTournament(tournamentId: string) {
     const { error } = await this.supabase
       .from("pozo_rounds")
       .delete()
       .eq("tournament_id", tournamentId);
-    if (error) throw new Error(error.message);
+    if (error) return err(error.message);
+    return ok(undefined);
   }
 
-  async findRoundPairs(roundId: string): Promise<PozoRoundPair[]> {
+  async findRoundPairs(roundId: string) {
     const { data } = await this.supabase
       .from("pozo_round_pairs")
       .select("*")
       .eq("round_id", roundId)
       .order("court_number");
-    return (data ?? []) as PozoRoundPair[];
+    return ok((data ?? []) as PozoRoundPair[]);
   }
 
   async findCourtPairs(
     roundId: string,
     courtNumber: number
-  ): Promise<PozoRoundPair[]> {
+  ) {
     const { data } = await this.supabase
       .from("pozo_round_pairs")
       .select("*")
       .eq("round_id", roundId)
       .eq("court_number", courtNumber);
-    return (data ?? []) as PozoRoundPair[];
+    return ok((data ?? []) as PozoRoundPair[]);
   }
 
   async updatePairResult(data: {
     pairId: string;
     winner_drawn_pair_id: string;
     score_a: number;
-  }): Promise<void> {
+  }) {
     const { error } = await this.supabase
       .from("pozo_round_pairs")
       .update({
@@ -190,7 +109,8 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
         is_finished: true,
       })
       .eq("id", data.pairId);
-    if (error) throw new Error(error.message);
+    if (error) return err(error.message);
+    return ok(undefined);
   }
 
   async insertRoundPairs(
@@ -199,26 +119,28 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
       drawn_pair_id: string;
       court_number: number;
     }[]
-  ): Promise<void> {
+  ) {
     const { error } = await this.supabase.from("pozo_round_pairs").insert(pairs);
-    if (error) throw new Error(error.message);
+    if (error) return err(error.message);
+    return ok(undefined);
   }
 
-  async deleteRound(roundId: string): Promise<void> {
+  async deleteRound(roundId: string) {
     const { error } = await this.supabase
       .from("pozo_rounds")
       .delete()
       .eq("id", roundId);
-    if (error) throw new Error(error.message);
+    if (error) return err(error.message);
+    return ok(undefined);
   }
 
-  async findRound1IfExists(tournamentId: string): Promise<PozoRound | null> {
+  async findRound1IfExists(tournamentId: string) {
     const { data } = await this.supabase
       .from("pozo_rounds")
       .select("id")
       .eq("tournament_id", tournamentId)
       .eq("round_number", 1)
       .maybeSingle();
-    return (data as PozoRound) ?? null;
+    return ok((data as PozoRound | null) ?? null);
   }
 }

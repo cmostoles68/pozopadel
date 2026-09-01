@@ -1,29 +1,3 @@
-export interface LegacyMatch {
-  id: string;
-  round_id: string;
-  court_number: number;
-  player1_id: string;
-  player2_id: string;
-  player3_id: string;
-  player4_id: string;
-  score_team_a: number;
-  score_team_b: number;
-  is_finished: boolean;
-  updated_at: string;
-}
-
-export interface CourtMatch {
-  court_number: number;
-  team_a: { player1_id: string; player2_id: string };
-  team_b: { player1_id: string; player2_id: string };
-}
-
-export interface RoundResult {
-  court_number: number;
-  winner: { player1_id: string; player2_id: string };
-  loser: { player1_id: string; player2_id: string };
-}
-
 export interface PairCourtResult {
   court_number: number;
   winner_drawn_pair_id: string;

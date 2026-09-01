@@ -5,7 +5,9 @@ import type { IPlayerRepository } from "@/domain/repositories/player.repository"
 import type { IMatchHistoryRepository } from "@/domain/repositories/match.repository";
 import type { PozoRound } from "@/domain/entities/round";
 import type { PozoRoundPair } from "@/domain/entities/match";
-import type { CourtResultInput, SaveCourtResultResult, CheckAndStartNextResult, FinalizePozoResult } from "../dto/round.dto";
+import type { CourtResultInput } from "../dto/round.dto";
+import type { Result } from "@/domain/result";
+import { err } from "@/domain/result";
 import { calculatePairMovements } from "@/domain/algorithms/movements";
 
 export class RoundService {
@@ -17,15 +19,15 @@ export class RoundService {
     private matchHistoryRepo: IMatchHistoryRepository,
   ) {}
 
-  async getRounds(tournamentId: string): Promise<PozoRound[]> {
+  async getRounds(tournamentId: string): Promise<Result<PozoRound[]>> {
     return this.pozoRoundRepo.findByTournament(tournamentId);
   }
 
-  async getActiveRound(tournamentId: string): Promise<PozoRound | null> {
+  async getActiveRound(tournamentId: string): Promise<Result<PozoRound | null>> {
     return this.pozoRoundRepo.findActiveByTournament(tournamentId);
   }
 
-  async getRoundPairs(roundId: string): Promise<PozoRoundPair[]> {
+  async getRoundPairs(roundId: string): Promise<Result<PozoRoundPair[]>> {
     return this.pozoRoundRepo.findRoundPairs(roundId);
   }
 
@@ -35,38 +37,42 @@ export class RoundService {
     results: CourtResultInput[],
     winnerDrawnPairId: string,
     userUuid: string,
-  ): Promise<SaveCourtResultResult> {
+  ): Promise<Result<void>> {
     const round = await this.pozoRoundRepo.findById(roundId);
-    if (!round) return { error: "Ronda no encontrada" };
+    if (!round.ok) return round;
+    if (!round.data) return err("Ronda no encontrada");
 
     const rows = await this.pozoRoundRepo.findCourtPairs(roundId, courtNumber);
-    if (rows.length === 0) return { error: "Pista no encontrada" };
+    if (!rows.ok) return rows;
+    if (rows.data.length === 0) return err("Pista no encontrada");
 
     const scoreMap: Record<string, number> = {};
     for (const r of results) scoreMap[r.drawnPairId] = r.score;
 
-    for (const row of rows) {
+    for (const row of rows.data) {
       const score = scoreMap[row.drawn_pair_id] ?? 0;
-      await this.pozoRoundRepo.updatePairResult({
+      const res = await this.pozoRoundRepo.updatePairResult({
         pairId: row.id,
         winner_drawn_pair_id: winnerDrawnPairId,
         score_a: score,
       });
+      if (!res.ok) return res;
     }
 
     // Record match history
-    await this.recordMatchHistory(
-      round.tournament_id,
-      round.id,
-      round.round_number,
+    const historyRes = await this.recordMatchHistory(
+      round.data.tournament_id,
+      round.data.id,
+      round.data.round_number,
       courtNumber,
-      rows.map((r) => r.drawn_pair_id),
+      rows.data.map((r) => r.drawn_pair_id),
       winnerDrawnPairId,
       scoreMap,
       userUuid,
     );
+    if (!historyRes.ok) return historyRes;
 
-    return { ok: true };
+    return { ok: true, data: undefined };
   }
 
   private async recordMatchHistory(
@@ -78,15 +84,16 @@ export class RoundService {
     winnerDrawnPairId: string,
     scoreMap: Record<string, number>,
     userUuid: string,
-  ): Promise<void> {
+  ): Promise<Result<void>> {
     const allPairs = await this.drawnPairRepo.findAll(userUuid);
+    if (!allPairs.ok) return allPairs;
 
-    const winnerPair = allPairs.find((p) => p.id === winnerDrawnPairId);
-    const loserPair = allPairs.find(
+    const winnerPair = allPairs.data.find((p) => p.id === winnerDrawnPairId);
+    const loserPair = allPairs.data.find(
       (p) => drawnPairIds.includes(p.id) && p.id !== winnerDrawnPairId,
     );
 
-    if (!winnerPair || !loserPair) return;
+    if (!winnerPair || !loserPair) return { ok: true, data: undefined };
 
     const playerIds = [
       winnerPair.player1_id,
@@ -96,7 +103,8 @@ export class RoundService {
     ];
 
     const profiles = await this.playerRepo.findAll(userUuid);
-    const profileById = new Map(profiles.map((p) => [p.id, p] as const));
+    if (!profiles.ok) return profiles;
+    const profileById = new Map(profiles.data.map((p) => [p.id, p] as const));
 
     const playerData = new Map<
       string,
@@ -113,7 +121,7 @@ export class RoundService {
       });
     }
 
-    await this.matchHistoryRepo.upsert({
+    return this.matchHistoryRepo.upsert({
       tournament_id: tournamentId,
       round_id: roundId,
       round_number: roundNumber,
@@ -134,25 +142,31 @@ export class RoundService {
   async checkAndStartNextRound(
     tournamentId: string,
     roundId: string,
-  ): Promise<CheckAndStartNextResult> {
+    userUuid: string,
+  ): Promise<Result<{ nextRoundNumber?: number }>> {
     const round = await this.pozoRoundRepo.findById(roundId);
-    if (!round || round.status === "finished") return { ok: true };
-
-    const pairs = await this.pozoRoundRepo.findRoundPairs(roundId);
-    if (pairs.length === 0) return { ok: true };
-
-    const courts = Array.from(new Set(pairs.map((p) => p.court_number)));
-    for (const court of courts) {
-      const courtPairs = pairs.filter((p) => p.court_number === court);
-      if (courtPairs.length < 2) return { ok: true };
-      if (!courtPairs.every((p) => p.is_finished)) return { ok: true };
+    if (!round.ok) return round;
+    if (!round.data || round.data.status === "finished") {
+      return { ok: true, data: {} };
     }
 
-    const tournament = await this.tournamentRepo.findById(tournamentId);
-    if (!tournament) return { error: "Torneo no encontrado" };
+    const pairs = await this.pozoRoundRepo.findRoundPairs(roundId);
+    if (!pairs.ok) return pairs;
+    if (pairs.data.length === 0) return { ok: true, data: {} };
+
+    const courts = Array.from(new Set(pairs.data.map((p) => p.court_number)));
+    for (const court of courts) {
+      const courtPairs = pairs.data.filter((p) => p.court_number === court);
+      if (courtPairs.length < 2) return { ok: true, data: {} };
+      if (!courtPairs.every((p) => p.is_finished)) return { ok: true, data: {} };
+    }
+
+    const tournament = await this.tournamentRepo.findById(tournamentId, userUuid);
+    if (!tournament.ok) return tournament;
+    if (!tournament.data) return err("Torneo no encontrado");
 
     const results = courts.map((court) => {
-      const courtPairs = pairs.filter((p) => p.court_number === court);
+      const courtPairs = pairs.data.filter((p) => p.court_number === court);
       const winnerPair = courtPairs.find((p) => p.winner_drawn_pair_id === p.drawn_pair_id);
       const loserPair = courtPairs.find((p) => p !== winnerPair) ?? null;
       return {
@@ -162,45 +176,42 @@ export class RoundService {
       };
     });
 
-    const movements = calculatePairMovements(results, tournament.number_of_courts);
+    const movements = calculatePairMovements(results, tournament.data.number_of_courts);
     const nextAssignments = movements.map((m) => ({
       drawnPairId: m.drawn_pair_id,
       court: m.court_number,
     }));
 
-    let nextRound: PozoRound;
-    try {
-      nextRound = await this.pozoRoundRepo.createRound({
-        tournament_id: tournamentId,
-        round_number: round.round_number + 1,
-      });
-    } catch {
-      return { error: "No se pudo crear la siguiente ronda" };
+    const nextRound = await this.pozoRoundRepo.createRound({
+      tournament_id: tournamentId,
+      round_number: round.data.round_number + 1,
+    });
+    if (!nextRound.ok) return nextRound;
+
+    const inserted = await this.pozoRoundRepo.insertRoundPairs(
+      nextAssignments.map((a) => ({
+        round_id: nextRound.data.id,
+        drawn_pair_id: a.drawnPairId,
+        court_number: a.court,
+      }))
+    );
+    if (!inserted.ok) {
+      await this.pozoRoundRepo.deleteRound(nextRound.data.id);
+      return inserted;
     }
 
-    try {
-      await this.pozoRoundRepo.insertRoundPairs(
-        nextAssignments.map((a) => ({
-          round_id: nextRound.id,
-          drawn_pair_id: a.drawnPairId,
-          court_number: a.court,
-        }))
-      );
-    } catch {
-      await this.pozoRoundRepo.deleteRound(nextRound.id);
-      return { error: "No se pudieron crear las parejas de la siguiente ronda" };
-    }
+    const statusRes = await this.pozoRoundRepo.updateStatus(roundId, "finished");
+    if (!statusRes.ok) return statusRes;
 
-    await this.pozoRoundRepo.updateStatus(roundId, "finished");
-
-    return { ok: true, nextRoundNumber: nextRound.round_number };
+    return { ok: true, data: { nextRoundNumber: nextRound.data.round_number } };
   }
 
-  async finalizePozo(tournamentId: string): Promise<FinalizePozoResult> {
+  async finalizePozo(tournamentId: string, userUuid: string): Promise<Result<void>> {
     const rounds = await this.pozoRoundRepo.findByTournament(tournamentId);
+    if (!rounds.ok) return rounds;
 
-    if (rounds.length === 0) {
-      return { error: "No hay rondas para finalizar" };
+    if (rounds.data.length === 0) {
+      return err("No hay rondas para finalizar");
     }
 
     // El campeón es quien gana la pista rey (1) en la última ronda jugada.
@@ -208,10 +219,11 @@ export class RoundService {
     // más reciente hacia atrás hasta encontrar una con ganador definido en la
     // pista rey (descarta la posible nueva ronda aún sin resultado).
     let champion: string | null = null;
-    for (let i = rounds.length - 1; i >= 0; i--) {
-      const court1Pairs = await this.pozoRoundRepo.findCourtPairs(rounds[i].id, 1);
-      if (court1Pairs.length < 2) continue;
-      const winner = court1Pairs.find(
+    for (let i = rounds.data.length - 1; i >= 0; i--) {
+      const court1Pairs = await this.pozoRoundRepo.findCourtPairs(rounds.data[i].id, 1);
+      if (!court1Pairs.ok) return court1Pairs;
+      if (court1Pairs.data.length < 2) continue;
+      const winner = court1Pairs.data.find(
         (p) => p.winner_drawn_pair_id === p.drawn_pair_id && p.is_finished,
       );
       if (winner) {
@@ -221,10 +233,9 @@ export class RoundService {
     }
 
     if (!champion) {
-      return { error: "La pista 1 todavía no tiene un ganador definido" };
+      return err("La pista 1 todavía no tiene un ganador definido");
     }
 
-    await this.tournamentRepo.updateChampion(tournamentId, champion);
-    return { ok: true };
+    return this.tournamentRepo.updateChampion(tournamentId, userUuid, champion);
   }
 }

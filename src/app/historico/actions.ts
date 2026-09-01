@@ -9,7 +9,8 @@ export async function reincorporatePlayer(playerId: string) {
   const userUuid = await getCurrentUserUuid();
 
   const exists = await playerService.exists(playerId);
-  if (exists) {
+  if (!exists.ok) return { error: exists.error };
+  if (exists.data) {
     revalidatePath("/historico");
     return { ok: true };
   }
@@ -51,21 +52,18 @@ export async function reincorporatePlayer(playerId: string) {
     return { error: "No se pudieron recuperar los datos del jugador del histórico." };
   }
 
-  try {
-    await playerService.create(
-      {
-        id: playerId,
-        full_name: player.name,
-        gender: (player.gender as "MALE" | "FEMALE") ?? "MALE",
-        dominant_hand: (player.hand as "RIGHT" | "LEFT") ?? "RIGHT",
-        level: player.level ?? 3.5,
-      },
-      userUuid,
-    );
-    revalidatePath("/historico");
-    revalidatePath("/jugadores");
-    return { ok: true };
-  } catch (e: unknown) {
-    return { error: e instanceof Error ? e.message : "Error desconocido" };
-  }
+  const result = await playerService.create(
+    {
+      id: playerId,
+      full_name: player.name,
+      gender: (player.gender as "MALE" | "FEMALE") ?? "MALE",
+      dominant_hand: (player.hand as "RIGHT" | "LEFT") ?? "RIGHT",
+      level: player.level ?? 3.5,
+    },
+    userUuid,
+  );
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/historico");
+  revalidatePath("/jugadores");
+  return { ok: true };
 }

@@ -7,13 +7,11 @@ import {
   SupabaseDrawnPairAdapter,
   SupabaseTournamentDrawnPairAdapter,
 } from "./supabase/adapters/pair.adapter";
-import { SupabaseAuthAdapter } from "./supabase/adapters/auth.adapter";
 
 import { PlayerService } from "@/application/services/player.service";
 import { TournamentService } from "@/application/services/tournament.service";
 import { DrawService } from "@/application/services/draw.service";
 import { RoundService } from "@/application/services/round.service";
-import { AuthService } from "@/application/services/auth.service";
 
 export async function createServices() {
   const supabase = await createServerSupabase();
@@ -24,7 +22,6 @@ export async function createServices() {
   const matchHistoryRepo = new SupabaseMatchHistoryAdapter(supabase);
   const drawnPairRepo = new SupabaseDrawnPairAdapter(supabase);
   const tournamentDrawnPairRepo = new SupabaseTournamentDrawnPairAdapter(supabase);
-  const authRepo = new SupabaseAuthAdapter(supabase);
 
   return {
     playerService: new PlayerService(playerRepo),
@@ -44,7 +41,6 @@ export async function createServices() {
       playerRepo,
       matchHistoryRepo,
     ),
-    authService: new AuthService(authRepo),
 
     // Exposed repos for read-heavy presentation pages
     matchHistoryRepo,

@@ -2,6 +2,7 @@ import AppShell from "@/components/AppShell";
 import HistoricoPlayersList from "./HistoricoPlayersList";
 import { createServices } from "@/infrastructure/service-factory";
 import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
+import { requireResult } from "@/domain/result";
 import type { PlayerSnap } from "@/domain/entities/player";
 import { countChampionshipsByPairIds } from "@/domain/stats/championships";
 
@@ -9,8 +10,8 @@ export default async function HistoricoPage() {
   const { matchHistoryRepo, tournamentRepo, supabase } = await createServices();
   const userUuid = await getCurrentUserUuid();
   const [history, tournaments] = await Promise.all([
-    matchHistoryRepo.findAll(userUuid),
-    tournamentRepo.findAll(userUuid),
+    matchHistoryRepo.findAll(userUuid).then(requireResult),
+    tournamentRepo.findAll(userUuid).then(requireResult),
   ]);
 
   const { data: profiles } = await supabase

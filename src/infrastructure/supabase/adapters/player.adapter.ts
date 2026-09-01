@@ -1,36 +1,37 @@
 import type { IPlayerRepository } from "@/domain/repositories/player.repository";
 import type { Player, PlayerProfile } from "@/domain/entities/player";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ok, err } from "@/domain/result";
 
 type Database = any;
 
 export class SupabasePlayerAdapter implements IPlayerRepository {
   constructor(private supabase: SupabaseClient<Database>) {}
 
-  async findAll(userUuid: string): Promise<Player[]> {
+  async findAll(userUuid: string) {
     const { data } = await this.supabase
       .from("profiles")
       .select("*")
       .eq("user_uuid", userUuid)
       .order("full_name");
-    return (data ?? []) as Player[];
+    return ok((data ?? []) as Player[]);
   }
 
-  async findProfiles(userUuid: string): Promise<PlayerProfile[]> {
+  async findProfiles(userUuid: string) {
     const { data } = await this.supabase
       .from("profiles")
       .select("id, full_name, level, gender, dominant_hand")
       .eq("user_uuid", userUuid);
-    return (data ?? []) as PlayerProfile[];
+    return ok((data ?? []) as PlayerProfile[]);
   }
 
-  async findById(id: string): Promise<Player | null> {
+  async findById(id: string) {
     const { data } = await this.supabase
       .from("profiles")
       .select("*")
       .eq("id", id)
       .single();
-    return (data as Player) ?? null;
+    return ok((data as Player | null) ?? null);
   }
 
   async create(data: {
@@ -40,47 +41,51 @@ export class SupabasePlayerAdapter implements IPlayerRepository {
     dominant_hand: string;
     level: number;
     user_uuid: string;
-  }): Promise<void> {
+  }) {
     const { error } = await this.supabase.from("profiles").insert(data);
-    if (error) throw new Error(error.message);
+    if (error) return err(error.message);
+    return ok(undefined);
   }
 
   async update(
     id: string,
     data: { full_name: string; gender: string; dominant_hand: string; level: number },
     userUuid: string
-  ): Promise<void> {
+  ) {
     const { error } = await this.supabase
       .from("profiles")
       .update(data)
       .eq("id", id)
       .eq("user_uuid", userUuid);
-    if (error) throw new Error(error.message);
+    if (error) return err(error.message);
+    return ok(undefined);
   }
 
-  async delete(id: string, userUuid: string): Promise<void> {
+  async delete(id: string, userUuid: string) {
     const { error } = await this.supabase
       .from("profiles")
       .delete()
       .eq("id", id)
       .eq("user_uuid", userUuid);
-    if (error) throw new Error(error.message);
+    if (error) return err(error.message);
+    return ok(undefined);
   }
 
-  async deleteAll(userUuid: string): Promise<void> {
+  async deleteAll(userUuid: string) {
     const { error } = await this.supabase
       .from("profiles")
       .delete()
       .eq("user_uuid", userUuid);
-    if (error) throw new Error(error.message);
+    if (error) return err(error.message);
+    return ok(undefined);
   }
 
-  async exists(id: string): Promise<boolean> {
+  async exists(id: string) {
     const { data } = await this.supabase
       .from("profiles")
       .select("id")
       .eq("id", id)
       .maybeSingle();
-    return !!data;
+    return ok(!!data);
   }
 }

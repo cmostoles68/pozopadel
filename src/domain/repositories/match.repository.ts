@@ -1,24 +1,5 @@
-import type { LegacyMatch, MatchHistoryRow } from "../entities/match";
-
-export interface ILegacyMatchRepository {
-  findByRound(roundId: string): Promise<LegacyMatch[]>;
-  insertMatches(
-    matches: {
-      round_id: string;
-      court_number: number;
-      player1_id: string;
-      player2_id: string;
-      player3_id: string;
-      player4_id: string;
-    }[]
-  ): Promise<void>;
-  updateScore(
-    matchId: string,
-    scoreA: number,
-    scoreB: number
-  ): Promise<void>;
-  findAllByTournamentRounds(roundIds: string[]): Promise<LegacyMatch[]>;
-}
+import type { MatchHistoryRow } from "../entities/match";
+import type { Result } from "../result";
 
 export interface IMatchHistoryRepository {
   upsert(data: {
@@ -44,12 +25,12 @@ export interface IMatchHistoryRepository {
     score_winner: number | null;
     score_loser: number | null;
     user_uuid: string;
-  }): Promise<void>;
-  findAll(userUuid: string): Promise<MatchHistoryRow[]>;
-  findByTournament(tournamentId: string): Promise<MatchHistoryRow[]>;
+  }): Promise<Result<void>>;
+  findAll(userUuid: string): Promise<Result<MatchHistoryRow[]>>;
+  findByTournament(tournamentId: string, userUuid: string): Promise<Result<MatchHistoryRow[]>>;
   findWinningPartnerships(
     userUuid: string,
     minMatches?: number,
     minWinRate?: number
-  ): Promise<{ a: string; b: string; wins: number; total: number; winRate: number }[]>;
+  ): Promise<Result<{ a: string; b: string; wins: number; total: number; winRate: number }[]>>;
 }

@@ -3,6 +3,7 @@ import AppShell from "@/components/AppShell";
 import DeleteTournament from "./DeleteTournament";
 import { createServices } from "@/infrastructure/service-factory";
 import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
+import { requireResult } from "@/domain/result";
 
 const CARDS = [
   { href: "/pozos/nuevo", icon: "add_circle", label: "Nuevo Torneo" },
@@ -11,7 +12,7 @@ const CARDS = [
 export default async function DashboardPage() {
   const { tournamentService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  const tournaments = await tournamentService.getAll(userUuid);
+  const tournaments = requireResult(await tournamentService.getAll(userUuid));
 
   return (
     <AppShell>

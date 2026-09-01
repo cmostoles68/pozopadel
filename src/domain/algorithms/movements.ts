@@ -26,35 +26,3 @@ export function calculatePairMovements(
 
   return movements;
 }
-
-import type { RoundResult } from "../entities/match";
-
-export function calculateMovements(
-  results: RoundResult[],
-  numberOfCourts: number,
-): { player_id: string; current_court: number }[] {
-  const movements: { player_id: string; current_court: number }[] = [];
-
-  for (const result of results) {
-    const court = result.court_number;
-
-    if (court === 1) {
-      for (const pid of [result.loser.player1_id, result.loser.player2_id]) {
-        if (pid) movements.push({ player_id: pid, current_court: 2 });
-      }
-    } else if (court < numberOfCourts) {
-      for (const pid of [result.winner.player1_id, result.winner.player2_id]) {
-        if (pid) movements.push({ player_id: pid, current_court: court - 1 });
-      }
-      for (const pid of [result.loser.player1_id, result.loser.player2_id]) {
-        if (pid) movements.push({ player_id: pid, current_court: court + 1 });
-      }
-    } else {
-      for (const pid of [result.winner.player1_id, result.winner.player2_id]) {
-        if (pid) movements.push({ player_id: pid, current_court: court - 1 });
-      }
-    }
-  }
-
-  return movements;
-}

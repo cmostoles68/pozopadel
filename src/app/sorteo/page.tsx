@@ -2,13 +2,14 @@ import AppShell from "@/components/AppShell";
 import SorteoClient from "./SorteoClient";
 import { createServices } from "@/infrastructure/service-factory";
 import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
+import { requireResult } from "@/domain/result";
 import type { DrawnPairWithProfile } from "@/domain/entities/pair";
 
 export default async function SorteoPage() {
   const { playerService, drawService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  const players = await playerService.getAllProfiles(userUuid);
-  const pairs = await drawService.getDrawnPairsWithProfiles(userUuid);
+  const players = requireResult(await playerService.getAllProfiles(userUuid));
+  const pairs = requireResult(await drawService.getDrawnPairsWithProfiles(userUuid));
   const activeMethod = pairs.length > 0 ? pairs[0].draw_method : null;
 
   return (

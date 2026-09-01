@@ -9,14 +9,16 @@ export async function drawPairs(method: DrawMethod) {
   const { drawService } = await createServices();
   const userUuid = await getCurrentUserUuid();
   const result = await drawService.drawPairs(method, userUuid);
-  if (result.ok) revalidatePath("/sorteo");
-  return result;
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/sorteo");
+  return { ok: true as const, pairs: result.data.pairs, oddPlayer: result.data.oddPlayer };
 }
 
 export async function clearPairs() {
   const { drawService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  await drawService.clearPairs(userUuid);
+  const result = await drawService.clearPairs(userUuid);
+  if (!result.ok) return { error: result.error };
   revalidatePath("/sorteo");
-  return { ok: true };
+  return { ok: true as const };
 }

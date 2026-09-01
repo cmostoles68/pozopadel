@@ -1,10 +1,5 @@
 export type DrawMethod = "random" | "random_mix" | "level" | "level_mix";
 
-export interface Pair {
-  player1_id: string;
-  player2_id: string;
-}
-
 export interface DrawnPair {
   id: string;
   pair_number: number;

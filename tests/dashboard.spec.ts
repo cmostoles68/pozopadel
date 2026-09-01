@@ -12,7 +12,7 @@ test.describe("Dashboard", () => {
   test("shows main menu with links", async ({ page }) => {
     await page.goto("/dashboard");
 
-    await expect(page.getByText("PozoPadel")).toBeVisible();
+    await expect(page.getByText("PadelElite")).toBeVisible();
     await expect(page.getByText("Nuevo Pozo")).toBeVisible();
     await expect(page.getByText("Jugadores")).toBeVisible();
     await expect(page.getByText("Sortear")).toBeVisible();

@@ -1,21 +1,22 @@
 import type { ITournamentRepository } from "@/domain/repositories/tournament.repository";
-import type { Tournament, TournamentPlayer } from "@/domain/entities/tournament";
+import type { Tournament } from "@/domain/entities/tournament";
 import type { CreateTournamentInput } from "../dto/tournament.dto";
+import type { Result } from "@/domain/result";
 
 export class TournamentService {
   constructor(
     private tournamentRepo: ITournamentRepository,
   ) {}
 
-  async getById(id: string): Promise<Tournament | null> {
-    return this.tournamentRepo.findById(id);
+  async getById(id: string, userUuid: string): Promise<Result<Tournament | null>> {
+    return this.tournamentRepo.findById(id, userUuid);
   }
 
-  async getAll(userUuid: string): Promise<Tournament[]> {
+  async getAll(userUuid: string): Promise<Result<Tournament[]>> {
     return this.tournamentRepo.findAll(userUuid);
   }
 
-  async create(input: CreateTournamentInput, userUuid: string): Promise<Tournament> {
+  async create(input: CreateTournamentInput, userUuid: string): Promise<Result<Tournament>> {
     return this.tournamentRepo.create({
       title: input.title,
       number_of_courts: input.numberOfCourts,
@@ -24,15 +25,7 @@ export class TournamentService {
     });
   }
 
-  async delete(id: string): Promise<void> {
-    await this.tournamentRepo.delete(id);
-  }
-
-  async join(tournamentId: string, playerId?: string): Promise<void> {
-    await this.tournamentRepo.joinTournament(tournamentId, playerId);
-  }
-
-  async getTournamentPlayers(tournamentId: string): Promise<TournamentPlayer[]> {
-    return this.tournamentRepo.getTournamentPlayers(tournamentId);
+  async delete(id: string, userUuid: string): Promise<Result<void>> {
+    return this.tournamentRepo.delete(id, userUuid);
   }
 }

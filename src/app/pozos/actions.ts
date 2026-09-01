@@ -19,86 +19,65 @@ export async function createPozo(formData: FormData) {
     );
   }
 
-  let tournament;
-  try {
-    tournament = await tournamentService.create(
-      {
-        title,
-        numberOfCourts,
-        minutesPerRound,
-      },
-      userUuid,
-    );
-  } catch (e: unknown) {
+  const result = await tournamentService.create(
+    {
+      title,
+      numberOfCourts,
+      minutesPerRound,
+    },
+    userUuid,
+  );
+  if (!result.ok) {
     return redirect(
-      "/pozos/nuevo?error=" + encodeURIComponent(e instanceof Error ? e.message : "Error")
+      "/pozos/nuevo?error=" + encodeURIComponent(result.error)
     );
   }
 
-  redirect(`/pozos/${tournament.id}`);
-}
-
-export async function joinPozo(tournamentId: string) {
-  const { tournamentService } = await createServices();
-  try {
-    await tournamentService.join(tournamentId);
-    redirect(`/pozos/${tournamentId}`);
-  } catch (e: unknown) {
-    redirect(`/dashboard?error=${encodeURIComponent(e instanceof Error ? e.message : "Error")}`);
-  }
+  redirect(`/pozos/${result.data.id}`);
 }
 
 export async function selectPair(tournamentId: string, drawnPairId: string) {
   const { drawService } = await createServices();
-  try {
-    await drawService.selectPair(tournamentId, drawnPairId);
-    return { ok: true as const };
-  } catch (e: unknown) {
-    return { error: e instanceof Error ? e.message : "Error desconocido" };
-  }
+  const result = await drawService.selectPair(tournamentId, drawnPairId);
+  if (!result.ok) return { error: result.error };
+  return { ok: true as const };
 }
 
 export async function deselectPair(tournamentId: string, drawnPairId: string) {
   const { drawService } = await createServices();
-  try {
-    await drawService.deselectPair(tournamentId, drawnPairId);
-    return { ok: true as const };
-  } catch (e: unknown) {
-    return { error: e instanceof Error ? e.message : "Error desconocido" };
-  }
+  const result = await drawService.deselectPair(tournamentId, drawnPairId);
+  if (!result.ok) return { error: result.error };
+  return { ok: true as const };
 }
 
 export async function selectAllPairs(tournamentId: string) {
   const { drawService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  try {
-    await drawService.selectAllPairs(tournamentId, userUuid);
-    return { ok: true as const };
-  } catch (e: unknown) {
-    return { error: e instanceof Error ? e.message : "Error desconocido" };
-  }
+  const result = await drawService.selectAllPairs(tournamentId, userUuid);
+  if (!result.ok) return { error: result.error };
+  return { ok: true as const };
 }
 
 export async function drawCourts(tournamentId: string) {
   const { drawService } = await createServices();
-  const result = await drawService.drawCourts(tournamentId);
-  return result;
+  const userUuid = await getCurrentUserUuid();
+  const result = await drawService.drawCourts(tournamentId, userUuid);
+  if (!result.ok) return { error: result.error };
+  return { ok: true as const };
 }
 
 export async function clearCourtDraw(tournamentId: string) {
   const { drawService } = await createServices();
   const result = await drawService.clearCourtDraw(tournamentId);
-  return result;
+  if (!result.ok) return { error: result.error };
+  return { ok: true as const };
 }
 
 export async function seedRound1(tournamentId: string) {
   const { drawService } = await createServices();
-  try {
-    await drawService.seedRound1(tournamentId);
-    return { ok: true as const };
-  } catch (e: unknown) {
-    return { error: e instanceof Error ? e.message : "Error desconocido" };
-  }
+  const result = await drawService.seedRound1(tournamentId);
+  if (!result.ok) return { error: result.error };
+  return { ok: true as const };
 }
 
 export async function saveCourtResult(
@@ -109,15 +88,23 @@ export async function saveCourtResult(
 ) {
   const { roundService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  return roundService.saveCourtResult(roundId, courtNumber, results, winnerDrawnPairId, userUuid);
+  const result = await roundService.saveCourtResult(roundId, courtNumber, results, winnerDrawnPairId, userUuid);
+  if (!result.ok) return { error: result.error };
+  return { ok: true as const };
 }
 
 export async function checkAndStartNextRound(tournamentId: string, roundId: string) {
   const { roundService } = await createServices();
-  return roundService.checkAndStartNextRound(tournamentId, roundId);
+  const userUuid = await getCurrentUserUuid();
+  const result = await roundService.checkAndStartNextRound(tournamentId, roundId, userUuid);
+  if (!result.ok) return { error: result.error };
+  return { ok: true as const, nextRoundNumber: result.data.nextRoundNumber };
 }
 
 export async function finalizePozo(tournamentId: string) {
   const { roundService } = await createServices();
-  return roundService.finalizePozo(tournamentId);
+  const userUuid = await getCurrentUserUuid();
+  const result = await roundService.finalizePozo(tournamentId, userUuid);
+  if (!result.ok) return { error: result.error };
+  return { ok: true as const };
 }

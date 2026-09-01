@@ -184,7 +184,7 @@ verificado por búsqueda de imports):
 | Test de servicios | No hay | Mockear adaptadores e testear `Draw`/`Round` service (cubre la orquestación, el 80% de la lógica real hoy reside en la UI) |
 | Tests de adaptadores | No hay | Contra Supabase local (ya disponible) |
 | Migraciones | Aplicadas manualmente; tabla `supabase_migrations` **no existe** en la DB | Adoptar `supabase db reset` desde `supabase/migrations/*.sql` para reproducibilidad |
-| Coherencia de nombres | `PadelElite` (AppShell/login/layout) vs `pozopadel` (repo, dominio) | Elegir una marca única |
+| Coherencia de nombres | ~~`PadelElite` vs `pozopadel`~~ → **`PadelElite` única** (UI, README, tests, docs; `pozopadel` queda como ident. técnico: repo/package/project_id) | Hecho (Fase A ✅) |
 | Errores al usuario | `throw new Error(...)` crudo en acciones | Mapear a mensajes de UI con estado (éxito/error) por action |
 
 ---
@@ -264,19 +264,20 @@ verificado por búsqueda de imports):
 ## 8. Roadmap priorizado
 
 ### Fase A — Limpieza (1 día)
-- [ ] Eliminar `AdminControlPanel`, `CourtsGrid`, `LeaderboardTable` y el
+- [x] Eliminar `AdminControlPanel`, `CourtsGrid`, `LeaderboardTable` y el
       directorio vacío `src/app/api/pozos/`.
-- [ ] Eliminar adaptadores/repos/Servicios legacy no instanciados
+- [x] Eliminar adaptadores/repos/Servicios legacy no instanciados
       (`SupabaseLegacy*`, `ILegacy*`, `auth.service` si no se va a usar OTP).
-- [ ] Añadir `typecheck` script + pasarlo en CI.
-- [ ] Unificar marca (`PadelElite` vs `pozopadel`).
+- [x] Añadir `typecheck` script (`package.json`) + pasarlo en CI (no hay CI aún:
+      hook de pre-push o workflow por crear).
+- [x] Unificar marca (`PadelElite` única; `pozopadel` = ident. técnico).
 
 ### Fase B — Tipado y errores (2 días)
 - [ ] Regenerar `database.types.ts` con el esquema real
       (`supabase gen types --local`) y quitar `type Database = any`.
-- [ ] Estandarizar manejo de errores: adoptar patrón `Result`/`{ok,error}` en
-      repos y services; mapear en las actions.
-- [ ] Centralizar el scoping `user_uuid` (métodos `findById/update/delete`
+- [x] Estandarizar manejo de errores: adoptar patrón `Result`/`{ok,error}` en
+      repos y services; mapear en las actions (`src/domain/result.ts`).
+- [x] Centralizar el scoping `user_uuid` (métodos `findById/update/delete`
       de tournament/match).
 
 ### Fase C — UI (1 día)

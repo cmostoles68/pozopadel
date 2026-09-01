@@ -10,11 +10,3 @@ export interface Tournament {
   champion_drawn_pair_id: string | null;
   created_at: string;
 }
-
-export interface TournamentPlayer {
-  id: string;
-  tournament_id: string;
-  player_id: string;
-  total_points: number;
-  current_court: number;
-}

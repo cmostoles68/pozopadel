@@ -1,9 +1,10 @@
 import type { DrawnPair, TournamentDrawnPair, DrawnPairWithProfile, DrawMethod } from "../entities/pair";
+import type { Result } from "../result";
 
 export interface IDrawnPairRepository {
-  findAll(userUuid: string): Promise<DrawnPair[]>;
-  findAllWithProfiles(userUuid: string): Promise<DrawnPairWithProfile[]>;
-  deleteAll(userUuid: string): Promise<void>;
+  findAll(userUuid: string): Promise<Result<DrawnPair[]>>;
+  findAllWithProfiles(userUuid: string): Promise<Result<DrawnPairWithProfile[]>>;
+  deleteAll(userUuid: string): Promise<Result<void>>;
   insert(
     pairs: {
       pair_number: number;
@@ -12,18 +13,18 @@ export interface IDrawnPairRepository {
       draw_method: DrawMethod;
     }[],
     userUuid: string
-  ): Promise<DrawnPair[]>;
+  ): Promise<Result<DrawnPair[]>>;
 }
 
 export interface ITournamentDrawnPairRepository {
-  findByTournament(tournamentId: string): Promise<TournamentDrawnPair[]>;
-  selectPair(tournamentId: string, drawnPairId: string): Promise<void>;
-  deselectPair(tournamentId: string, drawnPairId: string): Promise<void>;
+  findByTournament(tournamentId: string): Promise<Result<TournamentDrawnPair[]>>;
+  selectPair(tournamentId: string, drawnPairId: string): Promise<Result<void>>;
+  deselectPair(tournamentId: string, drawnPairId: string): Promise<Result<void>>;
   selectAllPairs(
     tournamentId: string,
     allPairIds: string[]
-  ): Promise<void>;
-  updateCourtNumber(id: string, courtNumber: number): Promise<void>;
-  clearCourtNumbers(tournamentId: string): Promise<void>;
-  getSelectedWithCourt(tournamentId: string): Promise<TournamentDrawnPair[]>;
+  ): Promise<Result<void>>;
+  updateCourtNumber(id: string, courtNumber: number): Promise<Result<void>>;
+  clearCourtNumbers(tournamentId: string): Promise<Result<void>>;
+  getSelectedWithCourt(tournamentId: string): Promise<Result<TournamentDrawnPair[]>>;
 }

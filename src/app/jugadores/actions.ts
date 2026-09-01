@@ -13,13 +13,10 @@ export async function createPlayer(formData: FormData) {
   const dominant_hand = formData.get("dominant_hand") as string;
   const level = parseFloat(formData.get("level") as string);
 
-  try {
-    await playerService.create({ full_name, gender, dominant_hand, level }, userUuid);
-    revalidatePath("/jugadores");
-    return { ok: true };
-  } catch (e: unknown) {
-    return { error: e instanceof Error ? e.message : "Error desconocido" };
-  }
+  const result = await playerService.create({ full_name, gender, dominant_hand, level }, userUuid);
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/jugadores");
+  return { ok: true };
 }
 
 export async function updatePlayer(formData: FormData) {
@@ -32,35 +29,26 @@ export async function updatePlayer(formData: FormData) {
   const dominant_hand = formData.get("dominant_hand") as string;
   const level = parseFloat(formData.get("level") as string);
 
-  try {
-    await playerService.update({ id, full_name, gender, dominant_hand, level }, userUuid);
-    revalidatePath("/jugadores");
-    return { ok: true };
-  } catch (e: unknown) {
-    return { error: e instanceof Error ? e.message : "Error desconocido" };
-  }
+  const result = await playerService.update({ id, full_name, gender, dominant_hand, level }, userUuid);
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/jugadores");
+  return { ok: true };
 }
 
 export async function deletePlayer(id: string) {
   const { playerService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  try {
-    await playerService.delete(id, userUuid);
-    revalidatePath("/jugadores");
-    return { ok: true };
-  } catch (e: unknown) {
-    return { error: e instanceof Error ? e.message : "Error desconocido" };
-  }
+  const result = await playerService.delete(id, userUuid);
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/jugadores");
+  return { ok: true };
 }
 
 export async function deleteAllPlayers() {
   const { playerService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  try {
-    await playerService.deleteAll(userUuid);
-    revalidatePath("/jugadores");
-    return { ok: true };
-  } catch (e: unknown) {
-    return { error: e instanceof Error ? e.message : "Error desconocido" };
-  }
+  const result = await playerService.deleteAll(userUuid);
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/jugadores");
+  return { ok: true };
 }

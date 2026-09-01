@@ -6,6 +6,7 @@ import PairSelector from "./PairSelector";
 import CourtScoring from "./CourtScoring";
 import { createServices } from "@/infrastructure/service-factory";
 import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
+import { requireResult } from "@/domain/result";
 
 export default async function PozoPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
@@ -17,17 +18,19 @@ export default async function PozoPage(props: { params: Promise<{ id: string }> 
   } = await createServices();
   const userUuid = await getCurrentUserUuid();
 
-  const tournament = await tournamentService.getById(id);
+  const tournamentRes = await tournamentService.getById(id, userUuid);
+  if (!tournamentRes.ok) return notFound();
+  const tournament = tournamentRes.data;
   if (!tournament) notFound();
 
   const [allPairs, selectedPairs] = await Promise.all([
-    drawService.getDrawnPairsWithProfiles(userUuid),
-    tournamentDrawnPairRepo.findByTournament(id),
+    drawService.getDrawnPairsWithProfiles(userUuid).then(requireResult),
+    tournamentDrawnPairRepo.findByTournament(id).then(requireResult),
   ]);
 
-  const pozoRounds = await roundService.getRounds(id);
+  const pozoRounds = requireResult(await roundService.getRounds(id));
   const pozoRoundPairs = await Promise.all(
-    pozoRounds.map((r) => roundService.getRoundPairs(r.id))
+    pozoRounds.map((r) => roundService.getRoundPairs(r.id).then(requireResult))
   );
 
   const roundsData = pozoRounds.map((r, i) => ({
@@ -54,7 +57,7 @@ export default async function PozoPage(props: { params: Promise<{ id: string }> 
               {tournament.title}
             </h2>
             <div className="mt-3">
-              <LiveTournamentHeader tournament={tournament} currentRound={null} />
+              <LiveTournamentHeader tournament={tournament} />
             </div>
             {activePozoRound && !completed && (
               <div className="mt-3">

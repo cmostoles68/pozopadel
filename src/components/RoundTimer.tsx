@@ -51,12 +51,6 @@ export default function RoundTimer({
     }
   }, [left, started]);
 
-  useEffect(() => {
-    if (started) {
-      window.dispatchEvent(new CustomEvent("pozo-timer-started"));
-    }
-  }, [started]);
-
   const running = started && left > 0;
   const finished = started && left === 0;
 
