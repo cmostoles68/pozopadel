@@ -84,7 +84,6 @@ export default function CourtCard({
                   ? undefined
                   : () => {
                       setWinnerId(p.drawn_pair_id);
-                      persist(p.drawn_pair_id, scores);
                     }
               }            >
               <span
@@ -112,7 +111,6 @@ export default function CourtCard({
                 onChange={(e) => {
                   const next = { ...scores, [p.drawn_pair_id]: e.target.value };
                   setScores(next);
-                  if (winnerId) persist(winnerId, next);
                 }}
                 className="w-20 h-12 bg-surface-highest border-none rounded-xl text-center font-display text-2xl text-on-surface focus:ring-2 focus:ring-secondary-container focus:bg-surface-variant transition-colors outline-none disabled:opacity-50"
               />

@@ -2,8 +2,7 @@ import type { IPlayerRepository } from "@/domain/repositories/player.repository"
 import type { Player, PlayerProfile } from "@/domain/entities/player";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ok, err } from "@/domain/result";
-
-type Database = any;
+import type { Database } from "../database.types";
 
 export class SupabasePlayerAdapter implements IPlayerRepository {
   constructor(private supabase: SupabaseClient<Database>) {}

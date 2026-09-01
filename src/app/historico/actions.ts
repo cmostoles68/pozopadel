@@ -35,7 +35,7 @@ export async function reincorporatePlayer(playerId: string) {
   } | null = null;
 
   for (const r of rows ?? []) {
-    const cols: Array<[string, string, string, string, number | null]> = [
+    const cols: Array<[string, string | null, string | null, string | null, number | null]> = [
       [r.winner_player1_id, r.winner_player1_name, r.winner_player1_gender, r.winner_player1_hand, r.winner_player1_level],
       [r.winner_player2_id, r.winner_player2_name, r.winner_player2_gender, r.winner_player2_hand, r.winner_player2_level],
       [r.loser_player1_id, r.loser_player1_name, r.loser_player1_gender, r.loser_player1_hand, r.loser_player1_level],

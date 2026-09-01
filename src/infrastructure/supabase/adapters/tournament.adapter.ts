@@ -2,8 +2,7 @@ import type { ITournamentRepository } from "@/domain/repositories/tournament.rep
 import type { Tournament } from "@/domain/entities/tournament";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ok, err } from "@/domain/result";
-
-type Database = any;
+import type { Database } from "../database.types";
 
 export class SupabaseTournamentAdapter implements ITournamentRepository {
   constructor(private supabase: SupabaseClient<Database>) {}

@@ -5,8 +5,7 @@ import type {
 import type { DrawnPair, TournamentDrawnPair, DrawMethod } from "@/domain/entities/pair";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ok, err } from "@/domain/result";
-
-type Database = any;
+import type { Database } from "../database.types";
 
 
 export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
@@ -37,7 +36,7 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
       .eq("user_uuid", userUuid);
 
     const profileMap = new Map(
-      ((profiles ?? []) as any[]).map((p) => [p.id, p])
+      ((profiles ?? []) as Database["public"]["Tables"]["profiles"]["Row"][]).map((p) => [p.id, p])
     );
 
     return ok(

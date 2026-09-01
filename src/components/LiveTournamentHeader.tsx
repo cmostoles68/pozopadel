@@ -12,7 +12,7 @@ export default function LiveTournamentHeader({
   tournament,
 }: LiveTournamentHeaderProps) {
   const statusConfig: Record<string, { label: string; active: boolean }> = {
-    draft: { label: "Jugándose", active: false },
+    draft: { label: "En preparación", active: false },
     in_progress: { label: "En curso", active: true },
     completed: { label: "Finalizado", active: false },
   };

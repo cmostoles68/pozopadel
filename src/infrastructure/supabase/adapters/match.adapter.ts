@@ -2,8 +2,7 @@ import type { IMatchHistoryRepository } from "@/domain/repositories/match.reposi
 import type { MatchHistoryRow } from "@/domain/entities/match";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ok, err } from "@/domain/result";
-
-type Database = any;
+import type { Database } from "../database.types";
 
 export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
   constructor(private supabase: SupabaseClient<Database>) {}

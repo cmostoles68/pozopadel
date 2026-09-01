@@ -273,26 +273,33 @@ verificado por búsqueda de imports):
 - [x] Unificar marca (`PadelElite` única; `pozopadel` = ident. técnico).
 
 ### Fase B — Tipado y errores (2 días)
-- [ ] Regenerar `database.types.ts` con el esquema real
+- [x] Regenerar `database.types.ts` con el esquema real
       (`supabase gen types --local`) y quitar `type Database = any`.
+      Adaptadores y clients tipados con `SupabaseClient<Database>`.
 - [x] Estandarizar manejo de errores: adoptar patrón `Result`/`{ok,error}` en
       repos y services; mapear en las actions (`src/domain/result.ts`).
 - [x] Centralizar el scoping `user_uuid` (métodos `findById/update/delete`
       de tournament/match).
 
 ### Fase C — UI (1 día)
-- [ ] Arreglar `statusConfig` (`draft` ≠ "Jugándose").
-- [ ] Evitar doble persistencia en `CourtCard` (una sola vía de guardado).
-- [ ] Suscribir `LiveRanking` a Realtime **o** renombrarlo a "Ranking/Puntuación".
-- [ ] Pasar `currentRound` real a `LiveTournamentHeader` o retirar esa sección.
-- [ ] Suscribir los eventos del timer o retirarlos.
+- [x] Arreglar `statusConfig` (`draft` = "En preparación", no "Jugándose").
+- [x] Evitar doble persistencia en `CourtCard` (el botón es la única vía de guardado).
+- [x] `LiveRanking` eliminado (no estaba montado en ninguna página).
+- [x] Retirada la sección de `currentRound` muerta en `LiveTournamentHeader` (Fase A).
+- [x] Retirados los eventos de timer sin receptor (`pozo-timer-*`) (Fase A).
 
 ### Fase D — Migraciones y testing (2 días)
-- [ ] Alinear las migraciones con la DB local y habilitar
-      `supabase db reset` reproducible.
-- [ ] Unit tests de `DrawService` y `RoundService` con adaptadores mockeados.
-- [ ] (Opcional) Reapuntar los tests del motor al algoritmo usado en
-      producción en vez de a `legacy-round-engine.ts`.
+- [x] Alinear las migraciones con la DB local y habilitar
+      `supabase db reset` reproducible. Migraciones renombradas a prefijo
+      `YYYYMMDDHHMMSS`, `scripts/seed.sql` sin deletes de tablas legacy y
+      `supabase/config.toml` apuntando a `../scripts/seed.sql`. Validado de
+      forma **no destructiva** en una DB temporal (esquema idéntico a la local);
+      `supabase db reset` real NO ejecutado (decisión del usuario).
+- [x] Unit tests de `DrawService` y `RoundService` con adaptadores mockeados
+      (`src/tests/draw-service.unit.spec.ts` y `round-service.unit.spec.ts`).
+- [x] (Opcional) Reapuntar los tests del motor al algoritmo usado en
+      producción en vez de a `legacy-round-engine.ts`. Sin referencias
+      restantes; los tests ya usan `calculatePairMovements` de producción.
 
 ---
 

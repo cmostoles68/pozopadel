@@ -3,8 +3,7 @@ import type { PozoRound } from "@/domain/entities/round";
 import type { PozoRoundPair } from "@/domain/entities/match";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ok, err } from "@/domain/result";
-
-type Database = any;
+import type { Database } from "../database.types";
 
 export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
   constructor(private supabase: SupabaseClient<Database>) {}

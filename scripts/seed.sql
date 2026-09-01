@@ -9,9 +9,6 @@ DELETE FROM public.pozo_rounds;
 DELETE FROM public.tournament_drawn_pairs;
 DELETE FROM public.tournaments;
 DELETE FROM public.drawn_pairs;
-DELETE FROM public.tournament_players;
-DELETE FROM public.rounds;
-DELETE FROM public.matches;
 DELETE FROM public.profiles;
 
 -- Base de jugadores: 50 perfiles, 24 hombres / 26 mujeres, 8 zurdos (16%), niveles 2-8.

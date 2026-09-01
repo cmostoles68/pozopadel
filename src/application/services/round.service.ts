@@ -176,7 +176,7 @@ export class RoundService {
       };
     });
 
-    const movements = calculatePairMovements(results, tournament.data.number_of_courts);
+    const movements = calculatePairMovements(results, courts.length);
     const nextAssignments = movements.map((m) => ({
       drawnPairId: m.drawn_pair_id,
       court: m.court_number,
