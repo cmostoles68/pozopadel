@@ -12,9 +12,9 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", icon: "dashboard", label: "Torneos" },
   { href: "/jugadores", icon: "group", label: "Jugadores" },
   { href: "/sorteo", icon: "shuffle", label: "Sorteo" },
+  { href: "/dashboard", icon: "dashboard", label: "Torneos" },
   { href: "/historico", icon: "bar_chart", label: "Histórico" },
 ];
 

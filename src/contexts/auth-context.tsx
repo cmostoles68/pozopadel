@@ -9,13 +9,21 @@ import {
   type ReactNode,
 } from "react";
 import {
-  ADMIN_PASSWORD,
+  ADMIN_PASSWORD_HASH,
   AUTH_COOKIE_NAME,
   uuidForMode,
   type AuthMode,
 } from "@/config/auth";
 
 const STORAGE_KEY = "pozopadel.auth";
+
+async function hashPassword(password: string): Promise<string> {
+  const bytes = new TextEncoder().encode(password);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 function setAuthCookie(uuid: string) {
   if (typeof document === "undefined") return;
@@ -36,7 +44,7 @@ interface AuthContextValue {
   uuid: string;
   isAdmin: boolean;
   loginAsGuest: () => void;
-  loginAsAdmin: (password: string) => boolean;
+  loginAsAdmin: (password: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -70,8 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [persist]);
 
   const loginAsAdmin = useCallback(
-    (password: string): boolean => {
-      if (password !== ADMIN_PASSWORD) return false;
+    async (password: string): Promise<boolean> => {
+      const hash = await hashPassword(password);
+      if (hash !== ADMIN_PASSWORD_HASH) return false;
       setMode("admin");
       persist("admin");
       setAuthCookie(uuidForMode("admin"));

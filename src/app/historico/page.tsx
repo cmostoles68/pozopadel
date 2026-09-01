@@ -106,7 +106,19 @@ export default async function HistoricoPage() {
     ] as [PlayerSnap, PlayerSnap],
   }));
 
+  const nameKey = (name: string | null) => name?.trim().toLowerCase() || "";
+
   const players = new Map<string, PlayerSnap>();
+  const mergedIds = new Map<string, Set<string>>();
+
+  const mergeSnap = (a: PlayerSnap, b: PlayerSnap): PlayerSnap => ({
+    id: !profileIds.has(a.id) && profileIds.has(b.id) ? b.id : a.id,
+    name: a.name ?? b.name,
+    gender: a.gender ?? b.gender,
+    hand: a.hand ?? b.hand,
+    level: a.level ?? b.level,
+  });
+
   for (const h of history) {
     const candidates = [
       {
@@ -139,9 +151,20 @@ export default async function HistoricoPage() {
       },
     ];
     for (const c of candidates) {
-      const cur = players.get(c.id);
-      if (!cur || (!cur.name && c.name)) players.set(c.id, c);
+      const key = c.name ? nameKey(c.name) : c.id;
+      const cur = players.get(key);
+      players.set(key, cur ? mergeSnap(cur, c) : c);
+      mergedIds.set(key, (mergedIds.get(key) ?? new Set()).add(c.id));
     }
+  }
+
+  const mergedChampionshipCount: Record<string, number> = {};
+  for (const [key, ids] of mergedIds) {
+    const p = players.get(key);
+    if (!p) continue;
+    let total = 0;
+    for (const id of ids) total += championshipCount[id] ?? 0;
+    mergedChampionshipCount[p.id] = total;
   }
 
   const uniquePlayers = Array.from(players.values()).sort((a, b) =>
@@ -162,7 +185,7 @@ export default async function HistoricoPage() {
           ) : (
             <HistoricoPlayersList
               players={uniquePlayers}
-              championshipCount={championshipCount}
+              championshipCount={mergedChampionshipCount}
               profileIds={profileIds}
             />
           )}

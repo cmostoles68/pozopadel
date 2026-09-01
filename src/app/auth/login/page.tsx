@@ -18,10 +18,10 @@ export default function LoginPage() {
     router.push("/dashboard");
   }
 
-  function confirmAdmin(e: React.FormEvent<HTMLFormElement>) {
+  async function confirmAdmin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    const ok = loginAsAdmin(password);
+    const ok = await loginAsAdmin(password);
     if (ok) {
       router.push("/dashboard");
     } else {
