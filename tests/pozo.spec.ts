@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 import { Client } from "pg";
-import { randomUUID } from "crypto";
 
 const DB = {
   host: "127.0.0.1",
@@ -57,7 +56,7 @@ async function setupTournament(courts: number, pairIndexes: number[], minutes = 
 
   const { rows } = await client.query(
     "INSERT INTO tournaments (title, number_of_courts, minutes_per_round, status, created_by) VALUES ($1, $2, $3, 'draft', $4) RETURNING id",
-    [`pozo-test-${stamp}`, courts, minutes, randomUUID()]
+    [`pozo-test-${stamp}`, courts, minutes, '1']
   );
   const tournamentId = rows[0].id;
   createdTournaments.push(tournamentId);

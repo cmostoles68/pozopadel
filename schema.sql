@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   dominant_hand TEXT CHECK (dominant_hand IN ('RIGHT', 'LEFT')) NOT NULL DEFAULT 'RIGHT',
   level NUMERIC(3, 1) CHECK (level >= 1.0 AND level <= 10.0) NOT NULL DEFAULT 3.5,
   avatar_url TEXT,
+  user_uuid UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001',
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
@@ -19,7 +20,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE TABLE IF NOT EXISTS public.tournaments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title TEXT NOT NULL,
-  created_by UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  created_by UUID REFERENCES public.test_users(id) ON DELETE CASCADE NOT NULL,
   status TEXT CHECK (status IN ('draft', 'in_progress', 'completed')) DEFAULT 'draft' NOT NULL,
   number_of_courts INT NOT NULL CHECK (number_of_courts >= 1),
   minutes_per_round INT NOT NULL DEFAULT 15,
@@ -27,13 +28,22 @@ CREATE TABLE IF NOT EXISTS public.tournaments (
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
--- 3. TABLA DRAWN_PAIRS (Sorteo de parejas)
+-- 3. TABLA TEST_USERS (Usuarios de prueba para E2E tests)
+CREATE TABLE IF NOT EXISTS public.test_users (
+  id UUID PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  role TEXT CHECK (role IN ('guest', 'admin')) NOT NULL DEFAULT 'guest',
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- 3b. TABLA DRAWN_PAIRS (Sorteo de parejas)
 CREATE TABLE IF NOT EXISTS public.drawn_pairs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   pair_number INT NOT NULL,
   player1_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   player2_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   draw_method TEXT DEFAULT 'random',
+  user_uuid UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001',
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
@@ -84,12 +94,14 @@ CREATE TABLE IF NOT EXISTS public.pozo_match_history (
   loser_drawn_pair_id UUID,
   score_winner INT,
   score_loser INT,
+  user_uuid UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001',
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   UNIQUE(tournament_id, round_id, court_number)
 );
 
 -- Enable RLS on all modern tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.test_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tournaments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.drawn_pairs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tournament_drawn_pairs ENABLE ROW LEVEL SECURITY;
@@ -101,6 +113,12 @@ ALTER TABLE public.pozo_match_history ENABLE ROW LEVEL SECURITY;
 -- Profiles
 CREATE POLICY "Public profiles read" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+-- Test Users
+CREATE POLICY "Anyone can read test_users" ON public.test_users FOR SELECT USING (true);
+CREATE POLICY "Anyone can insert test_users" ON public.test_users FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can update test_users" ON public.test_users FOR UPDATE USING (true);
+CREATE POLICY "Anyone can delete test_users" ON public.test_users FOR DELETE USING (true);
 
 -- Tournaments
 CREATE POLICY "Public tournaments read" ON public.tournaments FOR SELECT USING (true);
@@ -159,6 +177,11 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.tournament_drawn_pairs TO anon, a
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.pozo_rounds TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.pozo_round_pairs TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.pozo_match_history TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.test_users TO anon, authenticated;
+
+-- Insert default test users
+INSERT INTO public.test_users (id, username, role) VALUES ('00000000-0000-0000-0000-000000000001', 'guest', 'guest') ON CONFLICT DO NOTHING;
+INSERT INTO public.test_users (id, username, role) VALUES ('00000000-0000-0000-0000-000000000002', 'admin', 'admin') ON CONFLICT DO NOTHING;
 
 -- Realtime subscriptions (modern flow only)
 ALTER PUBLICATION supabase_realtime ADD TABLE pozo_rounds;

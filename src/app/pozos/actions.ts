@@ -2,10 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { createServices } from "@/infrastructure/service-factory";
+import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
 import type { CourtResultInput } from "@/application/dto/round.dto";
 
 export async function createPozo(formData: FormData) {
   const { tournamentService } = await createServices();
+  const userUuid = await getCurrentUserUuid();
 
   const title = formData.get("title") as string;
   const numberOfCourts = parseInt(formData.get("numberOfCourts") as string, 10);
@@ -19,11 +21,14 @@ export async function createPozo(formData: FormData) {
 
   let tournament;
   try {
-    tournament = await tournamentService.create({
-      title,
-      numberOfCourts,
-      minutesPerRound,
-    });
+    tournament = await tournamentService.create(
+      {
+        title,
+        numberOfCourts,
+        minutesPerRound,
+      },
+      userUuid,
+    );
   } catch (e: unknown) {
     return redirect(
       "/pozos/nuevo?error=" + encodeURIComponent(e instanceof Error ? e.message : "Error")
@@ -65,8 +70,9 @@ export async function deselectPair(tournamentId: string, drawnPairId: string) {
 
 export async function selectAllPairs(tournamentId: string) {
   const { drawService } = await createServices();
+  const userUuid = await getCurrentUserUuid();
   try {
-    await drawService.selectAllPairs(tournamentId);
+    await drawService.selectAllPairs(tournamentId, userUuid);
     return { ok: true as const };
   } catch (e: unknown) {
     return { error: e instanceof Error ? e.message : "Error desconocido" };
@@ -102,7 +108,8 @@ export async function saveCourtResult(
   winnerDrawnPairId: string,
 ) {
   const { roundService } = await createServices();
-  return roundService.saveCourtResult(roundId, courtNumber, results, winnerDrawnPairId);
+  const userUuid = await getCurrentUserUuid();
+  return roundService.saveCourtResult(roundId, courtNumber, results, winnerDrawnPairId, userUuid);
 }
 
 export async function checkAndStartNextRound(tournamentId: string, roundId: string) {

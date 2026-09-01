@@ -85,6 +85,7 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
     >;
     score_winner: number | null;
     score_loser: number | null;
+    user_uuid: string;
   }): Promise<void> {
     const d = (id: string) => {
       const p = data.playerData.get(id);
@@ -107,6 +108,7 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
         round_id: data.round_id,
         round_number: data.round_number,
         court_number: data.court_number,
+        user_uuid: data.user_uuid,
         winner_player1_id: data.winner_player1_id,
         winner_player2_id: data.winner_player2_id,
         loser_player1_id: data.loser_player1_id,
@@ -136,10 +138,11 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
     );
   }
 
-  async findAll(): Promise<MatchHistoryRow[]> {
+  async findAll(userUuid: string): Promise<MatchHistoryRow[]> {
     const { data } = await this.supabase
       .from("pozo_match_history")
       .select("*")
+      .eq("user_uuid", userUuid)
       .order("created_at", { ascending: false });
     return (data ?? []) as MatchHistoryRow[];
   }
@@ -153,6 +156,7 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
   }
 
   async findWinningPartnerships(
+    userUuid: string,
     minMatches = 2,
     minWinRate = 0.7,
   ): Promise<{ a: string; b: string; wins: number; total: number; winRate: number }[]> {
@@ -160,7 +164,8 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
       .from("pozo_match_history")
       .select(
         "winner_player1_id, winner_player2_id, loser_player1_id, loser_player2_id",
-      );
+      )
+      .eq("user_uuid", userUuid);
     if (!history || history.length === 0) return [];
 
     const key = (a: string, b: string) => [a, b].sort().join("|");

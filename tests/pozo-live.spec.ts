@@ -63,7 +63,7 @@ test("registrar marcador en el pozo live actualiza el ranking en vivo", async ({
   const tournament = await client.query(
     `INSERT INTO tournaments (id, title, created_by, status, number_of_courts)
      VALUES ($1, 'Pozo E2E Live', $2, 'in_progress', 2) RETURNING id`,
-    [tournamentId, randomUUID()]
+    [tournamentId, '1']
   );
   createdTournaments.push(tournament.rows[0].id);
 

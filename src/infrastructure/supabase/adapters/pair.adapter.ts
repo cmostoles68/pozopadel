@@ -11,16 +11,17 @@ type Database = any;
 export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
   constructor(private supabase: SupabaseClient<Database>) {}
 
-  async findAll(): Promise<DrawnPair[]> {
+  async findAll(userUuid: string): Promise<DrawnPair[]> {
     const { data } = await this.supabase
       .from("drawn_pairs")
       .select("*")
+      .eq("user_uuid", userUuid)
       .order("pair_number");
     return (data ?? []) as DrawnPair[];
   }
 
-  async findAllWithProfiles(): Promise<DrawnPairWithProfile[]> {
-    const pairs = await this.findAll();
+  async findAllWithProfiles(userUuid: string): Promise<DrawnPairWithProfile[]> {
+    const pairs = await this.findAll(userUuid);
     if (pairs.length === 0) return [];
 
     const playerIds = Array.from(
@@ -30,7 +31,8 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
     const { data: profiles } = await this.supabase
       .from("profiles")
       .select("id, full_name, level, dominant_hand")
-      .in("id", playerIds);
+      .in("id", playerIds)
+      .eq("user_uuid", userUuid);
 
     const profileMap = new Map(
       ((profiles ?? []) as any[]).map((p) => [p.id, p])
@@ -60,22 +62,25 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
     });
   }
 
-  async deleteAll(): Promise<void> {
+  async deleteAll(userUuid: string): Promise<void> {
     await this.supabase
       .from("drawn_pairs")
       .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000");
+      .eq("user_uuid", userUuid);
   }
 
-  async insert(pairs: {
-    pair_number: number;
-    player1_id: string;
-    player2_id: string;
-    draw_method: DrawMethod;
-  }[]): Promise<DrawnPair[]> {
+  async insert(
+    pairs: {
+      pair_number: number;
+      player1_id: string;
+      player2_id: string;
+      draw_method: DrawMethod;
+    }[],
+    userUuid: string
+  ): Promise<DrawnPair[]> {
     const { data, error } = await this.supabase
       .from("drawn_pairs")
-      .insert(pairs)
+      .insert(pairs.map((p) => ({ ...p, user_uuid: userUuid })))
       .select("*");
     if (error) throw new Error(error.message);
     return (data ?? []) as DrawnPair[];

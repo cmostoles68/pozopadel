@@ -16,10 +16,11 @@ export class SupabaseTournamentAdapter implements ITournamentRepository {
     return (data as Tournament) ?? null;
   }
 
-  async findAll(): Promise<Tournament[]> {
+  async findAll(userUuid: string): Promise<Tournament[]> {
     const { data } = await this.supabase
       .from("tournaments")
       .select("id, title, status, number_of_courts, minutes_per_round, champion_drawn_pair_id, created_at, created_by")
+      .eq("created_by", userUuid)
       .order("created_at", { ascending: false });
     return (data ?? []) as Tournament[];
   }
@@ -28,13 +29,17 @@ export class SupabaseTournamentAdapter implements ITournamentRepository {
     title: string;
     number_of_courts: number;
     minutes_per_round: number;
+    user_uuid: string;
   }): Promise<Tournament> {
+    const createdBy = data.user_uuid;
+
     const { data: tournament, error } = await this.supabase
       .from("tournaments")
       .insert({
         title: data.title,
         number_of_courts: data.number_of_courts,
         minutes_per_round: data.minutes_per_round,
+        created_by: createdBy,
       })
       .select()
       .single();

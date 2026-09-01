@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createServices } from "@/infrastructure/service-factory";
+import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
 
 export async function reincorporatePlayer(playerId: string) {
   const { playerService, supabase } = await createServices();
+  const userUuid = await getCurrentUserUuid();
 
   const exists = await playerService.exists(playerId);
   if (exists) {
@@ -18,6 +20,7 @@ export async function reincorporatePlayer(playerId: string) {
     .select(
       "id, winner_player1_id, winner_player1_name, winner_player1_gender, winner_player1_hand, winner_player1_level, winner_player2_id, winner_player2_name, winner_player2_gender, winner_player2_hand, winner_player2_level, loser_player1_id, loser_player1_name, loser_player1_gender, loser_player1_hand, loser_player1_level, loser_player2_id, loser_player2_name, loser_player2_gender, loser_player2_hand, loser_player2_level, created_at"
     )
+    .eq("user_uuid", userUuid)
     .or(
       `winner_player1_id.eq.${playerId},winner_player2_id.eq.${playerId},loser_player1_id.eq.${playerId},loser_player2_id.eq.${playerId}`
     )
@@ -49,13 +52,16 @@ export async function reincorporatePlayer(playerId: string) {
   }
 
   try {
-    await playerService.create({
-      id: playerId,
-      full_name: player.name,
-      gender: (player.gender as "MALE" | "FEMALE") ?? "MALE",
-      dominant_hand: (player.hand as "RIGHT" | "LEFT") ?? "RIGHT",
-      level: player.level ?? 3.5,
-    });
+    await playerService.create(
+      {
+        id: playerId,
+        full_name: player.name,
+        gender: (player.gender as "MALE" | "FEMALE") ?? "MALE",
+        dominant_hand: (player.hand as "RIGHT" | "LEFT") ?? "RIGHT",
+        level: player.level ?? 3.5,
+      },
+      userUuid,
+    );
     revalidatePath("/historico");
     revalidatePath("/jugadores");
     return { ok: true };

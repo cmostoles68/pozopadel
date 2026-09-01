@@ -2,11 +2,12 @@ import type { Tournament, TournamentPlayer } from "../entities/tournament";
 
 export interface ITournamentRepository {
   findById(id: string): Promise<Tournament | null>;
-  findAll(): Promise<Tournament[]>;
+  findAll(userUuid: string): Promise<Tournament[]>;
   create(data: {
     title: string;
     number_of_courts: number;
     minutes_per_round: number;
+    user_uuid: string;
   }): Promise<Tournament>;
   updateStatus(id: string, status: string): Promise<void>;
   updateChampion(id: string, championDrawnPairId: string): Promise<void>;

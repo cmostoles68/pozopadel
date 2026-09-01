@@ -12,56 +12,15 @@
 # Error details
 
 ```
-Error: expect(locator).toBeVisible() failed
-
-Locator: getByText('Sorteo de parejas')
-Expected: visible
-Timeout: 5000ms
-Error: element(s) not found
-
-Call log:
-  - Expect "toBeVisible" with timeout 5000ms
-  - waiting for getByText('Sorteo de parejas')
-
-```
-
-```yaml
-- complementary:
-  - text: sports_tennis
-  - heading "PadelElite" [level=1]
-  - link "dashboard Torneos":
-    - /url: /dashboard
-  - link "group Jugadores":
-    - /url: /jugadores
-  - link "shuffle Sorteo":
-    - /url: /sorteo
-  - link "bar_chart Histórico":
-    - /url: /historico
-  - link "logout Cerrar sesión":
-    - /url: /auth/login
-- main:
-  - heading "pozo-test-1788187511616-1" [level=2]
-  - text: Borrador 2 pistas 15 min/ronda
-  - heading "Parejas disponibles (6)" [level=3]
-  - button "Seleccionar todas"
-  - text: 1 Carlos Ruiz (z) & Miguel Torres
-  - button "Seleccionar"
-  - text: 2 Andrés Gómez & Javier Molina
-  - button "Seleccionar"
-  - text: 3 Pablo Sosa (z) & Luis Ortega
-  - button "Seleccionar"
-  - text: 4 Sergio Vidal & David Navarro
-  - button "Seleccionar"
-  - text: 9001 Ana Vega & Andrés Moreno
-  - button "Seleccionar"
-  - text: 9002 Juan García (z) & Elena Castro
-  - button "Seleccionar"
-- alert
+error: invalid input syntax for type uuid: "1"
 ```
 
 # Test source
 
 ```ts
+  1   | import { test, expect } from "@playwright/test";
+  2   | import { Client } from "pg";
+  3   | 
   4   | const DB = {
   5   |   host: "127.0.0.1",
   6   |   port: 54322,
@@ -115,9 +74,10 @@ Call log:
   54  |   seq += 1;
   55  |   const stamp = Date.now() + "-" + seq;
   56  | 
-  57  |   const { rows } = await client.query(
-  58  |     "INSERT INTO tournaments (title, number_of_courts, minutes_per_round, status) VALUES ($1, $2, $3, 'draft') RETURNING id",
-  59  |     [`pozo-test-${stamp}`, courts, minutes]
+> 57  |   const { rows } = await client.query(
+      |                    ^ error: invalid input syntax for type uuid: "1"
+  58  |     "INSERT INTO tournaments (title, number_of_courts, minutes_per_round, status, created_by) VALUES ($1, $2, $3, 'draft', $4) RETURNING id",
+  59  |     [`pozo-test-${stamp}`, courts, minutes, '1']
   60  |   );
   61  |   const tournamentId = rows[0].id;
   62  |   createdTournaments.push(tournamentId);
@@ -162,8 +122,7 @@ Call log:
   101 |     const { tournamentId, numbers } = await setupTournament(2, [0, 1]);
   102 |     await page.goto(`/pozos/${tournamentId}`);
   103 | 
-> 104 |     await expect(page.getByText("Sorteo de parejas")).toBeVisible();
-      |                                                       ^ Error: expect(locator).toBeVisible() failed
+  104 |     await expect(page.getByText(/Parejas disponibles/)).toBeVisible();
   105 |     for (const num of numbers) {
   106 |       await expect(badge(page, num)).toBeVisible();
   107 |     }
@@ -217,51 +176,4 @@ Call log:
   155 | 
   156 |   test("sorteo pistas asigna 2 parejas por pista", async ({ page }) => {
   157 |     const { tournamentId, numbers } = await setupTournament(2, [0, 1, 2, 3]);
-  158 |     await page.goto(`/pozos/${tournamentId}`);
-  159 | 
-  160 |     for (const num of numbers) await clickSelect(page, num);
-  161 |     await expect(page.getByText("Seleccionadas (4)")).toBeVisible();
-  162 | 
-  163 |     await page.getByRole("button", { name: "Sorteo pistas" }).click();
-  164 |     const round1 = page.getByTestId("round-1");
-  165 |     await expect(round1).toBeVisible();
-  166 |     await expect(round1.getByText("Pista 1")).toBeVisible();
-  167 |     await expect(round1.getByText("Pista 2")).toBeVisible();
-  168 | 
-  169 |     for (const num of numbers) {
-  170 |       await expect(badge(page, num)).toBeVisible();
-  171 |     }
-  172 |   });
-  173 | 
-  174 |   test("avisa si hay mas parejas que pistas disponibles", async ({ page }) => {
-  175 |     const { tournamentId, numbers } = await setupTournament(1, [0, 1, 2]);
-  176 |     await page.goto(`/pozos/${tournamentId}`);
-  177 | 
-  178 |     for (const num of numbers) await clickSelect(page, num);
-  179 |     await expect(page.getByText("Seleccionadas (3)")).toBeVisible();
-  180 | 
-  181 |     await page.getByRole("button", { name: "Sorteo pistas" }).click();
-  182 |     await expect(
-  183 |       page.getByText("Hay 3 parejas pero solo 1 pistas (caben 2). Elimina alguna pareja o añade pistas.")
-  184 |     ).toBeVisible();
-  185 |     await expect(page.getByTestId("round-1")).not.toBeVisible();
-  186 |   });
-  187 | 
-  188 |   test("permite rehacer el sorteo de pistas", async ({ page }) => {
-  189 |     const { tournamentId, numbers } = await setupTournament(2, [0, 1, 2, 3]);
-  190 |     await page.goto(`/pozos/${tournamentId}`);
-  191 | 
-  192 |     for (const num of numbers) await clickSelect(page, num);
-  193 |     await page.getByRole("button", { name: "Sorteo pistas" }).click();
-  194 |     await expect(page.getByTestId("round-1")).toBeVisible();
-  195 | 
-  196 |     await page.getByRole("button", { name: "Rehacer sorteo" }).click();
-  197 |     await expect(page.getByTestId("round-1")).not.toBeVisible();
-  198 |     await expect(page.getByText("Seleccionadas (4)")).toBeVisible();
-  199 |   });
-  200 | });
-  201 | 
-  202 | // Maps pair_number -> court_number for a given round of a tournament.
-  203 | async function roundCourtMap(
-  204 |   tournamentId: string,
 ```

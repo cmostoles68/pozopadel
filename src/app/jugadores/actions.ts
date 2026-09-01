@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createServices } from "@/infrastructure/service-factory";
+import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
 
 export async function createPlayer(formData: FormData) {
   const { playerService } = await createServices();
+  const userUuid = await getCurrentUserUuid();
 
   const full_name = formData.get("full_name") as string;
   const gender = formData.get("gender") as string;
@@ -12,7 +14,7 @@ export async function createPlayer(formData: FormData) {
   const level = parseFloat(formData.get("level") as string);
 
   try {
-    await playerService.create({ full_name, gender, dominant_hand, level });
+    await playerService.create({ full_name, gender, dominant_hand, level }, userUuid);
     revalidatePath("/jugadores");
     return { ok: true };
   } catch (e: unknown) {
@@ -22,6 +24,7 @@ export async function createPlayer(formData: FormData) {
 
 export async function updatePlayer(formData: FormData) {
   const { playerService } = await createServices();
+  const userUuid = await getCurrentUserUuid();
 
   const id = formData.get("id") as string;
   const full_name = formData.get("full_name") as string;
@@ -30,7 +33,7 @@ export async function updatePlayer(formData: FormData) {
   const level = parseFloat(formData.get("level") as string);
 
   try {
-    await playerService.update({ id, full_name, gender, dominant_hand, level });
+    await playerService.update({ id, full_name, gender, dominant_hand, level }, userUuid);
     revalidatePath("/jugadores");
     return { ok: true };
   } catch (e: unknown) {
@@ -40,8 +43,9 @@ export async function updatePlayer(formData: FormData) {
 
 export async function deletePlayer(id: string) {
   const { playerService } = await createServices();
+  const userUuid = await getCurrentUserUuid();
   try {
-    await playerService.delete(id);
+    await playerService.delete(id, userUuid);
     revalidatePath("/jugadores");
     return { ok: true };
   } catch (e: unknown) {
@@ -51,8 +55,9 @@ export async function deletePlayer(id: string) {
 
 export async function deleteAllPlayers() {
   const { playerService } = await createServices();
+  const userUuid = await getCurrentUserUuid();
   try {
-    await playerService.deleteAll();
+    await playerService.deleteAll(userUuid);
     revalidatePath("/jugadores");
     return { ok: true };
   } catch (e: unknown) {

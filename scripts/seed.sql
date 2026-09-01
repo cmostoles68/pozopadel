@@ -14,7 +14,7 @@ DELETE FROM public.rounds;
 DELETE FROM public.matches;
 DELETE FROM public.profiles;
 
--- Base de jugadores: 40 perfiles (20 hombres / 20 mujeres), 4 zurdos (10%), niveles 2-8.
+-- Base de jugadores: 50 perfiles, 24 hombres / 26 mujeres, 8 zurdos (16%), niveles 2-8.
 INSERT INTO public.profiles (full_name, gender, dominant_hand, level)
 VALUES
   -- Perfiles de test (dependencias de los tests E2E)
@@ -59,6 +59,21 @@ VALUES
   ('Patricia Luque',  'FEMALE', 'RIGHT', 4.5),
   ('Gemma Pardo',     'FEMALE', 'RIGHT', 3.5),
   ('Esther Lao',      'FEMALE', 'RIGHT', 3.0),
-  ('Berta Arcos',     'FEMALE', 'RIGHT', 2.0);
+  ('Berta Arcos',     'FEMALE', 'RIGHT', 2.0),
+  -- 12 jugadores variados (6 hombres / 6 mujeres)
+  -- Hombres
+  ('Francisco López',   'MALE',   'RIGHT', 7.0),
+  ('Roberto Herrera',   'MALE',   'LEFT',  5.5),
+  ('Alejandro Romo',    'MALE',   'RIGHT', 3.5),
+  ('Tomás Fernández',   'MALE',   'LEFT',  6.0),
+  ('Hugo Sánchez',      'MALE',   'RIGHT', 4.0),
+  ('Víctor Medina',     'MALE',   'RIGHT', 2.5),
+  -- Mujeres
+  ('Rosa Moreno',       'FEMALE', 'LEFT',  7.5),
+  ('Paula Domínguez',   'FEMALE', 'RIGHT', 5.0),
+  ('Clara Ruiz',        'FEMALE', 'LEFT',  3.0),
+  ('Marta López',       'FEMALE', 'RIGHT', 6.5),
+  ('Nerea Jiménez',     'FEMALE', 'RIGHT', 4.5),
+  ('Elena Hernández',   'FEMALE', 'LEFT',  5.5);
 
 COMMIT;

@@ -1,15 +1,18 @@
 import type { DrawnPair, TournamentDrawnPair, DrawnPairWithProfile, DrawMethod } from "../entities/pair";
 
 export interface IDrawnPairRepository {
-  findAll(): Promise<DrawnPair[]>;
-  findAllWithProfiles(): Promise<DrawnPairWithProfile[]>;
-  deleteAll(): Promise<void>;
-  insert(pairs: {
-    pair_number: number;
-    player1_id: string;
-    player2_id: string;
-    draw_method: DrawMethod;
-  }[]): Promise<DrawnPair[]>;
+  findAll(userUuid: string): Promise<DrawnPair[]>;
+  findAllWithProfiles(userUuid: string): Promise<DrawnPairWithProfile[]>;
+  deleteAll(userUuid: string): Promise<void>;
+  insert(
+    pairs: {
+      pair_number: number;
+      player1_id: string;
+      player2_id: string;
+      draw_method: DrawMethod;
+    }[],
+    userUuid: string
+  ): Promise<DrawnPair[]>;
 }
 
 export interface ITournamentDrawnPairRepository {

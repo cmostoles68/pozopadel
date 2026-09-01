@@ -1,42 +1,32 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { signInWithMagicLink, signInWithGoogle } from "../actions";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function LoginPage() {
-  return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
-  );
-}
+  const router = useRouter();
+  const { loginAsGuest, loginAsAdmin } = useAuth();
 
-function LoginForm() {
-  const searchParams = useSearchParams();
-  const error = searchParams.get("error");
-  const sent = searchParams.get("sent");
-  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<"guest" | "admin" | null>(null);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(
-    e: React.FormEvent<HTMLFormElement>
-  ) {
-    e.preventDefault();
-    setLoading(true);
-    const formData = new FormData(e.currentTarget);
-    try {
-      await signInWithMagicLink(formData);
-    } catch {
-      setLoading(false);
-    }
+  function enterGuest() {
+    setSelected("guest");
+    loginAsGuest();
+    router.push("/dashboard");
   }
 
-  async function handleGoogle() {
-    setLoading(true);
-    try {
-      await signInWithGoogle();
-    } catch {
-      setLoading(false);
+  function confirmAdmin(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    const ok = loginAsAdmin(password);
+    if (ok) {
+      router.push("/dashboard");
+    } else {
+      setError("Contraseña incorrecta.");
+      setPassword("");
     }
   }
 
@@ -48,69 +38,79 @@ function LoginForm() {
             PadelElite
           </h1>
           <p className="text-on-surface-variant mt-2">
-            Inicia sesión para continuar
+            Elige cómo quieres entrar
           </p>
         </div>
 
-        {error && (
-          <div className="bg-error-container/20 border border-error/30 text-error rounded-xl px-4 py-3 text-sm">
-            {error}
-          </div>
-        )}
-
-        {sent && (
-          <div className="bg-secondary-container/20 border border-secondary-container/50 text-on-secondary-container rounded-xl px-4 py-3 text-sm">
-            Revisa tu correo para el enlace de acceso.
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-on-surface mb-1"
+        {selected === null ? (
+          <div className="space-y-4">
+            <button
+              onClick={enterGuest}
+              className="w-full bg-primary text-on-primary py-4 rounded-2xl font-medium hover:bg-white transition-colors"
             >
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              placeholder="tu@email.com"
-              className="w-full px-4 py-3 bg-surface-highest border border-outline-variant rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-secondary-container"
-            />
-          </div>
+              <span className="block text-lg">Entrar como Invitado</span>
+              <span className="text-sm text-on-primary/70">
+                Sin credenciales, solo ver y jugar
+              </span>
+            </button>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-on-primary py-3 rounded-xl font-medium hover:bg-white transition-colors disabled:opacity-50"
-          >
-            {loading
-              ? "Enviando..."
-              : "Enviar enlace mágico"}
-          </button>
-        </form>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-outline-variant" />
+            <button
+              onClick={() => setSelected("admin")}
+              className="w-full border border-outline-variant bg-surface-highest text-on-surface py-4 rounded-2xl font-medium hover:bg-surface-high transition-colors"
+            >
+              <span className="block text-lg">Entrar como Admin</span>
+              <span className="block text-sm text-on-surface-variant">
+                Requiere contraseña
+              </span>
+            </button>
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-surface px-2 text-on-surface-variant">
-              o
-            </span>
-          </div>
-        </div>
+        ) : selected === "admin" ? (
+          <form onSubmit={confirmAdmin} className="space-y-4">
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-on-surface mb-1"
+              >
+                Contraseña de administrador
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoFocus
+                placeholder="••••"
+                className="w-full px-4 py-3 bg-surface-highest border border-outline-variant rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-secondary-container"
+              />
+            </div>
 
-        <button
-          onClick={handleGoogle}
-          disabled={loading}
-          className="w-full border border-outline-variant bg-surface-highest text-on-surface py-3 rounded-xl font-medium hover:bg-surface-high transition-colors disabled:opacity-50"
-        >
-          Continuar con Google
-        </button>
+            {error && (
+              <div className="bg-error-container/20 border border-error/30 text-error rounded-xl px-4 py-3 text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelected(null);
+                  setPassword("");
+                  setError(null);
+                }}
+                className="px-4 py-3 rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-high transition-colors"
+              >
+                Volver
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-secondary-container text-on-secondary-container py-3 rounded-xl font-medium hover:bg-white transition-colors"
+              >
+                Entrar
+              </button>
+            </div>
+          </form>
+        ) : null}
       </div>
     </div>
   );

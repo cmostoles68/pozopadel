@@ -11,15 +11,16 @@ export class TournamentService {
     return this.tournamentRepo.findById(id);
   }
 
-  async getAll(): Promise<Tournament[]> {
-    return this.tournamentRepo.findAll();
+  async getAll(userUuid: string): Promise<Tournament[]> {
+    return this.tournamentRepo.findAll(userUuid);
   }
 
-  async create(input: CreateTournamentInput): Promise<Tournament> {
+  async create(input: CreateTournamentInput, userUuid: string): Promise<Tournament> {
     return this.tournamentRepo.create({
       title: input.title,
       number_of_courts: input.numberOfCourts,
       minutes_per_round: input.minutesPerRound,
+      user_uuid: userUuid,
     });
   }
 

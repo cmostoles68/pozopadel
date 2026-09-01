@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Chivo, Plus_Jakarta_Sans } from "next/font/google";
+import { AuthProvider } from "@/contexts/auth-context";
 import "./globals.css";
 
 const chivo = Chivo({
@@ -25,7 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="es"
       className={`${chivo.variable} ${plusJakarta.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-background text-on-surface font-sans">{children}</body>
+      <body className="min-h-full bg-background text-on-surface font-sans">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

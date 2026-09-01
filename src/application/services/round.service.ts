@@ -34,6 +34,7 @@ export class RoundService {
     courtNumber: number,
     results: CourtResultInput[],
     winnerDrawnPairId: string,
+    userUuid: string,
   ): Promise<SaveCourtResultResult> {
     const round = await this.pozoRoundRepo.findById(roundId);
     if (!round) return { error: "Ronda no encontrada" };
@@ -62,6 +63,7 @@ export class RoundService {
       rows.map((r) => r.drawn_pair_id),
       winnerDrawnPairId,
       scoreMap,
+      userUuid,
     );
 
     return { ok: true };
@@ -75,8 +77,9 @@ export class RoundService {
     drawnPairIds: string[],
     winnerDrawnPairId: string,
     scoreMap: Record<string, number>,
+    userUuid: string,
   ): Promise<void> {
-    const allPairs = await this.drawnPairRepo.findAll();
+    const allPairs = await this.drawnPairRepo.findAll(userUuid);
 
     const winnerPair = allPairs.find((p) => p.id === winnerDrawnPairId);
     const loserPair = allPairs.find(
@@ -92,7 +95,7 @@ export class RoundService {
       loserPair.player2_id,
     ];
 
-    const profiles = await this.playerRepo.findAll();
+    const profiles = await this.playerRepo.findAll(userUuid);
     const profileById = new Map(profiles.map((p) => [p.id, p] as const));
 
     const playerData = new Map<
@@ -124,6 +127,7 @@ export class RoundService {
       playerData,
       score_winner: scoreMap[winnerPair.id] ?? null,
       score_loser: scoreMap[loserPair.id] ?? null,
+      user_uuid: userUuid,
     });
   }
 

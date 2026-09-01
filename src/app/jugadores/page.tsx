@@ -3,15 +3,17 @@ import PlayerForm from "./PlayerForm";
 import PlayersList from "./PlayersList";
 import DeleteAllPlayers from "./DeleteAllPlayers";
 import { createServices } from "@/infrastructure/service-factory";
+import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
 import { countChampionshipsByDrawnPairIds } from "@/domain/stats/championships";
 
 export default async function JugadoresPage() {
   const { playerService, tournamentRepo, drawService } = await createServices();
-  const players = await playerService.getAll();
+  const userUuid = await getCurrentUserUuid();
+  const players = await playerService.getAll(userUuid);
 
   const [tournaments, allPairs] = await Promise.all([
-    tournamentRepo.findAll(),
-    drawService.getDrawnPairsWithProfiles(),
+    tournamentRepo.findAll(userUuid),
+    drawService.getDrawnPairsWithProfiles(userUuid),
   ]);
 
   const pairMembersById = new Map<string, [string, string]>();

@@ -18,17 +18,17 @@ export class DrawService {
     private tournamentRepo: ITournamentRepository,
   ) {}
 
-  async drawPairs(method: DrawMethod): Promise<DrawPairsResult> {
-    const players = await this.playerRepo.findProfiles();
+  async drawPairs(method: DrawMethod, userUuid: string): Promise<DrawPairsResult> {
+    const players = await this.playerRepo.findProfiles(userUuid);
 
     const validationError = getDrawValidationError(players.length);
     if (validationError) {
       return { error: validationError };
     }
 
-    await this.drawnPairRepo.deleteAll();
+    await this.drawnPairRepo.deleteAll(userUuid);
 
-    const winningPartnerships = await this.matchHistoryRepo.findWinningPartnerships();
+    const winningPartnerships = await this.matchHistoryRepo.findWinningPartnerships(userUuid);
     const disallowedPairs = new Set(
       winningPartnerships.map((p) => [p.a, p.b].sort().join("|"))
     );
@@ -42,7 +42,7 @@ export class DrawService {
       draw_method: method,
     }));
 
-    const inserted = await this.drawnPairRepo.insert(pairsToInsert);
+    const inserted = await this.drawnPairRepo.insert(pairsToInsert, userUuid);
 
     const usedCount = paired.length * 2;
     const oddPlayer =
@@ -59,12 +59,12 @@ export class DrawService {
     };
   }
 
-  async clearPairs(): Promise<void> {
-    await this.drawnPairRepo.deleteAll();
+  async clearPairs(userUuid: string): Promise<void> {
+    await this.drawnPairRepo.deleteAll(userUuid);
   }
 
-  async getDrawnPairsWithProfiles() {
-    return this.drawnPairRepo.findAllWithProfiles();
+  async getDrawnPairsWithProfiles(userUuid: string) {
+    return this.drawnPairRepo.findAllWithProfiles(userUuid);
   }
 
   async selectPair(tournamentId: string, drawnPairId: string): Promise<void> {
@@ -75,8 +75,8 @@ export class DrawService {
     await this.tournamentDrawnPairRepo.deselectPair(tournamentId, drawnPairId);
   }
 
-  async selectAllPairs(tournamentId: string): Promise<void> {
-    const allPairs = await this.drawnPairRepo.findAll();
+  async selectAllPairs(tournamentId: string, userUuid: string): Promise<void> {
+    const allPairs = await this.drawnPairRepo.findAll(userUuid);
     const allPairIds = allPairs.map((p) => p.id);
     await this.tournamentDrawnPairRepo.selectAllPairs(tournamentId, allPairIds);
   }

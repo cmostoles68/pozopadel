@@ -43,10 +43,12 @@ export interface IMatchHistoryRepository {
     >;
     score_winner: number | null;
     score_loser: number | null;
+    user_uuid: string;
   }): Promise<void>;
-  findAll(): Promise<MatchHistoryRow[]>;
+  findAll(userUuid: string): Promise<MatchHistoryRow[]>;
   findByTournament(tournamentId: string): Promise<MatchHistoryRow[]>;
   findWinningPartnerships(
+    userUuid: string,
     minMatches?: number,
     minWinRate?: number
   ): Promise<{ a: string; b: string; wins: number; total: number; winRate: number }[]>;

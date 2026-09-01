@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
 import type { ReactNode } from "react";
 
 interface NavItem {
@@ -24,6 +25,13 @@ function isActive(pathname: string, href: string): boolean {
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { isAdmin, logout } = useAuth();
+
+  function handleLogout() {
+    logout();
+    router.push("/auth/login");
+  }
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-sans">
@@ -61,6 +69,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <h1 className="font-display text-[28px] text-secondary-fixed-dim text-center font-bold tracking-tight">
             PadelElite
           </h1>
+          <span
+            className={`mt-2 px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
+              isAdmin
+                ? "bg-secondary-container text-on-secondary-container"
+                : "bg-surface-highest text-on-surface-variant border border-outline-variant"
+            }`}
+          >
+            {isAdmin ? "Admin" : "Invitado"}
+          </span>
         </div>
 
         <div className="flex-1 py-5 overflow-y-auto">
@@ -81,13 +98,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <div className="p-4 border-t border-outline-variant/10">
-          <Link
-            href="/auth/login"
-            className="mx-2 my-1 flex items-center px-5 py-3 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-high/40 transition-all"
+          <button
+            onClick={handleLogout}
+            className="mx-2 my-1 w-[calc(100%-1rem)] flex items-center px-5 py-3 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-high/40 transition-all"
           >
             <span className="material-symbols-outlined mr-3 text-[24px]">logout</span>
             <span className="text-[18px] font-medium">Cerrar sesión</span>
-          </Link>
+          </button>
         </div>
       </aside>
 

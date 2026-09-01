@@ -901,7 +901,7 @@ src/
 ## Quick Wins (Can Do Today)
 
 1. **Delete 3 dead API routes** → 30 minutes
-2. **Remove dead service methods** → 15 minutes  
+2. **Remove dead service methods** → 15 minutes
 3. **Hide legacy TournamentView** → 10 minutes
 4. **Add `Database` type to 1 adapter as template** → 15 minutes
 

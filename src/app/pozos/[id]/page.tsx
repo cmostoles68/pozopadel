@@ -5,6 +5,7 @@ import RoundTimer from "@/components/RoundTimer";
 import PairSelector from "./PairSelector";
 import CourtScoring from "./CourtScoring";
 import { createServices } from "@/infrastructure/service-factory";
+import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
 
 export default async function PozoPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
@@ -14,12 +15,13 @@ export default async function PozoPage(props: { params: Promise<{ id: string }> 
     roundService,
     tournamentDrawnPairRepo,
   } = await createServices();
+  const userUuid = await getCurrentUserUuid();
 
   const tournament = await tournamentService.getById(id);
   if (!tournament) notFound();
 
   const [allPairs, selectedPairs] = await Promise.all([
-    drawService.getDrawnPairsWithProfiles(),
+    drawService.getDrawnPairsWithProfiles(userUuid),
     tournamentDrawnPairRepo.findByTournament(id),
   ]);
 
