@@ -3,30 +3,29 @@
 import { redirect } from "next/navigation";
 import { createServices } from "@/infrastructure/service-factory";
 import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
+import { createTournamentSchema, saveCourtResultSchema, uuidSchema } from "@/application/validation/schemas";
+import { parseOrError } from "@/application/validation/parse";
 import type { CourtResultInput } from "@/application/dto/round.dto";
 
 export async function createPozo(formData: FormData) {
   const { tournamentService } = await createServices();
   const userUuid = await getCurrentUserUuid();
 
-  const title = formData.get("title") as string;
-  const numberOfCourts = parseInt(formData.get("numberOfCourts") as string, 10);
-  const minutesPerRound = parseInt(formData.get("minutesPerRound") as string, 10);
-
-  if (!minutesPerRound || minutesPerRound < 1 || minutesPerRound > 90) {
-    redirect(
-      "/pozos/nuevo?error=" + encodeURIComponent("Los minutos por ronda deben estar entre 1 y 90.")
+  const parsed = parseOrError(
+    createTournamentSchema,
+    {
+      title: formData.get("title"),
+      numberOfCourts: formData.get("numberOfCourts"),
+      minutesPerRound: formData.get("minutesPerRound"),
+    },
+  );
+  if (!parsed.ok) {
+    return redirect(
+      "/pozos/nuevo?error=" + encodeURIComponent(parsed.error)
     );
   }
 
-  const result = await tournamentService.create(
-    {
-      title,
-      numberOfCourts,
-      minutesPerRound,
-    },
-    userUuid,
-  );
+  const result = await tournamentService.create(parsed.data, userUuid);
   if (!result.ok) {
     return redirect(
       "/pozos/nuevo?error=" + encodeURIComponent(result.error)
@@ -37,45 +36,65 @@ export async function createPozo(formData: FormData) {
 }
 
 export async function selectPair(tournamentId: string, drawnPairId: string) {
+  const tournament = parseOrError(uuidSchema, tournamentId);
+  const pair = parseOrError(uuidSchema, drawnPairId);
+  if (!tournament.ok || !pair.ok) return { error: "Datos no válidos" };
+
   const { drawService } = await createServices();
-  const result = await drawService.selectPair(tournamentId, drawnPairId);
+  const result = await drawService.selectPair(tournament.data, pair.data);
   if (!result.ok) return { error: result.error };
   return { ok: true as const };
 }
 
 export async function deselectPair(tournamentId: string, drawnPairId: string) {
+  const tournament = parseOrError(uuidSchema, tournamentId);
+  const pair = parseOrError(uuidSchema, drawnPairId);
+  if (!tournament.ok || !pair.ok) return { error: "Datos no válidos" };
+
   const { drawService } = await createServices();
-  const result = await drawService.deselectPair(tournamentId, drawnPairId);
+  const result = await drawService.deselectPair(tournament.data, pair.data);
   if (!result.ok) return { error: result.error };
   return { ok: true as const };
 }
 
 export async function selectAllPairs(tournamentId: string) {
+  const tournament = parseOrError(uuidSchema, tournamentId);
+  if (!tournament.ok) return { error: "Datos no válidos" };
+
   const { drawService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  const result = await drawService.selectAllPairs(tournamentId, userUuid);
+  const result = await drawService.selectAllPairs(tournament.data, userUuid);
   if (!result.ok) return { error: result.error };
   return { ok: true as const };
 }
 
 export async function drawCourts(tournamentId: string) {
+  const tournament = parseOrError(uuidSchema, tournamentId);
+  if (!tournament.ok) return { error: "Datos no válidos" };
+
   const { drawService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  const result = await drawService.drawCourts(tournamentId, userUuid);
+  const result = await drawService.drawCourts(tournament.data, userUuid);
   if (!result.ok) return { error: result.error };
   return { ok: true as const };
 }
 
 export async function clearCourtDraw(tournamentId: string) {
+  const tournament = parseOrError(uuidSchema, tournamentId);
+  if (!tournament.ok) return { error: "Datos no válidos" };
+
   const { drawService } = await createServices();
-  const result = await drawService.clearCourtDraw(tournamentId);
+  const result = await drawService.clearCourtDraw(tournament.data);
   if (!result.ok) return { error: result.error };
   return { ok: true as const };
 }
 
 export async function seedRound1(tournamentId: string) {
+  const tournament = parseOrError(uuidSchema, tournamentId);
+  if (!tournament.ok) return { error: "Datos no válidos" };
+
   const { drawService } = await createServices();
-  const result = await drawService.seedRound1(tournamentId);
+  const result = await drawService.seedRound1(tournament.data);
   if (!result.ok) return { error: result.error };
   return { ok: true as const };
 }
@@ -86,25 +105,44 @@ export async function saveCourtResult(
   results: CourtResultInput[],
   winnerDrawnPairId: string,
 ) {
+  const parsed = parseOrError(
+    saveCourtResultSchema,
+    { roundId, courtNumber, results, winnerDrawnPairId },
+  );
+  if (!parsed.ok) return { error: parsed.error };
+
   const { roundService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  const result = await roundService.saveCourtResult(roundId, courtNumber, results, winnerDrawnPairId, userUuid);
+  const result = await roundService.saveCourtResult(
+    parsed.data.roundId,
+    parsed.data.courtNumber,
+    parsed.data.results,
+    parsed.data.winnerDrawnPairId,
+    userUuid,
+  );
   if (!result.ok) return { error: result.error };
   return { ok: true as const };
 }
 
 export async function checkAndStartNextRound(tournamentId: string, roundId: string) {
+  const tournament = parseOrError(uuidSchema, tournamentId);
+  const round = parseOrError(uuidSchema, roundId);
+  if (!tournament.ok || !round.ok) return { error: "Datos no válidos" };
+
   const { roundService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  const result = await roundService.checkAndStartNextRound(tournamentId, roundId, userUuid);
+  const result = await roundService.checkAndStartNextRound(tournament.data, round.data, userUuid);
   if (!result.ok) return { error: result.error };
   return { ok: true as const, nextRoundNumber: result.data.nextRoundNumber };
 }
 
 export async function finalizePozo(tournamentId: string) {
+  const tournament = parseOrError(uuidSchema, tournamentId);
+  if (!tournament.ok) return { error: "Datos no válidos" };
+
   const { roundService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  const result = await roundService.finalizePozo(tournamentId, userUuid);
+  const result = await roundService.finalizePozo(tournament.data, userUuid);
   if (!result.ok) return { error: result.error };
   return { ok: true as const };
 }

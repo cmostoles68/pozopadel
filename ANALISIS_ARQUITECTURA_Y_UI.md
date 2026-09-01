@@ -54,11 +54,11 @@ Puntuación del estado actual:
 | Tipado | 6/10 | `type Database = any` en adaptadores; `database.types.ts` desactualizado |
 | Manejo de errores | 5/10 | Tres patrones coexisten (throw, return, `{ok,error}`) |
 | Código muerto | 4/10 | Queda inventario legacy sin uso tras el refactor |
-| Validación de frontera | 4/10 | Sin validación de entrada (no hay zod/equivalente) |
+| Validación de frontera | ~~4/10~~ **7/10** | Zod en las server actions desde la Fase D; resta compartir esquemas con la UI |
 | Migraciones/entorno | 5/10 | Migraciones aplicadas manualmente; tracking ausente |
-| Testing | 6/10 | Buen unit de algoritmos; sin test de servicios/adaptadores |
+| Testing | ~~6/10~~ **8/10** | Unit de algoritmos + servicios + adaptadores (mock Supabase) y validación zod |
 | UI/UX | 8/10 | Sólida y coherente; residuos de flujos muertos |
-| **Global** | **6.5/10** | Base sólida; deuda acotada y eliminable |
+| **Global** | ~~6.5/10~~ **7.5/10** | Deuda acotada; capa de datos tipada y validada en entrada |
 
 ---
 
@@ -109,7 +109,7 @@ Page (server component)
 | 3 | **`database.types.ts` desactualizado** | falta `user_uuid`, `test_users`; aún declara `matches`, `rounds`, `tournament_players` (tablas eliminadas) | Desincronizado de `schema.sql` real; si se activa el tipo, fallará el build |
 | 4 | **Manejo de errores heterogéneo** | repos lanzan `throw` (tournament), otros devuelven `data`; servicios mezclan `{ok,error}` y devoluciones directas | El consumidor no sabe qué esperar |
 | 5 | **Repos parcialmente sin scope de usuario** | `tournament.adapter.findById/updateStatus/delete`, `match.findRound/findById` no filtran por `user_uuid` | Menos consistente la invariante "cada usuario solo ve lo suyo" |
-| 6 | **Sin validación en la frontera** | actions reciben `FormData`/payloads y se castean (`as …`) sin validar | Entradas malformadas derivan en errores oscuros del driver |
+| 6 | **Sin validación en la frontera** (~~no había~~ resuelto: Zod en actions desde Fase D) | ~~actions reciben `FormData`/payloads y se castean (`as …`) sin validar~~ → esquemas `zod` en `src/application/validation/` | Entradas malformadas derivaban en errores oscuros del driver; ahora se rechazan antes del servicio |
 
 ---
 
@@ -180,9 +180,9 @@ verificado por búsqueda de imports):
 | Área | Estado | Recomendación |
 |------|--------|---------------|
 | `typecheck` | Falta script; solo `lint`, `test`, `build` | Añadir `tsc --noEmit` a CI y al flujo local |
-| Validación de entrada | Ausente | Zod (compartir esquemas DB↔UI) o al menos guards en actions |
+| Validación de entrada | ~~Ausente~~ → **Zod en las server actions** (`src/application/validation/`) | Hecho (Fase D ✅) |
 | Test de servicios | No hay | Mockear adaptadores e testear `Draw`/`Round` service (cubre la orquestación, el 80% de la lógica real hoy reside en la UI) |
-| Tests de adaptadores | No hay | Contra Supabase local (ya disponible) |
+| Tests de adaptadores | ~~No hay~~ → **mock del cliente Supabase en `src/tests/adapters.unit.spec.ts`** | Hecho (Fase D ✅) |
 | Migraciones | Aplicadas manualmente; tabla `supabase_migrations` **no existe** en la DB | Adoptar `supabase db reset` desde `supabase/migrations/*.sql` para reproducibilidad |
 | Coherencia de nombres | ~~`PadelElite` vs `pozopadel`~~ → **`PadelElite` única** (UI, README, tests, docs; `pozopadel` queda como ident. técnico: repo/package/project_id) | Hecho (Fase A ✅) |
 | Errores al usuario | `throw new Error(...)` crudo en acciones | Mapear a mensajes de UI con estado (éxito/error) por action |
@@ -300,6 +300,12 @@ verificado por búsqueda de imports):
 - [x] (Opcional) Reapuntar los tests del motor al algoritmo usado en
       producción en vez de a `legacy-round-engine.ts`. Sin referencias
       restantes; los tests ya usan `calculatePairMovements` de producción.
+- [x] Tests de adaptadores con cliente Supabase mockeado
+      (`src/tests/adapters.unit.spec.ts`, 38 tests: tournament/player/pair/
+      round/match).
+- [x] Validación de entrada en la frontera con Zod (`zod` añadido a deps):
+      esquemas en `src/application/validation/schemas.ts` + `parseOrError`,
+      aplicados en las server actions de jugadores, pozos y sorteo.
 
 ---
 

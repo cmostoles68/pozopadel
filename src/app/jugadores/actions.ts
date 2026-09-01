@@ -3,42 +3,59 @@
 import { revalidatePath } from "next/cache";
 import { createServices } from "@/infrastructure/service-factory";
 import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
+import { createPlayerSchema, updatePlayerSchema, uuidSchema } from "@/application/validation/schemas";
+import { parseOrError } from "@/application/validation/parse";
 
 export async function createPlayer(formData: FormData) {
+  const parsed = parseOrError(
+    createPlayerSchema,
+    {
+      full_name: formData.get("full_name"),
+      gender: formData.get("gender"),
+      dominant_hand: formData.get("dominant_hand"),
+      level: formData.get("level"),
+    },
+  );
+  if (!parsed.ok) return { error: parsed.error };
+
   const { playerService } = await createServices();
   const userUuid = await getCurrentUserUuid();
 
-  const full_name = formData.get("full_name") as string;
-  const gender = formData.get("gender") as string;
-  const dominant_hand = formData.get("dominant_hand") as string;
-  const level = parseFloat(formData.get("level") as string);
-
-  const result = await playerService.create({ full_name, gender, dominant_hand, level }, userUuid);
+  const result = await playerService.create(parsed.data, userUuid);
   if (!result.ok) return { error: result.error };
   revalidatePath("/jugadores");
   return { ok: true };
 }
 
 export async function updatePlayer(formData: FormData) {
+  const parsed = parseOrError(
+    updatePlayerSchema,
+    {
+      id: formData.get("id"),
+      full_name: formData.get("full_name"),
+      gender: formData.get("gender"),
+      dominant_hand: formData.get("dominant_hand"),
+      level: formData.get("level"),
+    },
+  );
+  if (!parsed.ok) return { error: parsed.error };
+
   const { playerService } = await createServices();
   const userUuid = await getCurrentUserUuid();
 
-  const id = formData.get("id") as string;
-  const full_name = formData.get("full_name") as string;
-  const gender = formData.get("gender") as string;
-  const dominant_hand = formData.get("dominant_hand") as string;
-  const level = parseFloat(formData.get("level") as string);
-
-  const result = await playerService.update({ id, full_name, gender, dominant_hand, level }, userUuid);
+  const result = await playerService.update(parsed.data, userUuid);
   if (!result.ok) return { error: result.error };
   revalidatePath("/jugadores");
   return { ok: true };
 }
 
 export async function deletePlayer(id: string) {
+  const parsed = parseOrError(uuidSchema, id);
+  if (!parsed.ok) return { error: "Datos no válidos" };
+
   const { playerService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  const result = await playerService.delete(id, userUuid);
+  const result = await playerService.delete(parsed.data, userUuid);
   if (!result.ok) return { error: result.error };
   revalidatePath("/jugadores");
   return { ok: true };
