@@ -1,39 +1,65 @@
 import { test, expect } from "@playwright/test";
-import { Client } from "pg";
+import {
+  connect,
+  resetUserData,
+  createProfile,
+  createDrawnPair,
+  createTournament,
+  GUEST_UUID,
+} from "./helpers";
 
-const DB = {
-  host: "127.0.0.1",
-  port: 54322,
-  user: "postgres",
-  password: "postgres",
-  database: "postgres",
-};
+let client: Awaited<ReturnType<typeof connect>>;
+const createdTournaments: string[] = [];
+let carlosId = "";
+let miguelId = "";
 
-const client = new Client(DB);
-
-// drawn_pair 1 = Carlos Ruiz + Miguel Torres
-const PAIR_CARLOS_MIGUEL = "abc938d5-3f16-4cc0-89bb-3f04b18eec38";
-
-// tracks the champion_drawn_pair_id values we overwrite so we can restore them
-const touchedTournaments: { id: string; original: string | null }[] = [];
+// Carlos Ruiz + Miguel Torres are the "champion" pair (2 wins).
+const NAMES = [
+  "Carlos Ruiz",
+  "Miguel Torres",
+  "Andrés Gómez",
+  "David Navarro",
+  "Javier Molina",
+  "Luis Ortega",
+  "Pablo Sosa",
+  "Sergio Vidal",
+];
 
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  await client.connect();
+  client = await connect();
+  await resetUserData(client, GUEST_UUID);
+
+  const names: string[] = [];
+  for (const n of NAMES) {
+    names.push(await createProfile(client, { full_name: n }));
+  }
+  carlosId = names[0];
+  miguelId = names[1];
+
+  // Draw a persistent champion pair for the ordering math.
+  const championPairId = await createDrawnPair(client, {
+    pair_number: 700,
+    player1_id: carlosId,
+    player2_id: miguelId,
+  });
+
+  // Two completed tournaments won by that pair.
+  for (let i = 0; i < 2; i++) {
+    const id = await createTournament(client, {
+      title: `Orden Campeon ${i}`,
+      number_of_courts: 1,
+      status: "completed",
+      created_by: GUEST_UUID,
+      champion_drawn_pair_id: championPairId,
+    });
+    createdTournaments.push(id);
+  }
 });
 
 test.afterEach(async () => {
-  try {
-    for (const t of touchedTournaments) {
-      await client.query(
-        "UPDATE tournaments SET champion_drawn_pair_id = $2 WHERE id = $1",
-        [t.id, t.original]
-      );
-    }
-  } finally {
-    touchedTournaments.length = 0;
-  }
+  // The draw spec may wipe drawn_pairs; nothing to restore for ordering.
 });
 
 test.afterAll(async () => {
@@ -41,20 +67,6 @@ test.afterAll(async () => {
 });
 
 test("ordenar por pozos ganados pone primero a los campeones", async ({ page }) => {
-  // Pick 2 completed tournaments as "won" by the Carlos Ruiz + Miguel Torres pair.
-  const { rows } = await client.query(
-    "SELECT id, champion_drawn_pair_id FROM tournaments WHERE status = 'completed' ORDER BY id LIMIT 2"
-  );
-  expect(rows).toHaveLength(2);
-
-  for (const t of rows) {
-    touchedTournaments.push({ id: t.id, original: t.champion_drawn_pair_id });
-    await client.query(
-      "UPDATE tournaments SET champion_drawn_pair_id = $2 WHERE id = $1",
-      [t.id, PAIR_CARLOS_MIGUEL]
-    );
-  }
-
   await page.goto("/jugadores");
   await expect(
     page.getByText("Ordenar por pozos ganados", { exact: true })

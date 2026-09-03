@@ -2,17 +2,28 @@
 
 import { revalidatePath } from "next/cache";
 import { createServices } from "@/infrastructure/service-factory";
-import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
+import { getCurrentUserUuid, getCurrentAuthMode } from "@/infrastructure/supabase/current-user";
+import { GUEST_LIMITS } from "@/config/limits";
 
 export async function reincorporatePlayer(playerId: string) {
   const { playerService, supabase } = await createServices();
   const userUuid = await getCurrentUserUuid();
+  const mode = await getCurrentAuthMode();
 
   const exists = await playerService.exists(playerId);
   if (!exists.ok) return { error: exists.error };
   if (exists.data) {
     revalidatePath("/historico");
     return { ok: true };
+  }
+
+  if (mode === "guest") {
+    const profiles = await playerService.getAllProfiles(userUuid);
+    if (profiles.ok && profiles.data.length >= GUEST_LIMITS.maxHistoryPlayers) {
+      return {
+        error: `En modo invitado no se pueden recuperar más de ${GUEST_LIMITS.maxHistoryPlayers} jugadores del histórico.`,
+      };
+    }
   }
 
   // Recover the player's data from the most recent history row

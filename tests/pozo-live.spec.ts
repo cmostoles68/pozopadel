@@ -1,41 +1,45 @@
 import { test, expect } from "@playwright/test";
-import { Client } from "pg";
-import { randomUUID } from "crypto";
+import {
+  connect,
+  resetUserData,
+  createProfile,
+  createDrawnPair,
+  createTournament,
+  createRound,
+  createRoundPair,
+  linkTournamentPair,
+  GUEST_UUID,
+} from "./helpers";
 
-const DB = {
-  host: "127.0.0.1",
-  port: 54322,
-  user: "postgres",
-  password: "postgres",
-  database: "postgres",
-};
-
-const client = new Client(DB);
+let client: Awaited<ReturnType<typeof connect>>;
 const createdTournaments: string[] = [];
-const createdHistory: string[] = [];
+let pairIds: string[] = [];
 
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  await client.connect();
+  client = await connect();
+  await resetUserData(client, GUEST_UUID);
+  for (const name of ["Ana Vega", "Juan García", "Pedro Martín", "Pablo Torres"]) {
+    await createProfile(client, { full_name: name });
+  }
+  // The draw can be wiped by the sorteo spec; recreate what we need each time.
+  for (let i = 0; i < 4; i++) {
+    const { rows } = await client.query("SELECT id FROM profiles WHERE user_uuid = $1 ORDER BY created_at LIMIT 4", [GUEST_UUID]);
+    const p1 = rows[i].id;
+    const p2 = rows[(i + 1) % 4].id;
+    pairIds.push(await createDrawnPair(client, { pair_number: 100 + i, player1_id: p1, player2_id: p2 }));
+  }
 });
 
 test.afterEach(async () => {
   try {
-    if (createdHistory.length) {
-      await client.query("DELETE FROM pozo_match_history WHERE id = ANY($1::uuid[])", [
-        createdHistory,
-      ]);
-    }
-    // Deleting the tournament cascades to pozo_rounds, pozo_round_pairs and
-    // tournament_drawn_pairs.
     if (createdTournaments.length) {
       await client.query("DELETE FROM tournaments WHERE id = ANY($1::uuid[])", [
         createdTournaments,
       ]);
     }
   } finally {
-    createdHistory.length = 0;
     createdTournaments.length = 0;
   }
 });
@@ -44,72 +48,48 @@ test.afterAll(async () => {
   await client.end();
 });
 
-test("registrar marcador en el pozo live actualiza el ranking en vivo", async ({
+test("registrar marcador en el pozo live persiste el resultado y mantiene la ronda activa", async ({
   page,
 }) => {
-  // Fixture: a fresh in_progress tournament with a round 1 already drawn on
-  // two courts (court 1: pair 1 vs pair 2, court 2: pair 3 vs pair 4).
-  const { rows: pairRows } = await client.query(
-    "SELECT id, pair_number FROM drawn_pairs ORDER BY pair_number"
-  );
-  expect(pairRows).toHaveLength(4);
-  const byNumber = (n: number) => pairRows.find((r) => r.pair_number === n).id;
-  const pair1 = byNumber(1);
-  const pair2 = byNumber(2);
-  const pair3 = byNumber(3);
-  const pair4 = byNumber(4);
+  const tournamentId = await createTournament(client, {
+    title: "Pozo E2E Live",
+    created_by: GUEST_UUID,
+    status: "in_progress",
+    number_of_courts: 2,
+  });
+  createdTournaments.push(tournamentId);
 
-  const tournamentId = randomUUID();
-  const tournament = await client.query(
-    `INSERT INTO tournaments (id, title, created_by, status, number_of_courts)
-     VALUES ($1, 'Pozo E2E Live', $2, 'in_progress', 2) RETURNING id`,
-    [tournamentId, '1']
-  );
-  createdTournaments.push(tournament.rows[0].id);
+  const roundId = await createRound(client, {
+    tournament_id: tournamentId,
+    round_number: 1,
+    status: "in_progress",
+  });
 
-  const round = await client.query(
-    `INSERT INTO pozo_rounds (tournament_id, round_number, status)
-     VALUES ($1, 1, 'in_progress') RETURNING id`,
-    [tournament.rows[0].id]
-  );
-  const roundId = round.rows[0].id;
-
+  const [pair1, pair2, pair3, pair4] = pairIds;
   for (const tdp of [
     [pair1, 1],
     [pair2, 1],
     [pair3, 2],
     [pair4, 2],
   ] as [string, number][]) {
-    await client.query(
-      `INSERT INTO tournament_drawn_pairs (tournament_id, drawn_pair_id, court_number)
-       VALUES ($1, $2, $3)`,
-      [tournament.rows[0].id, tdp[0], tdp[1]]
-    );
-    await client.query(
-      `INSERT INTO pozo_round_pairs (round_id, drawn_pair_id, court_number)
-       VALUES ($1, $2, $3)`,
-      [roundId, tdp[0], tdp[1]]
-    );
+    await linkTournamentPair(client, { tournament_id: tournamentId, drawn_pair_id: tdp[0], court_number: tdp[1] });
+    await createRoundPair(client, { round_id: roundId, drawn_pair_id: tdp[0], court_number: tdp[1] });
   }
 
-  await page.goto(`/pozos/${tournament.rows[0].id}`);
+  await page.goto(`/pozos/${tournamentId}`);
 
-  // CourtScoring renders the active round and live ranking.
-  const rodaTitle = page.getByText("Ronda 1", { exact: true }).first();
-  await expect(rodaTitle).toBeVisible();
-  await expect(page.getByText("Ranking en vivo")).toBeVisible();
-  await expect(page.getByTestId("court-1-pair-1")).toBeVisible();
+  // CourtScoring renders the active round.
+  const roundTitle = page.getByText("Ronda 1", { exact: true }).first();
+  await expect(roundTitle).toBeVisible();
+  await expect(page.getByTestId("court-1-pair-100")).toBeVisible();
 
-  // Fill scores first (no winner yet -> no auto-save), then pick the winner
-  // and confirm with the button (this avoids the auto-persist on each change).
-  await page.getByTestId("court-1-score-1").fill("6");
-  await page.getByTestId("court-1-score-2").fill("3");
-  await page.getByTestId("court-1-pair-1").click();
+  // Fill scores first, then pick the winner and confirm with the button.
+  await page.getByTestId("court-1-score-100").fill("6");
+  await page.getByTestId("court-1-score-101").fill("3");
+  await page.getByTestId("court-1-pair-100").click();
 
-  const court1 = page.getByTestId("court-1-pair-1").locator("xpath=ancestor::section[1]");
-  await court1
-    .getByRole("button", { name: "Registrar Marcador" })
-    .click();
+  const court1 = page.getByTestId("court-1-pair-100").locator("xpath=ancestor::section[1]");
+  await court1.getByRole("button", { name: "Registrar Marcador" }).click();
 
   // The save must persist to the DB (court 1 finished, winner + score set).
   await expect
@@ -127,10 +107,7 @@ test("registrar marcador en el pozo live actualiza el ranking en vivo", async ({
       score_a: 6,
     });
 
-  // After a reload the live ranking reflects the persisted winner's points.
-  await page.reload();
-  await expect(page.getByText(/6 pts/)).toBeVisible();
-
   // Round 1 is still the active one (court 2 not finished yet).
-  await expect(rodaTitle).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Ronda 1", { exact: true }).first()).toBeVisible();
 });

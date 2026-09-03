@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import {
   AUTH_COOKIE_NAME,
   SYSTEM_USER_UUIDS,
+  type AuthMode,
 } from "@/config/auth";
 
 export async function getCurrentUserUuid(): Promise<string> {
@@ -11,4 +12,10 @@ export async function getCurrentUserUuid(): Promise<string> {
     return uuid;
   }
   return SYSTEM_USER_UUIDS.guest;
+}
+
+/** Determina el modo de autenticación actual del lado del servidor. */
+export async function getCurrentAuthMode(): Promise<AuthMode> {
+  const uuid = await getCurrentUserUuid();
+  return uuid === SYSTEM_USER_UUIDS.admin ? "admin" : "guest";
 }

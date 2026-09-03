@@ -34,4 +34,25 @@ test.describe("Login page", () => {
 
     await expect(page).toHaveURL(/\/dashboard/);
   });
+
+  test("admin flow accepts correct password and shows Admin badge", async ({ page }) => {
+    await page.goto("/auth/login");
+
+    await page.getByRole("button", { name: /Entrar como Admin/ }).click();
+    await page.getByLabel("Contraseña de administrador").fill("1234");
+    await page.getByRole("button", { name: "Entrar" }).click();
+
+    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page.getByText("Admin")).toBeVisible();
+  });
+
+  test("logout returns to login page", async ({ page }) => {
+    await page.goto("/auth/login");
+    await page.getByRole("button", { name: /Entrar como Invitado/ }).click();
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    await page.getByRole("button", { name: /Cerrar sesión/ }).click();
+
+    await expect(page).toHaveURL(/\/auth\/login/);
+  });
 });

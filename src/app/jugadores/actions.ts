@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createServices } from "@/infrastructure/service-factory";
-import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
+import { getCurrentUserUuid, getCurrentAuthMode } from "@/infrastructure/supabase/current-user";
 import { createPlayerSchema, updatePlayerSchema, uuidSchema } from "@/application/validation/schemas";
 import { parseOrError } from "@/application/validation/parse";
+import { GUEST_LIMITS } from "@/config/limits";
 
 export async function createPlayer(formData: FormData) {
   const parsed = parseOrError(
@@ -20,6 +21,16 @@ export async function createPlayer(formData: FormData) {
 
   const { playerService } = await createServices();
   const userUuid = await getCurrentUserUuid();
+  const mode = await getCurrentAuthMode();
+
+  if (mode === "guest") {
+    const profiles = await playerService.getAllProfiles(userUuid);
+    if (profiles.ok && profiles.data.length >= GUEST_LIMITS.maxPlayers) {
+      return {
+        error: `En modo invitado no se pueden superar ${GUEST_LIMITS.maxPlayers} jugadores.`,
+      };
+    }
+  }
 
   const result = await playerService.create(parsed.data, userUuid);
   if (!result.ok) return { error: result.error };

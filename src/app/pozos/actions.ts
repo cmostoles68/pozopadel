@@ -2,14 +2,16 @@
 
 import { redirect } from "next/navigation";
 import { createServices } from "@/infrastructure/service-factory";
-import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
+import { getCurrentUserUuid, getCurrentAuthMode } from "@/infrastructure/supabase/current-user";
 import { createTournamentSchema, saveCourtResultSchema, uuidSchema } from "@/application/validation/schemas";
 import { parseOrError } from "@/application/validation/parse";
+import { GUEST_LIMITS } from "@/config/limits";
 import type { CourtResultInput } from "@/application/dto/round.dto";
 
 export async function createPozo(formData: FormData) {
   const { tournamentService } = await createServices();
   const userUuid = await getCurrentUserUuid();
+  const mode = await getCurrentAuthMode();
 
   const parsed = parseOrError(
     createTournamentSchema,
@@ -23,6 +25,27 @@ export async function createPozo(formData: FormData) {
     return redirect(
       "/pozos/nuevo?error=" + encodeURIComponent(parsed.error)
     );
+  }
+
+  if (mode === "guest") {
+    if (parsed.data.numberOfCourts > GUEST_LIMITS.maxCourts) {
+      return redirect(
+        "/pozos/nuevo?error=" +
+          encodeURIComponent(
+            `En modo invitado el máximo de pistas es ${GUEST_LIMITS.maxCourts}.`,
+          ),
+      );
+    }
+
+    const all = await tournamentService.getAll(userUuid);
+    if (all.ok && all.data.length >= GUEST_LIMITS.maxPozos) {
+      return redirect(
+        "/pozos/nuevo?error=" +
+          encodeURIComponent(
+            `En modo invitado solo puede existir ${GUEST_LIMITS.maxPozos} pozo. Borra el actual desde el panel antes de crear otro.`,
+          ),
+      );
+    }
   }
 
   const result = await tournamentService.create(parsed.data, userUuid);
@@ -111,8 +134,19 @@ export async function saveCourtResult(
   );
   if (!parsed.ok) return { error: parsed.error };
 
-  const { roundService } = await createServices();
+  const { roundService, matchHistoryRepo } = await createServices();
   const userUuid = await getCurrentUserUuid();
+  const mode = await getCurrentAuthMode();
+
+  if (mode === "guest") {
+    const existing = await matchHistoryRepo.findAll(userUuid);
+    if (existing.ok && existing.data.length >= GUEST_LIMITS.maxHistoryMatches) {
+      return {
+        error: `En modo invitado el histórico no puede superar los ${GUEST_LIMITS.maxHistoryMatches} partidos.`,
+      };
+    }
+  }
+
   const result = await roundService.saveCourtResult(
     parsed.data.roundId,
     parsed.data.courtNumber,

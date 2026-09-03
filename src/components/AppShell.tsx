@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
+import HelpDialog from "@/components/HelpDialog";
 import type { ReactNode } from "react";
 
 interface NavItem {
@@ -111,6 +112,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <main className="flex-1 md:ml-64 pt-20 md:pt-0 p-4 md:p-12 min-h-screen">
         {children}
       </main>
+
+      <HelpDialog />
     </div>
   );
 }

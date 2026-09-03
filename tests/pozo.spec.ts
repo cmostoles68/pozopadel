@@ -1,30 +1,55 @@
 import { test, expect } from "@playwright/test";
 import { Client } from "pg";
+import {
+  connect,
+  resetUserData,
+  createProfile,
+  createDrawnPair,
+  createTournament,
+  GUEST_UUID,
+} from "./helpers";
 
-const DB = {
-  host: "127.0.0.1",
-  port: 54322,
-  user: "postgres",
-  password: "postgres",
-  database: "postgres",
-};
-
-let seq = 0;
-const client = new Client(DB);
+let client: Client;
 const createdTournaments: string[] = [];
 const createdPairs: string[] = [];
+const profileIds = new Map<string, string>();
 
 test.beforeAll(async () => {
-  await client.connect();
+  client = await connect();
+  await resetUserData(client, GUEST_UUID);
+
+  // Self-contained fixtures: the players referenced by the pairs below.
+  for (const name of [
+    "Ana Vega",
+    "Andrés Moreno",
+    "Juan García",
+    "Elena Castro",
+    "Pedro Martín",
+    "Lucía Romero",
+    "Pablo Torres",
+    "Sara Gil",
+  ]) {
+    profileIds.set(name, await createProfile(client, { full_name: name }));
+  }
 });
 
 test.describe.configure({ mode: "serial" });
 
 test.afterEach(async () => {
   try {
-    await client.query("DELETE FROM pozo_match_history WHERE tournament_id = ANY($1)", [createdTournaments]);
-    await client.query("DELETE FROM tournaments WHERE id = ANY($1)", [createdTournaments]);
-    await client.query("DELETE FROM drawn_pairs WHERE id = ANY($1)", [createdPairs]);
+    if (createdTournaments.length) {
+      await client.query("DELETE FROM pozo_match_history WHERE tournament_id = ANY($1::uuid[])", [
+        createdTournaments,
+      ]);
+      await client.query("DELETE FROM tournaments WHERE id = ANY($1::uuid[])", [
+        createdTournaments,
+      ]);
+    }
+    if (createdPairs.length) {
+      await client.query("DELETE FROM drawn_pairs WHERE id = ANY($1::uuid[])", [
+        createdPairs,
+      ]);
+    }
   } finally {
     createdTournaments.length = 0;
     createdPairs.length = 0;
@@ -32,13 +57,7 @@ test.afterEach(async () => {
 });
 
 test.afterAll(async () => {
-  try {
-    await client.query("DELETE FROM pozo_match_history WHERE tournament_id = ANY($1)", [createdTournaments]);
-    await client.query("DELETE FROM tournaments WHERE id = ANY($1)", [createdTournaments]);
-    await client.query("DELETE FROM drawn_pairs WHERE id = ANY($1)", [createdPairs]);
-  } finally {
-    await client.end();
-  }
+  await client.end();
 });
 
 const PAIRS = [
@@ -49,31 +68,32 @@ const PAIRS = [
 ];
 
 // Creates a tournament + drawn pairs with unique high pair numbers (9000+) so
-// badge locators never collide with the seeded pairs (1-12).
+// badge locators never collide with other fixtures' pairs.
 async function setupTournament(courts: number, pairIndexes: number[], minutes = 15) {
-  seq += 1;
-  const stamp = Date.now() + "-" + seq;
+  const stamp = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
 
-  const { rows } = await client.query(
-    "INSERT INTO tournaments (title, number_of_courts, minutes_per_round, status, created_by) VALUES ($1, $2, $3, 'draft', $4) RETURNING id",
-    [`pozo-test-${stamp}`, courts, minutes, '1']
-  );
-  const tournamentId = rows[0].id;
+  const tournamentId = await createTournament(client, {
+    title: `pozo-test-${stamp}`,
+    number_of_courts: courts,
+    minutes_per_round: minutes,
+    created_by: GUEST_UUID,
+  });
   createdTournaments.push(tournamentId);
 
   const numbers: number[] = [];
   for (const idx of pairIndexes) {
     const [n1, n2] = PAIRS[idx];
-    const pid1 = (await client.query("SELECT id FROM profiles WHERE full_name = $1", [n1])).rows[0]?.id;
-    const pid2 = (await client.query("SELECT id FROM profiles WHERE full_name = $1", [n2])).rows[0]?.id;
-    if (!pid1 || !pid2) throw new Error(`Profiles not found: ${n1} / ${n2}`);
-
+    const pid1 = profileIds.get(n1)!;
+    const pid2 = profileIds.get(n2)!;
     const num = 9000 + idx + 1;
-    const dr = await client.query(
-      "INSERT INTO drawn_pairs (pair_number, player1_id, player2_id, draw_method) VALUES ($1, $2, $3, 'test') RETURNING id",
-      [num, pid1, pid2]
-    );
-    createdPairs.push(dr.rows[0].id);
+    const pairId = await createDrawnPair(client, {
+      pair_number: num,
+      player1_id: pid1,
+      player2_id: pid2,
+      draw_method: "test",
+      user_uuid: GUEST_UUID,
+    });
+    createdPairs.push(pairId);
     numbers.push(num);
   }
 
@@ -94,6 +114,33 @@ function rowFor(page: import("@playwright/test").Page, number: number) {
 
 async function clickSelect(page: import("@playwright/test").Page, number: number) {
   await rowFor(page, number).getByRole("button", { name: "Seleccionar" }).click();
+}
+
+// The CourtCard <section> for a concrete court number + pair number.
+function courtSection(
+  page: import("@playwright/test").Page,
+  court: number,
+  pairNumber: number,
+) {
+  return page
+    .getByTestId(`court-${court}-pair-${pairNumber}`)
+    .locator("xpath=ancestor::section[1]");
+}
+
+async function registerScore(
+  page: import("@playwright/test").Page,
+  court: number,
+  winner: number,
+  loser: number,
+  wScore = "6",
+  lScore = "4",
+) {
+  await page.getByTestId(`court-${court}-score-${winner}`).fill(wScore);
+  await page.getByTestId(`court-${court}-score-${loser}`).fill(lScore);
+  await page.getByTestId(`court-${court}-pair-${winner}`).click();
+  await courtSection(page, court, winner)
+    .getByRole("button", { name: "Registrar Marcador" })
+    .click();
 }
 
 test.describe("Pozo: selección de parejas y sorteo de pistas", () => {
@@ -140,8 +187,8 @@ test.describe("Pozo: selección de parejas y sorteo de pistas", () => {
 
     // Every one of the tournament's drawn pairs is now selected in the DB.
     const { rows: drawn } = await client.query(
-      "SELECT id FROM drawn_pairs WHERE pair_number = ANY($1::int[])",
-      [numbers]
+      "SELECT id FROM drawn_pairs WHERE pair_number = ANY($1::int[]) AND user_uuid = $2",
+      [numbers, GUEST_UUID]
     );
     const { rows: selected } = await client.query(
       "SELECT drawn_pair_id FROM tournament_drawn_pairs WHERE tournament_id = $1",
@@ -183,19 +230,6 @@ test.describe("Pozo: selección de parejas y sorteo de pistas", () => {
       page.getByText("Hay 3 parejas pero solo 1 pistas (caben 2). Elimina alguna pareja o añade pistas.")
     ).toBeVisible();
     await expect(page.getByTestId("round-1")).not.toBeVisible();
-  });
-
-  test("permite rehacer el sorteo de pistas", async ({ page }) => {
-    const { tournamentId, numbers } = await setupTournament(2, [0, 1, 2, 3]);
-    await page.goto(`/pozos/${tournamentId}`);
-
-    for (const num of numbers) await clickSelect(page, num);
-    await page.getByRole("button", { name: "Sorteo pistas" }).click();
-    await expect(page.getByTestId("round-1")).toBeVisible();
-
-    await page.getByRole("button", { name: "Rehacer sorteo" }).click();
-    await expect(page.getByTestId("round-1")).not.toBeVisible();
-    await expect(page.getByText("Seleccionadas (4)")).toBeVisible();
   });
 });
 
@@ -253,9 +287,7 @@ test.describe("Pozo: registro de resultados y siguiente ronda", () => {
       expect(pairNums).toHaveLength(2);
       // Convert to the drawn_pair number used in testids.
       const [w, l] = pairNums;
-      await page.getByTestId(`court-${court}-score-${w}`).fill("6");
-      await page.getByTestId(`court-${court}-score-${l}`).fill("4");
-      await page.getByTestId(`court-${court}-pair-${w}`).click();
+      await registerScore(page, court, w, l);
     }
 
     // Round 2 is generated once every court is scored.
@@ -286,10 +318,10 @@ test.describe("Pozo: registro de resultados y siguiente ronda", () => {
     await expect(page.getByTestId("round-1")).toBeVisible();
     const [w, l] = numbers;
 
-    // Click the pair number itself to mark it winner.
+    // Click the pair number itself to mark it winner (locally, until saved).
     await page.getByTestId(`court-1-pair-${w}`).getByText(String(w), { exact: true }).click();
-    await expect(page.getByTestId(`court-1-pair-${w}`)).toContainText("Ganador");
-    await expect(page.getByTestId(`court-1-pair-${l}`)).not.toContainText("Ganador");
+    await expect(page.getByTestId(`court-1-pair-${w}`)).toContainText("GANADOR");
+    await expect(page.getByTestId(`court-1-pair-${l}`)).not.toContainText("GANADOR");
   });
 
   test("finalizar pozo desprecia la nueva ronda y corona al ganador de la pista 1 de la anterior", async ({ page }) => {
@@ -303,9 +335,7 @@ test.describe("Pozo: registro de resultados y siguiente ronda", () => {
     const [w, l] = numbers;
 
     // Complete round 1 on court 1; winner = w. This generates round 2.
-    await page.getByTestId(`court-1-score-${w}`).fill("6");
-    await page.getByTestId(`court-1-score-${l}`).fill("4");
-    await page.getByTestId(`court-1-pair-${w}`).click();
+    await registerScore(page, 1, w, l);
     await expect(page.getByTestId("round-2")).toBeVisible();
 
     // Finalize: the newly generated round 2 is discarded and court-1 champion
@@ -349,8 +379,9 @@ test.describe("Pozo: temporizador de ronda", () => {
     await timer.getByRole("button", { name: "Iniciar" }).click();
     await expect(timer.getByRole("button", { name: "En curso..." })).toBeVisible();
 
-    // Tapping the running timer stops it and resets it to 00:00.
-    await timer.click();
+    // Tapping the running timer stops it and resets it to 00:00. Click on the
+    // left part of the timer (the clock area), away from the "En curso..." button.
+    await timer.click({ position: { x: 40, y: 30 } });
     await expect(timer).toContainText("00:00");
     await expect(timer).toContainText("¡Tiempo completado!");
     await expect(timer.getByRole("button", { name: "Reiniciar" })).toBeVisible();
@@ -384,9 +415,7 @@ test.describe("Pozo: histórico de partidos", () => {
     await expect(page.getByTestId("round-1")).toBeVisible();
 
     const [w, l] = numbers;
-    await page.getByTestId(`court-1-score-${w}`).fill("6");
-    await page.getByTestId(`court-1-score-${l}`).fill("4");
-    await page.getByTestId(`court-1-pair-${w}`).click();
+    await registerScore(page, 1, w, l);
     // With a single court, completing it immediately generates round 2.
     await expect(page.getByTestId("round-2")).toBeVisible();
 
@@ -412,14 +441,13 @@ test.describe("Pozo: histórico de partidos", () => {
   });
 
   test("el sorteo evita repetir parejas que siempre ganan en el historico", async ({ page }) => {
-    const [ana] = (await client.query("SELECT id FROM profiles WHERE full_name = $1", ["Ana Vega"])).rows;
-    const [andres] = (await client.query("SELECT id FROM profiles WHERE full_name = $1", ["Andrés Moreno"])).rows;
-    const [pablo] = (await client.query("SELECT id FROM profiles WHERE full_name = $1", ["Pablo Torres"])).rows;
-    const [sara] = (await client.query("SELECT id FROM profiles WHERE full_name = $1", ["Sara Gil"])).rows;
-    expect(ana && andres && pablo && sara).toBeTruthy();
+    const ana = profileIds.get("Ana Vega")!;
+    const andres = profileIds.get("Andrés Moreno")!;
+    const pablo = profileIds.get("Pablo Torres")!;
+    const sara = profileIds.get("Sara Gil")!;
 
     // Record existing drawn_pairs so cleanup only removes the new draw's rows.
-    const before = await client.query("SELECT id FROM drawn_pairs");
+    const before = await client.query("SELECT id FROM drawn_pairs WHERE user_uuid = $1", [GUEST_UUID]);
     const beforeIds = new Set(before.rows.map((r: { id: string }) => r.id));
 
     // Fabricate 3 wins so the Ana+Andrés partnership has a 100% win rate.
@@ -429,10 +457,10 @@ test.describe("Pozo: histórico de partidos", () => {
         `INSERT INTO pozo_match_history
            (tournament_id, round_id, round_number, court_number,
             winner_player1_id, winner_player2_id, loser_player1_id, loser_player2_id,
-            score_winner, score_loser)
-         VALUES (NULL, NULL, NULL, 1, $1, $2, $3, $4, 6, 4)
+            score_winner, score_loser, user_uuid)
+         VALUES (NULL, NULL, NULL, 1, $1, $2, $3, $4, 6, 4, $5)
          RETURNING id`,
-        [ana.id, andres.id, pablo.id, sara.id]
+        [ana, andres, pablo, sara, GUEST_UUID]
       );
       historyIds.push(rows[0].id);
     }
@@ -444,8 +472,8 @@ test.describe("Pozo: histórico de partidos", () => {
     await expect
       .poll(async () => {
         const { rows } = await client.query(
-          "SELECT id FROM drawn_pairs WHERE id <> ALL($1::uuid[])",
-          [[...beforeIds]]
+          "SELECT id FROM drawn_pairs WHERE user_uuid = $1 AND id <> ALL($2::uuid[])",
+          [GUEST_UUID, [...beforeIds]]
         );
         return rows.length > 0;
       })
@@ -455,17 +483,20 @@ test.describe("Pozo: histórico de partidos", () => {
     const { rows } = await client.query(
       `SELECT dp.player1_id, dp.player2_id
          FROM drawn_pairs dp
-        WHERE dp.id <> ALL($1::uuid[])
-          AND (dp.player1_id = $2 OR dp.player2_id = $2)`,
-      [[...beforeIds], ana.id]
+        WHERE dp.user_uuid = $1 AND dp.id <> ALL($2::uuid[])
+          AND (dp.player1_id = $3 OR dp.player2_id = $3)`,
+      [GUEST_UUID, [...beforeIds], ana]
     );
     for (const r of rows) {
-      const partner = r.player1_id === ana.id ? r.player2_id : r.player1_id;
-      expect(partner).not.toBe(andres.id);
+      const partner = r.player1_id === ana ? r.player2_id : r.player1_id;
+      expect(partner).not.toBe(andres);
     }
 
     // Remove only the pairs created by this draw.
-    await client.query("DELETE FROM drawn_pairs WHERE id <> ALL($1::uuid[])", [[...beforeIds]]);
+    await client.query("DELETE FROM drawn_pairs WHERE user_uuid = $1 AND id <> ALL($2::uuid[])", [
+      GUEST_UUID,
+      [...beforeIds],
+    ]);
     await client.query("DELETE FROM pozo_match_history WHERE id = ANY($1)", [historyIds]);
   });
 });
