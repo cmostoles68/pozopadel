@@ -29,7 +29,7 @@ test.afterAll(async () => {
   await client.end();
 });
 
-async function playedPairNumbers(page: import("@playwright/test").Page): Promise<number[]> {
+async function playedPairNumbers(): Promise<number[]> {
   const { rows } = await client.query(
     "SELECT pair_number FROM drawn_pairs WHERE user_uuid = $1 ORDER BY pair_number",
     [GUEST_UUID],
@@ -44,7 +44,7 @@ test("sortea parejas de forma aleatoria", async ({ page }) => {
   await page.getByRole("button", { name: "Aleatorio", exact: true }).click();
 
   // 6 players -> 3 full pairs.
-  await expect.poll(async () => (await playedPairNumbers(page)).length).toBe(3);
+  await expect.poll(async () => (await playedPairNumbers()).length).toBe(3);
   await expect(page.getByText(/Parejas \(3\)/)).toBeVisible();
 });
 
@@ -68,11 +68,11 @@ test("borrar sorteo limpia las parejas", async ({ page }) => {
 
   await page.goto("/sorteo");
   await page.getByRole("button", { name: "Por Nivel", exact: true }).click();
-  await expect.poll(async () => (await playedPairNumbers(page)).length).toBe(3);
+  await expect.poll(async () => (await playedPairNumbers()).length).toBe(3);
 
   page.on("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Borrar sorteo" }).click();
 
-  await expect.poll(async () => (await playedPairNumbers(page)).length).toBe(0);
+  await expect.poll(async () => (await playedPairNumbers()).length).toBe(0);
   await expect(page.getByText(/No hay parejas sorteadas/)).toBeVisible();
 });

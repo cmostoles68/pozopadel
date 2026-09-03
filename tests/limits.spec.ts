@@ -2,7 +2,6 @@ import { test, expect } from "@playwright/test";
 import {
   connect,
   resetUserData,
-  createProfile,
   createTournament,
   GUEST_UUID,
   ADMIN_UUID,

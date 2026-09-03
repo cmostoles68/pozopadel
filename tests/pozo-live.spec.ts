@@ -13,7 +13,7 @@ import {
 
 let client: Awaited<ReturnType<typeof connect>>;
 const createdTournaments: string[] = [];
-let pairIds: string[] = [];
+const pairIds: string[] = [];
 
 test.describe.configure({ mode: "serial" });
 
