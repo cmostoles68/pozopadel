@@ -39,11 +39,11 @@ test.describe("Login page", () => {
     await page.goto("/auth/login");
 
     await page.getByRole("button", { name: /Entrar como Admin/ }).click();
-    await page.getByLabel("Contraseña de administrador").fill("1234");
+    await page.getByLabel("Contraseña de administrador").fill("L0sp0z0s!");
     await page.getByRole("button", { name: "Entrar" }).click();
 
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByText("Admin")).toBeVisible();
+    await expect(page.getByText("Admin", { exact: true })).toBeVisible();
   });
 
   test("logout returns to login page", async ({ page }) => {

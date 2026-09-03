@@ -8,6 +8,7 @@ import {
   finalizePozo,
 } from "../actions";
 import type { PairInfo, RoundData } from "./types";
+import { toSafeErrorMessage } from "@/application/errors";
 import ChampionBanner from "./ChampionBanner";
 import CourtCard from "./CourtCard";
 
@@ -135,7 +136,7 @@ export default function CourtScoring({
                     if (next.error) setError(next.error);
                     if (next.nextRoundNumber) router.refresh();
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : "Error al guardar");
+                    setError(toSafeErrorMessage(e));
                   }
                   setLoading(null);
                 }}

@@ -4,7 +4,8 @@ import type {
 } from "@/domain/repositories/pair.repository";
 import type { DrawnPair, TournamentDrawnPair, DrawMethod } from "@/domain/entities/pair";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ok, err } from "@/domain/result";
+import { ok } from "@/domain/result";
+import { safeErr } from "@/application/errors";
 import type { Database } from "../database.types";
 
 
@@ -70,7 +71,7 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
       .from("drawn_pairs")
       .delete()
       .eq("user_uuid", userUuid);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -87,7 +88,7 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
       .from("drawn_pairs")
       .insert(pairs.map((p) => ({ ...p, user_uuid: userUuid })))
       .select("*");
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok((data ?? []) as DrawnPair[]);
   }
 }
@@ -108,7 +109,7 @@ export class SupabaseTournamentDrawnPairAdapter implements ITournamentDrawnPairR
       tournament_id: tournamentId,
       drawn_pair_id: drawnPairId,
     });
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -118,7 +119,7 @@ export class SupabaseTournamentDrawnPairAdapter implements ITournamentDrawnPairR
       .delete()
       .eq("tournament_id", tournamentId)
       .eq("drawn_pair_id", drawnPairId);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -138,7 +139,7 @@ export class SupabaseTournamentDrawnPairAdapter implements ITournamentDrawnPairR
     const { error } = await this.supabase
       .from("tournament_drawn_pairs")
       .insert(toInsert.map((id) => ({ tournament_id: tournamentId, drawn_pair_id: id })));
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -147,7 +148,7 @@ export class SupabaseTournamentDrawnPairAdapter implements ITournamentDrawnPairR
       .from("tournament_drawn_pairs")
       .update({ court_number: courtNumber })
       .eq("id", id);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -157,7 +158,7 @@ export class SupabaseTournamentDrawnPairAdapter implements ITournamentDrawnPairR
       .update({ court_number: null })
       .eq("tournament_id", tournamentId)
       .not("court_number", "is", null);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 

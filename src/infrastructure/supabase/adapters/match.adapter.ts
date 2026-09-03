@@ -1,7 +1,8 @@
 import type { IMatchHistoryRepository } from "@/domain/repositories/match.repository";
 import type { MatchHistoryRow } from "@/domain/entities/match";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ok, err } from "@/domain/result";
+import { ok } from "@/domain/result";
+import { safeErr } from "@/application/errors";
 import type { Database } from "../database.types";
 
 export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
@@ -80,7 +81,7 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
       },
       { onConflict: "tournament_id,round_id,court_number" },
     );
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 

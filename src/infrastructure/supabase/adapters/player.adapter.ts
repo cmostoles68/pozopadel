@@ -1,7 +1,8 @@
 import type { IPlayerRepository } from "@/domain/repositories/player.repository";
 import type { Player, PlayerProfile } from "@/domain/entities/player";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ok, err } from "@/domain/result";
+import { ok } from "@/domain/result";
+import { safeErr } from "@/application/errors";
 import type { Database } from "../database.types";
 
 export class SupabasePlayerAdapter implements IPlayerRepository {
@@ -42,7 +43,7 @@ export class SupabasePlayerAdapter implements IPlayerRepository {
     user_uuid: string;
   }) {
     const { error } = await this.supabase.from("profiles").insert(data);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -56,7 +57,7 @@ export class SupabasePlayerAdapter implements IPlayerRepository {
       .update(data)
       .eq("id", id)
       .eq("user_uuid", userUuid);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -66,7 +67,7 @@ export class SupabasePlayerAdapter implements IPlayerRepository {
       .delete()
       .eq("id", id)
       .eq("user_uuid", userUuid);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -75,7 +76,7 @@ export class SupabasePlayerAdapter implements IPlayerRepository {
       .from("profiles")
       .delete()
       .eq("user_uuid", userUuid);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 

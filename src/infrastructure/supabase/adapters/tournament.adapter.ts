@@ -1,7 +1,8 @@
 import type { ITournamentRepository } from "@/domain/repositories/tournament.repository";
 import type { Tournament } from "@/domain/entities/tournament";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ok, err } from "@/domain/result";
+import { ok } from "@/domain/result";
+import { safeErr } from "@/application/errors";
 import type { Database } from "../database.types";
 
 export class SupabaseTournamentAdapter implements ITournamentRepository {
@@ -44,7 +45,7 @@ export class SupabaseTournamentAdapter implements ITournamentRepository {
       })
       .select()
       .single();
-    if (error || !tournament) return err(error?.message ?? "Error creating tournament");
+    if (error || !tournament) return safeErr(error?.message ?? "Error creating tournament");
     return ok(tournament as Tournament);
   }
 
@@ -54,7 +55,7 @@ export class SupabaseTournamentAdapter implements ITournamentRepository {
       .update({ status })
       .eq("id", id)
       .eq("created_by", userUuid);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -64,7 +65,7 @@ export class SupabaseTournamentAdapter implements ITournamentRepository {
       .update({ status: "completed", champion_drawn_pair_id: championDrawnPairId })
       .eq("id", id)
       .eq("created_by", userUuid);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -74,7 +75,7 @@ export class SupabaseTournamentAdapter implements ITournamentRepository {
       .delete()
       .eq("id", id)
       .eq("created_by", userUuid);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 }

@@ -2,7 +2,8 @@ import type { IPozoRoundRepository } from "@/domain/repositories/round.repositor
 import type { PozoRound } from "@/domain/entities/round";
 import type { PozoRoundPair } from "@/domain/entities/match";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ok, err } from "@/domain/result";
+import { ok } from "@/domain/result";
+import { safeErr } from "@/application/errors";
 import type { Database } from "../database.types";
 
 export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
@@ -52,7 +53,7 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
       })
       .select()
       .single();
-    if (error || !round) return err(error?.message ?? "No se pudo crear la ronda");
+    if (error || !round) return safeErr(error?.message ?? "No se pudo crear la ronda");
     return ok(round as PozoRound);
   }
 
@@ -61,7 +62,7 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
       .from("pozo_rounds")
       .update({ status })
       .eq("id", roundId);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -70,7 +71,7 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
       .from("pozo_rounds")
       .delete()
       .eq("tournament_id", tournamentId);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -108,7 +109,7 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
         is_finished: true,
       })
       .eq("id", data.pairId);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -120,7 +121,7 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
     }[]
   ) {
     const { error } = await this.supabase.from("pozo_round_pairs").insert(pairs);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
@@ -129,7 +130,7 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
       .from("pozo_rounds")
       .delete()
       .eq("id", roundId);
-    if (error) return err(error.message);
+    if (error) return safeErr(error);
     return ok(undefined);
   }
 
