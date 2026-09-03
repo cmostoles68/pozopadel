@@ -1,18 +1,17 @@
 # PadelElite — Gestor de Pozos de Pádel
 
-Aplicación web para organizar y gestionar **pozos de pádel** (torneos tipo padel espíritu Pozo): crear jugadores, sortear parejas, anotar marcadores en vivo por pista, avanzar rondas automáticamente y coronar al campeón del pozo.
+Aplicación web para organizar y gestionar **pozos de pádel**: crear jugadores, sortear parejas, anotar marcadores en vivo por pista, avanzar rondas automáticamente con la regla "sube y baja" y coronar a la pareja campeona del Pozo 1 (Pista Rey).
 
 Proyecto desarrollado como **Trabajo de Fin de Máster** en desarrollo de aplicaciones web con IA.
 
 ## Stack
 
-- **Framework:** Next.js 16 (App Router, React 19, TypeScript 5)
-- **Estilos:** Tailwind CSS v4 con design system Material 3 ("Stitch" dark/glassmorphism)
-- **BBDD / Backend-as-a-Service:** Supabase (PostgreSQL local vía CLI)
-- **BBDD de algoritmo:** los motores de sorteo, movimientos y emparejamiento son funciones puras en TypeScript puro
+- **Framework:** Next.js 16 (App Router, React 19, TypeScript 5 en modo estricto)
+- **Estilos:** Tailwind CSS v4 con design system Material 3 (dark/glassmorphism)
+- **Backend-as-a-Service:** Supabase (PostgreSQL local vía CLI)
+- **Lógica de negocio:** algoritmos de sorteo, emparejamiento y movimientos como funciones puras en TypeScript (capa `domain`)
 - **Tests unitarios:** Vitest 4
 - **Tests E2E:** Playwright
-- **Lint:** ESLint 9 (config `next/core-web-vitals`)
 
 ## Arranque rápido
 
@@ -27,8 +26,8 @@ supabase start
 # 2. Variables de entorno (ver .env.example)
 cp .env.example .env.local
 
-# 3. Aplicar migraciones y datos de ejemplo
-npm run seed
+# 3. Aplicar migraciones (esquema + usuarios de prueba)
+supabase db reset
 
 # 4. Servidor de desarrollo
 npm run dev
@@ -42,124 +41,140 @@ NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key-de-supabase>
 ```
 
+La clave anónima se obtiene con `supabase status`.
+
+## Modos de acceso: Invitado y Admin
+
+La aplicación distingue dos modos de autenticación, controlados por la cookie `padel_uuid`:
+
+- **Invitado** (por defecto): entra sin credenciales. Sus datos quedan aislados bajo el UUID de invitado y **están sujetos a límites de uso** (ver sección Límites).
+- **Admin**: requiere contraseña. Puede gestionar su propio conjunto de datos (UUID de admin) **sin límites**.
+
+El UUID de sesión se resuelve en el servidor con `getCurrentUserUuid()` / `getCurrentAuthMode()` (`src/infrastructure/supabase/current-user.ts`). No existe middleware de sesión: los datos se aíslan por `user_uuid` en cada consulta.
+
+## Límites del modo invitado
+
+Definidos de forma centralizada en [`src/config/limits.ts`](src/config/limits.ts) como `GUEST_LIMITS`:
+
+| Límite | Valor |
+|---|---|
+| Máximo de jugadores | 32 |
+| Máximo de pozos (torneos) | 1 |
+| Máximo de pistas por pozo | 8 |
+| Máximo de jugadores en histórico | 32 |
+| Máximo de juegos en histórico | 100 |
+
+En el modo **invitado** estos valores se leen y **no pueden superarse** (se validan en las server actions antes de persistir). El modo **admin es ilimitado**. Si ya existe un pozo y se intenta crear otro en modo invitado, hay que borrar el actual desde el panel.
+
 ## Scripts
 
 | Comando | Descripción |
 |---|---|
 | `npm run dev` | Servidor de desarrollo |
 | `npm run build` / `npm run start` | Build y servidor de producción |
-| `npm run lint` | ESLint (config `next/core-web-vitals`) |
+| `npm run lint` | ESLint 9 (config `next/core-web-vitals`) |
+| `npm run typecheck` | TypeScript estricto (`tsc --noEmit`) |
 | `npm test` | Test unitarios (Vitest) |
 | `npm run test:watch` | Tests unitarios en modo watch |
-| `npm run test:e2e` | Tests E2E (Playwright, requiere servidor en :3000) |
-| `npm run seed` | Aplica migraciones + datos de ejemplo (`node scripts/seed.js`) |
+| `npm run test:e2e` | Tests E2E (Playwright) |
+| `npm run seed` | Ejecuta `node scripts/seed.js` |
 
 ## Arquitectura
 
-El proyecto sigue una **Arquitectura Limpia (hexagonal)** con dependencias dirigidas hacia el interior:
+Proyecto con **Arquitectura Limpia** y dependencias dirigidas hacia el interior:
 
 ```
-┌──────────────┐   ┌───────────────────────┐   ┌───────────────────┐
-│ presentation │ → │ application (services)│ → │  domain           │
-│  app/**      │   │ casos de uso          │   │  (puro, sin deps) │
-└──────────────┘   └──────────┬────────────┘   └───────────────────┘
-                              │ implements
-                              ▼
-                   ┌───────────────────────┐
-                   │ infrastructure        │
-                   │ repos + adapters (DB) │
-                   └───────────────────────┘
+┌──────────────┐   ┌─────────────────┐   ┌───────────────────┐
+│ presentation │ → │ application     │ → │  domain           │
+│ app/** +     │   │ services, DTOs  │   │  (puro, sin deps) │
+│ components   │   │ schemas zod     │   └───────────────────┘
+└──────────────┘   └───────┬─────────┘   ┌───────────────────┐
+                           │ implements  │ infrastructure    │
+                           ▼             │ repos + adapters  │
+                        ┌─────────────┐  │ (Supabase)        │
+                        │ domain: ifs │  └───────────────────┘
+                        └─────────────┘
 ```
 
-- **`src/domain/`** — sin dependencias externas. Entidades, repositorios (interfaces) y algoritmos puros: `algorithms/draw.ts`, `algorithms/legacy-round-engine.ts`, `algorithms/movements.ts`, `algorithms/round-engine.ts` y `stats/championships.ts`.
-- **`src/application/`** — casos de uso (`services`), DTOs. Orquestan dominio + infraestructura, sin lógica de negocio embebida.
-- **`src/infrastructure/`** — adaptadores de Supabase que implementan las interfaces de repositorio (`supabase/adapters`). Los accesos a BBDD pasan por aquí vía `service-factory.ts`.
-- **`src/components/`** — componentes de UI reutilizables (`AppShell`, `CourtsGrid`, `LeaderboardTable`, `AdminControlPanel`, `RoundTimer`).
-- **`src/app/**`** — páginas (server components) y server actions. Las **actions no contienen lógica de negocio ni acceso directo a BBDD**; delegan en servicios/repositorios.
+- **`src/domain/`** — sin dependencias externas. Entidades, interfaces de repositorio, el tipo `Result<T>` (monada `ok`/`err`) y algoritmos puros: `algorithms/draw.ts` (sorteo de parejas), `algorithms/movements.ts` (rotación "sube y baja") y `stats/championships.ts`.
+- **`src/application/`** — casos de uso (`services/`), DTOs y esquemas de validación Zod (`validation/schemas.ts`). Orquestan dominio e infraestructura.
+- **`src/infrastructure/`** — adaptadores Supabase que implementan las interfaces de repositorio, `service-factory.ts` y la resolución de sesión (`supabase/current-user.ts`).
+- **`src/config/`** — configuración de autenticación (`auth.ts`) y de límites del modo invitado (`limits.ts`).
+- **`src/components/`** — componentes de UI reutilizables (`AppShell`, `RoundTimer`, `LiveTournamentHeader`, `HelpDialog`, `ui/modal`).
+- **`src/app/**`** — páginas (server React components) y **server actions**. Las actions validan la entrada, resuelven el modo de sesión y delegan en los servicios/repositorios.
 
-```text
+```
 src/
-├── app/                 # Rutas y páginas (presentación)
-│   ├── dashboard/       # Torneos (CRUD)
-│   ├── jugadores/       # Gestión de jugadores
-│   ├── sorteo/          # Sorteo de parejas
-│   ├── historico/       # Histórico y clasificación
-│   ├── pozos/[id]/      # Detalle de pozo + marcador en vivo
-│   ├── api/pozos/*      # API routes (start, finish, finish-round)
-│   └── auth/            # Login y callback OAuth
-├── components/
-├── domain/              # Lógica pura (algoritmos, entidades, repos)
-├── application/         # Casos de uso y DTOs
-├── infrastructure/      # Adaptadores de BBDD (Supabase)
-└── tests/               # Tests unitarios (Vitest)
+├── app/
+│   ├── auth/login/        # Pantalla de acceso (invitado / admin)
+│   ├── dashboard/         # Panel: acceso a "Nuevo Torneo" y lista de torneos
+│   ├── jugadores/         # Gestión de jugadores (CRUD)
+│   ├── sorteo/            # Sorteo de parejas (4 algoritmos)
+│   ├── historico/         # Histórico de jugadores y reincorporación
+│   ├── pozos/nuevo/       # Creación de pozo (pistas, minutos por ronda)
+│   ├── pozos/[id]/        # Detalle de pozo + marcador en vivo
+│   └── page.tsx           # Redirige a /auth/login
+├── components/            # AppShell, CourtCard, RoundTimer, HelpDialog, Modal...
+├── config/                # auth.ts, limits.ts
+├── contexts/              # auth-context (cliente)
+├── domain/                # Algoritmos + entidades + repos + Result
+├── application/           # Servicios, DTOs, validación Zod
+├── infrastructure/        # Adaptadores Supabase, service-factory, current-user
+└── tests/                 # Tests unitarios (Vitest)
 ```
 
 ## Esquema de datos (Supabase/PostgreSQL)
 
 | Tabla | Propósito |
 |---|---|
-| `profiles` | Perfiles de usuario (auth) |
-| `tournaments` | Torneos / pozos |
-| `tournament_players` | Jugadores inscritos en un torneo (flujo legacy) |
-| `rounds` / `matches` | Rondas y partidos (flujo legacy) |
-| `drawn_pairs` | Parejas sorteadas (sorteo) |
-| `tournament_drawn_pairs` | Vinculación pareja ↔ torneo |
-| `pozo_rounds` / `pozo_round_pairs` | Rondas y asignaciones pista/pareja del pozo |
-| `pozo_match_history` | Historial de partidos jugados |
-| `champion` | Pareja campeona del pozo |
+| `profiles` | Jugadores (con `user_uuid` de propietario) |
+| `tournaments` | Pozos / torneos (con `created_by`) |
+| `drawn_pairs` | Parejas sorteadas (con `user_uuid`) |
+| `tournament_drawn_pairs` | Vinculación pareja ↔ torneo y asignación de pista |
+| `pozo_rounds` | Rondas del pozo |
+| `pozo_round_pairs` | Asignación pista/pareja de cada ronda |
+| `pozo_match_history` | Historial de partidos (jugadores, marcador, campeón) |
+| `test_users` | Usuarios de sistema (invitado/admin) |
 
-> **Deuda técnica conocida:** coexisten **dos motores de torneo** — un flujo *legacy* (`rounds`/`matches`, motor `legacy-round-engine`) y el flujo *pozo* (`pozo_rounds`, motor `round-engine`). La migración del `pozo` moderno está en curso; ver [MOTORES.md](MOTORES.md).
+El aislamiento entre usuarios se realiza por `user_uuid` / `created_by` en cada consulta. Las migraciones viven en `supabase/migrations/`.
 
-## Principios de auditoría y arquitectura
+## Sorteo de parejas
 
-La versión final de la auditoría queda resumida en estos cuatro principios:
+Disponible en la sección Sorteo, con 4 algoritmos (definidos en `src/domain/algorithms/draw.ts`):
 
-1. **Principio de flujo único**
-   - Un único flujo de negocio activo para cada caso de uso.
-   - No conviven dos motores de negocio que resuelven lo mismo.
-   - El flujo legacy debe quedarse archivado o eliminado, no activo.
+1. **Aleatorio Total** — emparejamiento totalmente al azar.
+2. **Aleatorio Mixto** — parejas hombre + mujer al azar.
+3. **Por Niveles Total** — compensa niveles (alto con bajo).
+4. **Por Niveles Mixto** — combina género mixto y equilibrio de niveles.
 
-2. **Principio de verdad del dominio**
-   - El dominio debe ser la fuente única de reglas y decisiones.
-   - La UI y la infraestructura no deben inventar lógica ni decidir reglas del negocio.
-   - Los algoritmos y entidades del dominio deben ser los únicos árbitros de la validez.
+El sorteo evita repetir parejas que ya se hayan proclamado campeonas de un pozo completo (detección vía histórico de victorias).
 
-3. **Principio de caso de uso único**
-   - Cada operación debe estar expresada por un caso de uso claro y estable.
-   - La aplicación debe orquestar casos de uso y no mezclar responsabilidades.
-   - Un servicio debe responder a una intención de negocio, no a varios impulsos distintos.
+## Ayuda integrada
 
-4. **Principio de eliminación de deuda y duplicidad**
-   - El código muerto, duplicado y legacy debe ser retirado o aislado.
-   - Si dos implementaciones resuelven lo mismo, se elige una sola y se elimina la otra.
-   - La auditoría exige limpieza constante, no meras correcciones puntuales.
-
-Estos cuatro principios son la base para hacer del proyecto una arquitectura sostenible, con baja ambigüedad, menos riesgo y mejor mantenibilidad.
+Un **botón flotante de ayuda** (icono `?`) está disponible en todas las páginas (montado en `AppShell`). Abre un modal (`src/components/ui/modal.tsx`) con un tutorial paso a paso que explica el funcionamiento completo: gestión de jugadores, algoritmos de sorteo, configuración del pozo, asignación de pistas, dinámica de juego (temporizador, registro de marcador, rotación), finalización del pozo y uso del histórico. Todo el contenido está en `src/components/HelpDialog.tsx`.
 
 ## Pruebas
 
 ```bash
-# Unitarias (dominio, 30+ tests)
+# Unitarias (Vitest) — 106 tests
 npm test
 
-# E2E (útil para validar flujos de jugador)
+# E2E (Playwright) — 38 tests
 npm run test:e2e
 ```
 
-Los tests unitarios cubren los algoritmos puros de dominio (emparejamiento por nivel/aleatorio, asignación de pistas, movimientos de jugadores y parejas, reglas del sorteo, conteo de campeonatos) **sin depender de BBDD ni de red** — garantizado por la capa de dominio sin dependencias.
+- **Unitarias** (`src/tests/` y `tests/*.unit.spec.ts`): algoritmos puros de dominio (sorteo, emparejamiento, movimientos), validación Zod, hash de admin e integración de la capa de adaptadores — sin depender de BBDD ni de red.
+- **E2E** (`tests/`, config en `playwright.config.ts`, proyecto chromium, `workers: 1`): flujos completos de la UI (auth, dashboard, jugadores, sorteo, pozo, pozo-live, orden de pozos e histórico). Cada spec crea y limpia sus propios fixtures sobre la BBDD local mediante `tests/helpers.ts`, garantizando determinismo.
+- Toda la suite pasa: `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:e2e` y `npm run build`.
 
 ## Decisiones de diseño
 
-1. **Lógica de negocio en dominio puro.** Los algoritmos críticos (sorteo, emparejamiento, movimientos) viven en `domain/algorithms` como funciones puras testables, sin tocar Supabase.
+1. **Lógica de negocio en dominio puro.** Algoritmos críticos (sorteo, emparejamiento, movimientos) viven en `domain/algorithms` como funciones puras testables, sin tocar Supabase.
 2. **Presentación sin lógica de negocio.** Páginas y server actions delegan en la capa `application`; el acceso a datos queda aislado en `infrastructure` detrás de interfaces de repositorio.
-3. **Design system centralizado.** Tokens M3 como variables CSS en `globals.css` y clases utilitarias (`.glass-panel`, `.pattern-bg`, `.neon-glow`) reutilizadas en toda la UI vía `AppShell`.
-4. **Iconos auto-hosteado.** Material Symbols se sirve localmente desde `/fonts` (sin dependencia de CDN en runtime).
-
-## Estructura de commits (histórico relevante)
-
-- `dbfa133` — Restyle completo "Stitch" (25 archivos)
-- `d2365b0` — Sorteo mínimo de 4 jugadores (par)
-- `b6c0a0f` — Pozos ganados + seed de datos
+3. **Validation en frontera.** Toda entrada se valida con Zod (`src/application/validation/schemas.ts`) antes de llegar a los servicios, y los errores se propagan con el tipo `Result<T>`.
+4. **Configuración centralizada.** Autenticación (`src/config/auth.ts`) y límites del modo invitado (`src/config/limits.ts`) separados del código de negocio.
+5. **Design system centralizado.** Tokens Material 3 como variables CSS en `globals.css` y clases utilitarias (`.glass-panel`, `.pattern-bg`, `.neon-glow`).
+6. **Iconos auto-hosteado.** Material Symbols servido localmente desde `/fonts` (sin CDN en runtime) y componente `Modal` reutilizable.
 
 ---
 
