@@ -7,7 +7,7 @@ import type { PozoRound } from "@/domain/entities/round";
 import type { PozoRoundPair } from "@/domain/entities/match";
 import type { CourtResultInput } from "../dto/round.dto";
 import type { Result } from "@/domain/result";
-import { err } from "@/domain/result";
+import { err, ok } from "@/domain/result";
 import { calculatePairMovements } from "@/domain/algorithms/movements";
 
 export class RoundService {
@@ -36,7 +36,6 @@ export class RoundService {
     courtNumber: number,
     results: CourtResultInput[],
     winnerDrawnPairId: string,
-    userUuid: string,
   ): Promise<Result<void>> {
     const round = await this.pozoRoundRepo.findById(roundId);
     if (!round.ok) return round;
@@ -59,39 +58,24 @@ export class RoundService {
       if (!res.ok) return res;
     }
 
-    // Record match history
-    const historyRes = await this.recordMatchHistory(
-      round.data.tournament_id,
-      round.data.id,
-      round.data.round_number,
-      courtNumber,
-      rows.data.map((r) => r.drawn_pair_id),
-      winnerDrawnPairId,
-      scoreMap,
-      userUuid,
-    );
-    if (!historyRes.ok) return historyRes;
-
     return { ok: true, data: undefined };
   }
 
-  private async recordMatchHistory(
+  private async recordChampionMatch(
     tournamentId: string,
     roundId: string,
     roundNumber: number,
-    courtNumber: number,
-    drawnPairIds: string[],
     winnerDrawnPairId: string,
-    scoreMap: Record<string, number>,
+    loserDrawnPairId: string,
+    winnerScore: number | null,
+    loserScore: number | null,
     userUuid: string,
   ): Promise<Result<void>> {
     const allPairs = await this.drawnPairRepo.findAll(userUuid);
     if (!allPairs.ok) return allPairs;
 
     const winnerPair = allPairs.data.find((p) => p.id === winnerDrawnPairId);
-    const loserPair = allPairs.data.find(
-      (p) => drawnPairIds.includes(p.id) && p.id !== winnerDrawnPairId,
-    );
+    const loserPair = allPairs.data.find((p) => p.id === loserDrawnPairId);
 
     if (!winnerPair || !loserPair) return { ok: true, data: undefined };
 
@@ -125,7 +109,7 @@ export class RoundService {
       tournament_id: tournamentId,
       round_id: roundId,
       round_number: roundNumber,
-      court_number: courtNumber,
+      court_number: 1,
       winner_player1_id: winnerPair.player1_id,
       winner_player2_id: winnerPair.player2_id,
       loser_player1_id: loserPair.player1_id,
@@ -133,8 +117,8 @@ export class RoundService {
       winner_drawn_pair_id: winnerPair.id,
       loser_drawn_pair_id: loserPair.id,
       playerData,
-      score_winner: scoreMap[winnerPair.id] ?? null,
-      score_loser: scoreMap[loserPair.id] ?? null,
+      score_winner: winnerScore,
+      score_loser: loserScore,
       user_uuid: userUuid,
     });
   }
@@ -219,6 +203,12 @@ export class RoundService {
     // más reciente hacia atrás hasta encontrar una con ganador definido en la
     // pista rey (descarta la posible nueva ronda aún sin resultado).
     let champion: string | null = null;
+    let finalRoundId = "";
+    let finalRoundNumber = 0;
+    let loserDrawnPairId: string | null = null;
+    let winnerScore: number | null = null;
+    let loserScore: number | null = null;
+
     for (let i = rounds.data.length - 1; i >= 0; i--) {
       const court1Pairs = await this.pozoRoundRepo.findCourtPairs(rounds.data[i].id, 1);
       if (!court1Pairs.ok) return court1Pairs;
@@ -228,6 +218,14 @@ export class RoundService {
       );
       if (winner) {
         champion = winner.drawn_pair_id;
+        finalRoundId = rounds.data[i].id;
+        finalRoundNumber = rounds.data[i].round_number;
+        winnerScore = winner.score_a;
+        const loser = court1Pairs.data.find(
+          (p) => p.drawn_pair_id !== winner.drawn_pair_id,
+        );
+        loserDrawnPairId = loser?.drawn_pair_id ?? null;
+        loserScore = loser?.score_a ?? null;
         break;
       }
     }
@@ -236,6 +234,23 @@ export class RoundService {
       return err("La pista 1 todavía no tiene un ganador definido");
     }
 
-    return this.tournamentRepo.updateChampion(tournamentId, userUuid, champion);
+    const upd = await this.tournamentRepo.updateChampion(tournamentId, userUuid, champion);
+    if (!upd.ok) return upd;
+
+    if (loserDrawnPairId) {
+      const rec = await this.recordChampionMatch(
+        tournamentId,
+        finalRoundId,
+        finalRoundNumber,
+        champion,
+        loserDrawnPairId,
+        winnerScore,
+        loserScore,
+        userUuid,
+      );
+      if (!rec.ok) return rec;
+    }
+
+    return ok(undefined);
   }
 }

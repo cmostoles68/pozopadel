@@ -134,25 +134,12 @@ export async function saveCourtResult(
   );
   if (!parsed.ok) return { error: parsed.error };
 
-  const { roundService, matchHistoryRepo } = await createServices();
-  const userUuid = await getCurrentUserUuid();
-  const mode = await getCurrentAuthMode();
-
-  if (mode === "guest") {
-    const existing = await matchHistoryRepo.findAll(userUuid);
-    if (existing.ok && existing.data.length >= GUEST_LIMITS.maxHistoryMatches) {
-      return {
-        error: `En modo invitado el histórico no puede superar los ${GUEST_LIMITS.maxHistoryMatches} partidos.`,
-      };
-    }
-  }
-
+  const { roundService } = await createServices();
   const result = await roundService.saveCourtResult(
     parsed.data.roundId,
     parsed.data.courtNumber,
     parsed.data.results,
     parsed.data.winnerDrawnPairId,
-    userUuid,
   );
   if (!result.ok) return { error: result.error };
   return { ok: true as const };
@@ -174,8 +161,19 @@ export async function finalizePozo(tournamentId: string) {
   const tournament = parseOrError(uuidSchema, tournamentId);
   if (!tournament.ok) return { error: "Datos no válidos" };
 
-  const { roundService } = await createServices();
+  const { roundService, matchHistoryRepo } = await createServices();
   const userUuid = await getCurrentUserUuid();
+  const mode = await getCurrentAuthMode();
+
+  if (mode === "guest") {
+    const existing = await matchHistoryRepo.findAll(userUuid);
+    if (existing.ok && existing.data.length >= GUEST_LIMITS.maxHistoryMatches) {
+      return {
+        error: `En modo invitado el histórico no puede superar los ${GUEST_LIMITS.maxHistoryMatches} partidos.`,
+      };
+    }
+  }
+
   const result = await roundService.finalizePozo(tournament.data, userUuid);
   if (!result.ok) return { error: result.error };
   return { ok: true as const };

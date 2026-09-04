@@ -18,6 +18,18 @@ interface Step {
 
 const STEPS: Step[] = [
   {
+    icon: "manage_accounts",
+    badge: "Acceso",
+    badgeTone: "primary",
+    title: "Modo de acceso: Invitado vs Admin",
+    body: "Antes de empezar, elige cómo entrar desde la pantalla de acceso. Según el modo, tendrás más o menos libertad a la hora de crear y editar.",
+    bullets: [
+      "Entrar como Invitado no requiere credenciales: puedes ver y jugar, pero está sujeto a límites pensados para pruebas rápidas (p. ej. máximo 32 jugadores, 1 pozo activo y 8 pistas por pozo).",
+      "Entrar como Admin requiere la contraseña de administrador y elimina esos límites: puedes crear varios pozos, superar los 32 jugadores o usar más de 8 pistas sin restricciones.",
+      "Ambos modos guardan los datos en tu propio espacio: cada uno solo ve su lista de jugadores, sus pozos y su histórico.",
+    ],
+  },
+  {
     icon: "group",
     badge: "Ejecución rápida",
     badgeTone: "secondary",

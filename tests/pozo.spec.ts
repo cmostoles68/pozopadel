@@ -406,7 +406,7 @@ test.describe("Pozo: temporizador de ronda", () => {
 });
 
 test.describe("Pozo: histórico de partidos", () => {
-  test("guarda el resultado de cada pista en el historico con las parejas que la jugaron", async ({ page }) => {
+  test("el histórico solo registra el ganador del pozo, no los ganadores de rondas previas", async ({ page }) => {
     const { tournamentId, numbers } = await setupTournament(1, [0, 1]);
     await page.goto(`/pozos/${tournamentId}`);
 
@@ -419,25 +419,49 @@ test.describe("Pozo: histórico de partidos", () => {
     // With a single court, completing it immediately generates round 2.
     await expect(page.getByTestId("round-2")).toBeVisible();
 
-    // Verify a history row was created for this court match.
-    const { rows } = await client.query(
-      `SELECT h.*, dpw.pair_number AS winner_num, dpl.pair_number AS loser_num
-         FROM pozo_match_history h
-         JOIN drawn_pairs dpw ON dpw.id = h.winner_drawn_pair_id
-         JOIN drawn_pairs dpl ON dpl.id = h.loser_drawn_pair_id
-        WHERE h.tournament_id = $1`,
+    // No history row must be created yet: only pozo champions are recorded.
+    const afterRound = await client.query(
+      "SELECT id FROM pozo_match_history WHERE tournament_id = $1",
       [tournamentId]
     );
-    expect(rows).toHaveLength(1);
-    expect(Number(rows[0].winner_num)).toBe(w);
-    expect(Number(rows[0].loser_num)).toBe(l);
-    expect(rows[0].score_winner).toBe(6);
-    expect(rows[0].score_loser).toBe(4);
-    // Denormalized player ids are recorded so the history survives re-draws.
-    expect(rows[0].winner_player1_id).toBeTruthy();
-    expect(rows[0].winner_player2_id).toBeTruthy();
-    expect(rows[0].loser_player1_id).toBeTruthy();
-    expect(rows[0].loser_player2_id).toBeTruthy();
+    expect(afterRound.rows).toHaveLength(0);
+
+    // Finalize: the winner of court 1 is crowned as champion and recorded once.
+    const finalize = page.getByTestId("finalize-pozo");
+    await expect(finalize).toBeEnabled();
+    await finalize.click();
+    await expect(page.getByTestId("champion-banner")).toBeVisible();
+
+    let championRows: Array<Record<string, unknown>> = [];
+    await expect
+      .poll(async () => {
+        const { rows } = await client.query(
+          `SELECT h.*, dpw.pair_number AS winner_num, dpl.pair_number AS loser_num
+             FROM pozo_match_history h
+             JOIN drawn_pairs dpw ON dpw.id = h.winner_drawn_pair_id
+             JOIN drawn_pairs dpl ON dpl.id = h.loser_drawn_pair_id
+            WHERE h.tournament_id = $1`,
+          [tournamentId]
+        );
+        championRows = rows;
+        return rows;
+      })
+      .toEqual([
+        expect.objectContaining({
+          winner_num: w,
+          loser_num: l,
+          score_winner: 6,
+          score_loser: 4,
+        }),
+      ]);
+
+    // Exactly one decisive match: the crowned champion, with denormalized ids.
+    expect(championRows).toHaveLength(1);
+    const [row] = championRows;
+    expect(row.winner_player1_id).toBeTruthy();
+    expect(row.winner_player2_id).toBeTruthy();
+    expect(row.loser_player1_id).toBeTruthy();
+    expect(row.loser_player2_id).toBeTruthy();
   });
 
   test("el sorteo evita repetir parejas que siempre ganan en el historico", async ({ page }) => {

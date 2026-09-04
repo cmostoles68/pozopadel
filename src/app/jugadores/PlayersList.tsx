@@ -44,7 +44,11 @@ export default function PlayersList({
       </label>
 
       {sorted.map((p) => (
-        <PlayerRow key={p.id} player={p} />
+        <PlayerRow
+          key={p.id}
+          player={p}
+          pozosGanados={sortByWins ? (championshipCount[p.id] ?? 0) : undefined}
+        />
       ))}
     </div>
   );

@@ -12,7 +12,7 @@ interface Player {
   level: number;
 }
 
-export default function PlayerRow({ player }: { player: Player }) {
+export default function PlayerRow({ player, pozosGanados }: { player: Player; pozosGanados?: number }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -111,6 +111,11 @@ export default function PlayerRow({ player }: { player: Player }) {
         <div className="min-w-0">
           <div className="font-medium text-on-surface">
             {player.full_name}
+            {pozosGanados != null && pozosGanados > 0 && (
+              <span className="ml-2 inline-flex items-center gap-1 text-xs font-semibold bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full">
+                {pozosGanados} {pozosGanados === 1 ? "pozo" : "pozos"}
+              </span>
+            )}
           </div>
           <div className="text-sm text-on-surface-variant">
             {player.gender === "FEMALE" ? "Mujer" : "Hombre"} ·{" "}

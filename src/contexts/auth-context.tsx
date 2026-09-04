@@ -8,24 +8,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { uuidForMode, type AuthMode } from "@/config/auth";
 import {
-  AUTH_COOKIE_NAME,
-  uuidForMode,
-  type AuthMode,
-} from "@/config/auth";
-import { verifyAdminLogin } from "@/app/auth/actions";
+  loginAsAdmin as serverLoginAsAdmin,
+  loginAsGuest as serverLoginAsGuest,
+  logout as serverLogout,
+} from "@/app/auth/actions";
 
 const STORAGE_KEY = "pozopadel.auth";
-
-function setAuthCookie(uuid: string) {
-  if (typeof document === "undefined") return;
-  document.cookie = `${AUTH_COOKIE_NAME}=${uuid}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
-}
-
-function clearAuthCookie() {
-  if (typeof document === "undefined") return;
-  document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`;
-}
 
 interface StoredAuth {
   mode: AuthMode;
@@ -35,9 +25,9 @@ interface AuthContextValue {
   mode: AuthMode;
   uuid: string;
   isAdmin: boolean;
-  loginAsGuest: () => void;
+  loginAsGuest: () => Promise<void>;
   loginAsAdmin: (password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -63,27 +53,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, []);
 
-  const loginAsGuest = useCallback(() => {
+  const loginAsGuest = useCallback(async () => {
+    await serverLoginAsGuest();
     setMode("guest");
     persist("guest");
-    setAuthCookie(uuidForMode("guest"));
   }, [persist]);
 
   const loginAsAdmin = useCallback(
     async (password: string): Promise<boolean> => {
-      const ok = await verifyAdminLogin(password);
+      const ok = await serverLoginAsAdmin(password);
       if (!ok) return false;
       setMode("admin");
       persist("admin");
-      setAuthCookie(uuidForMode("admin"));
       return true;
     },
     [persist],
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await serverLogout();
     window.localStorage.removeItem(STORAGE_KEY);
-    clearAuthCookie();
     setMode("guest");
   }, []);
 

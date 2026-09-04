@@ -12,9 +12,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  function enterGuest() {
+  async function enterGuest() {
     setSelected("guest");
-    loginAsGuest();
+    await loginAsGuest();
     router.push("/dashboard");
   }
 
@@ -50,7 +50,7 @@ export default function LoginPage() {
             >
               <span className="block text-lg">Entrar como Invitado</span>
               <span className="text-sm text-on-primary/70">
-                Sin credenciales, solo ver y jugar
+                Funcionalidad completa con límites de uso
               </span>
             </button>
 

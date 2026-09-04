@@ -29,8 +29,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { isAdmin, logout } = useAuth();
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     router.push("/auth/login");
   }
 

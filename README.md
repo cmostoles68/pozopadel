@@ -66,6 +66,26 @@ Definidos de forma centralizada en [`src/config/limits.ts`](src/config/limits.ts
 
 En el modo **invitado** estos valores se leen y **no pueden superarse** (se validan en las server actions antes de persistir). El modo **admin es ilimitado**. Si ya existe un pozo y se intenta crear otro en modo invitado, hay que borrar el actual desde el panel.
 
+## Histórico
+
+El histórico (`pozo_match_history`) registra **solo los ganadores de los pozos**, no los ganadores de las rondas previas:
+
+- Al anotar el marcador de una pista en una ronda, **no** se crea ninguna fila de histórico.
+- Al **finalizar un pozo** (`finalizePozo` en `src/application/services/round.service.ts`), se registra **un único** partido decisivo: el de la Pista 1 (Pista Rey) de la última ronda jugada, cuyo ganador se corona como pareja campeona.
+- Esto aplica por igual a **admin** e **invitado**; en invitado el número máximo de partidos históricos sigue limitado por `maxHistoryMatches` (100).
+
+Así, la sección "Partidos" del histórico muestra únicamente los partidos campeones de cada pozo finalizado (marcados como "Pareja campeona").
+
+## Seguridad y RLS
+
+Gestión de secretos y acceso a datos:
+
+- **Cookie de sesión en servidor**: la cookie `padel_uuid` se fija/limpia mediante server actions (`src/app/auth/actions.ts`) con `HttpOnly; Secure; SameSite=Lax` y `Path=/`. No se escribe desde JavaScript (`document.cookie`), por lo que no es legible desde el cliente.
+- **Contraseña de admin**: verificada con **bcrypt (cost 12)** en el servidor (`src/infrastructure/auth/admin-password.ts`) contra `.admin-password.hash` (gitignored) o la variable de entorno `ADMIN_PASSWORD_HASH`. No hay contraseña hardcodeada ni hash SHA-256 en el repositorio.
+- **RLS activo en todas las tablas** con políticas por propietario (`user_uuid`/`created_by`). La identidad se propaga firmando un **JWT HS256 por usuario** que viaja como `Authorization: Bearer`; la función `current_user_uuid()` lo lee de `request.jwt.claims`.
+- **Mínimo privilegio**: la app se conecta con el rol `authenticated` (rol en el JWT firmado) con DML completo; el rol anónimo `anon` (clave pública) queda con **solo `SELECT`**, que RLS filtra a nada sin un JWT de identidad. `service_role` conserva acceso total para tooling.
+- El esquema completo (tablas, RLS, políticas, grants, usuarios de sistema, matcheo de identidad) vive en **una única migración consolidada**: `supabase/migrations/20260910000000_initial_schema.sql`.
+
 ## Scripts
 
 | Comando | Descripción |
@@ -133,7 +153,7 @@ src/
 | `tournament_drawn_pairs` | Vinculación pareja ↔ torneo y asignación de pista |
 | `pozo_rounds` | Rondas del pozo |
 | `pozo_round_pairs` | Asignación pista/pareja de cada ronda |
-| `pozo_match_history` | Historial de partidos (jugadores, marcador, campeón) |
+| `pozo_match_history` | Historial de partidos campeones de pozo (jugadores, marcador) |
 | `test_users` | Usuarios de sistema (invitado/admin) |
 
 El aislamiento entre usuarios se realiza por `user_uuid` / `created_by` en cada consulta. Las migraciones viven en `supabase/migrations/`.

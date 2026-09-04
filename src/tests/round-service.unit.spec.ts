@@ -101,7 +101,7 @@ describe("RoundService", () => {
       const { service, repos } = buildService();
       repos.pozoRoundRepo.findById.mockResolvedValue(ok(null));
 
-      const res = await service.saveCourtResult("r1", 1, [], "d1", "u1");
+      const res = await service.saveCourtResult("r1", 1, [], "d1");
       expect(res).toEqual(err("Ronda no encontrada"));
     });
 
@@ -110,28 +110,17 @@ describe("RoundService", () => {
       repos.pozoRoundRepo.findById.mockResolvedValue(ok(round({ id: "r1" })));
       repos.pozoRoundRepo.findCourtPairs.mockResolvedValue(ok([]));
 
-      const res = await service.saveCourtResult("r1", 1, [], "d1", "u1");
+      const res = await service.saveCourtResult("r1", 1, [], "d1");
       expect(res).toEqual(err("Pista no encontrada"));
     });
 
-    it("updates each pair and records match history", async () => {
+    it("updates each pair on the court", async () => {
       const { service, repos } = buildService();
       repos.pozoRoundRepo.findById.mockResolvedValue(ok(round({ id: "r1", round_number: 3 })));
       repos.pozoRoundRepo.findCourtPairs.mockResolvedValue(
         ok([courtPair({ id: "rp1", drawn_pair_id: "d1" }), courtPair({ id: "rp2", drawn_pair_id: "d2" })]),
       );
       repos.pozoRoundRepo.updatePairResult.mockResolvedValue(ok(undefined));
-      repos.drawnPairRepo.findAll.mockResolvedValue(ok([
-        { id: "d1", player1_id: "p1", player2_id: "p2" } as unknown as DrawnPair,
-        { id: "d2", player1_id: "p3", player2_id: "p4" } as unknown as DrawnPair,
-      ]));
-      repos.playerRepo.findAll.mockResolvedValue(ok([
-        { id: "p1", full_name: "A", gender: "MALE", dominant_hand: "RIGHT", level: 5 } as unknown as Player,
-        { id: "p2", full_name: "B", gender: "MALE", dominant_hand: "LEFT", level: 4 } as unknown as Player,
-        { id: "p3", full_name: "C", gender: "FEMALE", dominant_hand: "RIGHT", level: 6 } as unknown as Player,
-        { id: "p4", full_name: "D", gender: "FEMALE", dominant_hand: "RIGHT", level: 3 } as unknown as Player,
-      ]));
-      repos.matchHistoryRepo.upsert.mockResolvedValue(ok(undefined));
 
       const res = await service.saveCourtResult(
         "r1",
@@ -141,7 +130,6 @@ describe("RoundService", () => {
           { drawnPairId: "d2", score: 8 },
         ],
         "d1",
-        "u1",
       );
 
       expect(res).toEqual(ok(undefined));
@@ -155,33 +143,16 @@ describe("RoundService", () => {
         winner_drawn_pair_id: "d1",
         score_a: 8,
       });
-      expect(repos.matchHistoryRepo.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          tournament_id: "t1",
-          round_id: "r1",
-          round_number: 3,
-          court_number: 1,
-          winner_player1_id: "p1",
-          winner_player2_id: "p2",
-          loser_player1_id: "p3",
-          loser_player2_id: "p4",
-          winner_drawn_pair_id: "d1",
-          loser_drawn_pair_id: "d2",
-          score_winner: 10,
-          score_loser: 8,
-          user_uuid: "u1",
-        }),
-      );
+      expect(repos.matchHistoryRepo.upsert).not.toHaveBeenCalled();
     });
 
-    it("does not record history when winner or loser pair is missing", async () => {
+    it("returns ok when a single pair is on the court", async () => {
       const { service, repos } = buildService();
       repos.pozoRoundRepo.findById.mockResolvedValue(ok(round({ id: "r1" })));
       repos.pozoRoundRepo.findCourtPairs.mockResolvedValue(ok([courtPair({ id: "rp1", drawn_pair_id: "d1" })]));
       repos.pozoRoundRepo.updatePairResult.mockResolvedValue(ok(undefined));
-      repos.drawnPairRepo.findAll.mockResolvedValue(ok([]));
 
-      const res = await service.saveCourtResult("r1", 1, [], "d1", "u1");
+      const res = await service.saveCourtResult("r1", 1, [], "d1");
       expect(res).toEqual(ok(undefined));
       expect(repos.matchHistoryRepo.upsert).not.toHaveBeenCalled();
     });
@@ -358,12 +329,13 @@ describe("RoundService", () => {
       expect(res).toEqual(err("La pista 1 todavía no tiene un ganador definido"));
     });
 
-    it("marks the winner of the latest court-1 match as champion", async () => {
+    it("marks the winner of the latest court-1 match as champion and records final match in history", async () => {
       const { service, repos } = buildService();
       const loserOnCourt1 = courtPair({
         id: "rp2",
         drawn_pair_id: "dLoser",
         winner_drawn_pair_id: "dChampion",
+        score_a: 6,
       });
       repos.pozoRoundRepo.findByTournament.mockResolvedValue(ok([
         round({ id: "r1", round_number: 1 }),
@@ -375,10 +347,38 @@ describe("RoundService", () => {
           : Promise.resolve(ok([])),
       );
       repos.tournamentRepo.updateChampion.mockResolvedValue(ok(undefined));
+      repos.drawnPairRepo.findAll.mockResolvedValue(ok([
+        { id: "dChampion", player1_id: "p1", player2_id: "p2" } as unknown as DrawnPair,
+        { id: "dLoser", player1_id: "p3", player2_id: "p4" } as unknown as DrawnPair,
+      ]));
+      repos.playerRepo.findAll.mockResolvedValue(ok([
+        { id: "p1", full_name: "A", gender: "MALE", dominant_hand: "RIGHT", level: 5 } as unknown as Player,
+        { id: "p2", full_name: "B", gender: "MALE", dominant_hand: "LEFT", level: 4 } as unknown as Player,
+        { id: "p3", full_name: "C", gender: "FEMALE", dominant_hand: "RIGHT", level: 6 } as unknown as Player,
+        { id: "p4", full_name: "D", gender: "FEMALE", dominant_hand: "RIGHT", level: 3 } as unknown as Player,
+      ]));
+      repos.matchHistoryRepo.upsert.mockResolvedValue(ok(undefined));
 
       const res = await service.finalizePozo("t1", "u1");
       expect(res).toEqual(ok(undefined));
       expect(repos.tournamentRepo.updateChampion).toHaveBeenCalledWith("t1", "u1", "dChampion");
+      expect(repos.matchHistoryRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tournament_id: "t1",
+          round_id: "r2",
+          round_number: 2,
+          court_number: 1,
+          winner_player1_id: "p1",
+          winner_player2_id: "p2",
+          loser_player1_id: "p3",
+          loser_player2_id: "p4",
+          winner_drawn_pair_id: "dChampion",
+          loser_drawn_pair_id: "dLoser",
+          score_winner: 10,
+          score_loser: 6,
+          user_uuid: "u1",
+        }),
+      );
     });
   });
 });

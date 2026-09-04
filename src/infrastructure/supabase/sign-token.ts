@@ -2,7 +2,10 @@ import crypto from "node:crypto";
 
 const HS256 = "HS256";
 const ISSUER = "supabase-demo";
-const DEFAULT_ROLE = "anon";
+// Requests carry a signed identity JWT, so they run as the `authenticated`
+// role. The public `anon` role is granted only SELECT (least privilege); all
+// row-level DML is scoped to the owner by RLS regardless of role.
+const DEFAULT_ROLE = "authenticated";
 const THIRTY_DAYS_SECONDS = 30 * 24 * 60 * 60;
 
 function base64url(input: Buffer | string): string {
