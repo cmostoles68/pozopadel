@@ -2,7 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import { DrawService } from "../application/services/draw.service";
 import { ok, err } from "../domain/result";
 import type { PlayerProfile } from "../domain/entities/player";
-import type { IDrawnPairRepository, ITournamentDrawnPairRepository } from "../domain/repositories/pair.repository";
+import type {
+  IDrawnPairRepository,
+  ITournamentDrawnPairRepository,
+} from "../domain/repositories/pair.repository";
 import type { IPlayerRepository } from "../domain/repositories/player.repository";
 import type { IMatchHistoryRepository } from "../domain/repositories/match.repository";
 import type { IPozoRoundRepository } from "../domain/repositories/round.repository";
@@ -121,8 +124,20 @@ describe("DrawService", () => {
       expect(res).toEqual(
         ok({
           pairs: [
-            { id: "d1", pair_number: 1, player1_id: "p1", player2_id: "p2", draw_method: "random" },
-            { id: "d2", pair_number: 2, player1_id: "p3", player2_id: "p4", draw_method: "random" },
+            {
+              id: "d1",
+              pair_number: 1,
+              player1_id: "p1",
+              player2_id: "p2",
+              draw_method: "random",
+            },
+            {
+              id: "d2",
+              pair_number: 2,
+              player1_id: "p3",
+              player2_id: "p4",
+              draw_method: "random",
+            },
           ],
           oddPlayer: null,
         }),
@@ -144,7 +159,9 @@ describe("DrawService", () => {
       const { service, repos } = buildService();
       repos.playerRepo.findProfiles.mockResolvedValue(ok(makePlayers(4)));
       repos.drawnPairRepo.deleteAll.mockResolvedValue(ok(undefined));
-      repos.matchHistoryRepo.findWinningPartnerships.mockResolvedValue(err("no history"));
+      repos.matchHistoryRepo.findWinningPartnerships.mockResolvedValue(
+        err("no history"),
+      );
 
       const res = await service.drawPairs("random", "u1");
       expect(res).toEqual(err("no history"));
@@ -181,7 +198,9 @@ describe("DrawService", () => {
 
       const res = await service.drawCourts("t1", "u1");
       expect(res.ok).toBe(false);
-      expect((res as { error: string }).error).toBe("No hay parejas seleccionadas");
+      expect((res as { error: string }).error).toBe(
+        "No hay parejas seleccionadas",
+      );
     });
 
     it("rejects more pairs than the courts can hold", async () => {
@@ -190,7 +209,11 @@ describe("DrawService", () => {
         ok({ id: "t1", number_of_courts: 2 } as unknown as Tournament),
       );
       repos.tournamentDrawnPairRepo.findByTournament.mockResolvedValue(
-        ok([1, 2, 3, 4, 5].map((n) => ({ id: `s${n}` })) as unknown as TournamentDrawnPair[]),
+        ok(
+          [1, 2, 3, 4, 5].map((n) => ({
+            id: `s${n}`,
+          })) as unknown as TournamentDrawnPair[],
+        ),
       );
 
       const res = await service.drawCourts("t1", "u1");
@@ -204,16 +227,23 @@ describe("DrawService", () => {
         ok({ id: "t1", number_of_courts: 2 } as unknown as Tournament),
       );
       repos.tournamentDrawnPairRepo.findByTournament.mockResolvedValue(
-        ok([1, 2, 3, 4].map((n) => ({ id: `s${n}` })) as unknown as TournamentDrawnPair[]),
+        ok(
+          [1, 2, 3, 4].map((n) => ({
+            id: `s${n}`,
+          })) as unknown as TournamentDrawnPair[],
+        ),
       );
-      repos.tournamentDrawnPairRepo.updateCourtNumber.mockResolvedValue(ok(undefined));
+      repos.tournamentDrawnPairRepo.updateCourtNumber.mockResolvedValue(
+        ok(undefined),
+      );
 
       const res = await service.drawCourts("t1", "u1");
       expect(res).toEqual(ok(undefined));
 
-      const calls = repos.tournamentDrawnPairRepo.updateCourtNumber.mock.calls.map(
-        (call) => call[1],
-      ) as number[];
+      const calls =
+        repos.tournamentDrawnPairRepo.updateCourtNumber.mock.calls.map(
+          (call) => call[1],
+        ) as number[];
       expect(calls.sort()).toEqual([1, 1, 2, 2]);
     });
   });
@@ -221,18 +251,22 @@ describe("DrawService", () => {
   describe("selectAllPairs", () => {
     it("selects every drawn pair for the tournament", async () => {
       const { service, repos } = buildService();
-      repos.drawnPairRepo.findAll.mockResolvedValue(ok([
-        { id: "d1" } as unknown as DrawnPair,
-        { id: "d2" } as unknown as DrawnPair,
-      ]));
-      repos.tournamentDrawnPairRepo.selectAllPairs.mockResolvedValue(ok(undefined));
+      repos.drawnPairRepo.findAll.mockResolvedValue(
+        ok([
+          { id: "d1" } as unknown as DrawnPair,
+          { id: "d2" } as unknown as DrawnPair,
+        ]),
+      );
+      repos.tournamentDrawnPairRepo.selectAllPairs.mockResolvedValue(
+        ok(undefined),
+      );
 
       const res = await service.selectAllPairs("t1", "u1");
       expect(res).toEqual(ok(undefined));
-      expect(repos.tournamentDrawnPairRepo.selectAllPairs).toHaveBeenCalledWith("t1", [
-        "d1",
-        "d2",
-      ]);
+      expect(repos.tournamentDrawnPairRepo.selectAllPairs).toHaveBeenCalledWith(
+        "t1",
+        ["d1", "d2"],
+      );
     });
 
     it("propagates errors from findAll", async () => {
@@ -247,7 +281,9 @@ describe("DrawService", () => {
   describe("clearCourtDraw", () => {
     it("clears court numbers and deletes seeded rounds", async () => {
       const { service, repos } = buildService();
-      repos.tournamentDrawnPairRepo.clearCourtNumbers.mockResolvedValue(ok(undefined));
+      repos.tournamentDrawnPairRepo.clearCourtNumbers.mockResolvedValue(
+        ok(undefined),
+      );
       repos.pozoRoundRepo.deleteByTournament.mockResolvedValue(ok(undefined));
 
       const res = await service.clearCourtDraw("t1");
@@ -257,7 +293,9 @@ describe("DrawService", () => {
 
     it("propagates errors from clearCourtNumbers", async () => {
       const { service, repos } = buildService();
-      repos.tournamentDrawnPairRepo.clearCourtNumbers.mockResolvedValue(err("boom"));
+      repos.tournamentDrawnPairRepo.clearCourtNumbers.mockResolvedValue(
+        err("boom"),
+      );
 
       const res = await service.clearCourtDraw("t1");
       expect(res).toEqual(err("boom"));
@@ -280,7 +318,9 @@ describe("DrawService", () => {
     it("does nothing when no pairs have a court assigned", async () => {
       const { service, repos } = buildService();
       repos.pozoRoundRepo.findRound1IfExists.mockResolvedValue(ok(null));
-      repos.tournamentDrawnPairRepo.getSelectedWithCourt.mockResolvedValue(ok([]));
+      repos.tournamentDrawnPairRepo.getSelectedWithCourt.mockResolvedValue(
+        ok([]),
+      );
 
       const res = await service.seedRound1("t1");
       expect(res).toEqual(ok(undefined));

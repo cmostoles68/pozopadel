@@ -4,66 +4,27 @@ import { createServices } from "@/infrastructure/service-factory";
 import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
 import { requireResult } from "@/domain/result";
 import type { PlayerSnap } from "@/domain/entities/player";
-import { countChampionshipsByPairIds } from "@/domain/stats/championships";
 
 export default async function HistoricoPage() {
-  const { matchHistoryRepo, tournamentRepo, supabase } = await createServices();
+  const {
+    matchHistoryService,
+    tournamentService,
+    playerService,
+    championshipStatsService,
+  } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  const [history, tournaments] = await Promise.all([
-    matchHistoryRepo.findAll(userUuid).then(requireResult),
-    tournamentRepo.findAll(userUuid).then(requireResult),
+  const [history, tournaments, profileRows, historyStats] = await Promise.all([
+    matchHistoryService.getAll(userUuid).then(requireResult),
+    tournamentService.getAll(userUuid).then(requireResult),
+    playerService.getAllProfiles(userUuid).then(requireResult),
+    championshipStatsService.countByHistory(userUuid).then(requireResult),
   ]);
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("user_uuid", userUuid);
-
   const tById = new Map(tournaments.map((t) => [t.id, t]));
-  const profileIds = new Set(
-    (profiles ?? []).map((p) => (p as { id: string }).id)
-  );
+  const profileIds = new Set(profileRows.map((p) => p.id));
 
-  const championOf = new Map<
-    string,
-    { p1: PlayerSnap; p2: PlayerSnap } | null
-  >();
-  for (const t of tournaments) {
-    if (!t.champion_drawn_pair_id) {
-      championOf.set(t.id, null);
-      continue;
-    }
-    const row = history.find(
-      (h) => h.winner_drawn_pair_id === t.champion_drawn_pair_id
-    );
-    if (!row) {
-      championOf.set(t.id, null);
-      continue;
-    }
-    championOf.set(t.id, {
-      p1: {
-        id: row.winner_player1_id,
-        name: row.winner_player1_name,
-        gender: null,
-        hand: null,
-        level: null,
-      },
-      p2: {
-        id: row.winner_player2_id,
-        name: row.winner_player2_name,
-        gender: null,
-        hand: null,
-        level: null,
-      },
-    });
-  }
-
-  const championPairs: [string, string][] = [];
-  for (const champion of championOf.values()) {
-    if (!champion) continue;
-    championPairs.push([champion.p1.id, champion.p2.id]);
-  }
-  const championshipCount = countChampionshipsByPairIds(championPairs);
+  const championOf = historyStats.championsByTournament;
+  const championshipCount = historyStats.counts;
 
   const matches = history.map((h) => ({
     id: h.id,
@@ -168,7 +129,7 @@ export default async function HistoricoPage() {
   }
 
   const uniquePlayers = Array.from(players.values()).sort((a, b) =>
-    (a.name ?? a.id).localeCompare(b.name ?? b.id)
+    (a.name ?? a.id).localeCompare(b.name ?? b.id),
   );
 
   return (
@@ -202,31 +163,26 @@ export default async function HistoricoPage() {
           ) : (
             <div className="space-y-4">
               {matches.map((m) => {
-                const t = m.tournamentId
-                  ? tById.get(m.tournamentId)
-                  : null;
+                const t = m.tournamentId ? tById.get(m.tournamentId) : null;
                 const champion = m.tournamentId
                   ? (championOf.get(m.tournamentId) ?? null)
                   : null;
                 const winnerIsChampion =
                   !!champion &&
-                  champion.p1.id === m.winner[0].id &&
-                  champion.p2.id === m.winner[1].id;
+                  champion.player1.id === m.winner[0].id &&
+                  champion.player2.id === m.winner[1].id;
                 return (
                   <div
                     key={m.id}
                     className={`glass-panel rounded-2xl p-4 ${
-                      winnerIsChampion
-                        ? "border-amber-500/40"
-                        : ""
+                      winnerIsChampion ? "border-amber-500/40" : ""
                     }`}
                   >
                     <div className="flex items-center justify-between text-sm text-on-surface-variant mb-2">
                       <span>
                         {t ? `Pozo: ${t.title}` : "Pozo eliminado"}
-                        {m.roundNumber != null &&
-                          ` · Ronda ${m.roundNumber}`}{" "}
-                        · Pista {m.courtNumber}
+                        {m.roundNumber != null && ` · Ronda ${m.roundNumber}`} ·
+                        Pista {m.courtNumber}
                       </span>
                       {winnerIsChampion && (
                         <span className="text-amber-500 font-semibold">

@@ -1,11 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { Client } from "pg";
-import {
-  connect,
-  resetUserData,
-  createProfile,
-  GUEST_UUID,
-} from "./helpers";
+import { connect, resetUserData, createProfile, GUEST_UUID } from "./helpers";
 
 let client: Client;
 
@@ -21,8 +16,12 @@ test.beforeAll(async () => {
 });
 
 test.afterEach(async () => {
-  await client.query("DELETE FROM pozo_match_history WHERE user_uuid = $1", [GUEST_UUID]);
-  await client.query("DELETE FROM drawn_pairs WHERE user_uuid = $1", [GUEST_UUID]);
+  await client.query("DELETE FROM pozo_match_history WHERE user_uuid = $1", [
+    GUEST_UUID,
+  ]);
+  await client.query("DELETE FROM drawn_pairs WHERE user_uuid = $1", [
+    GUEST_UUID,
+  ]);
 });
 
 test.afterAll(async () => {
@@ -49,7 +48,9 @@ test("sortea parejas de forma aleatoria", async ({ page }) => {
 });
 
 test("el sorteo queda bloqueado con menos de 4 jugadores", async ({ page }) => {
-  await client.query("DELETE FROM drawn_pairs WHERE user_uuid = $1", [GUEST_UUID]);
+  await client.query("DELETE FROM drawn_pairs WHERE user_uuid = $1", [
+    GUEST_UUID,
+  ]);
   await client.query("DELETE FROM profiles WHERE user_uuid = $1", [GUEST_UUID]);
   for (const name of ["Uno", "Dos", "Tres"]) {
     await createProfile(client, { full_name: name });
@@ -57,7 +58,9 @@ test("el sorteo queda bloqueado con menos de 4 jugadores", async ({ page }) => {
 
   await page.goto("/sorteo");
   await expect(page.getByText(/Necesitas al menos 4 jugadores/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Aleatorio", exact: true })).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Aleatorio", exact: true }),
+  ).toBeDisabled();
 });
 
 test("borrar sorteo limpia las parejas", async ({ page }) => {

@@ -3,6 +3,8 @@ import {
   connect,
   resetUserData,
   createTournament,
+  issueSessionToken,
+  AUTH_COOKIE_NAME,
   GUEST_UUID,
   ADMIN_UUID,
 } from "./helpers";
@@ -14,15 +16,17 @@ test.describe.configure({ mode: "serial" });
 const COOKIE_URL = "http://localhost:3000";
 
 async function setGuest(page: import("@playwright/test").Page) {
-  await page.context().addCookies([
-    { name: "padel_uuid", value: GUEST_UUID, url: COOKIE_URL },
-  ]);
+  const token = await issueSessionToken(client, GUEST_UUID);
+  await page
+    .context()
+    .addCookies([{ name: AUTH_COOKIE_NAME, value: token, url: COOKIE_URL }]);
 }
 
 async function setAdmin(page: import("@playwright/test").Page) {
-  await page.context().addCookies([
-    { name: "padel_uuid", value: ADMIN_UUID, url: COOKIE_URL },
-  ]);
+  const token = await issueSessionToken(client, ADMIN_UUID);
+  await page
+    .context()
+    .addCookies([{ name: AUTH_COOKIE_NAME, value: token, url: COOKIE_URL }]);
 }
 
 async function seedProfiles(count: number, userUuid: string) {
@@ -80,7 +84,9 @@ test.describe("Modo invitado: se aplican los límites", () => {
     ).toBeVisible();
   });
 
-  test("maxPozos: bloquea crear un segundo pozo mientras exista uno", async ({ page }) => {
+  test("maxPozos: bloquea crear un segundo pozo mientras exista uno", async ({
+    page,
+  }) => {
     await createTournament(client, {
       title: "Pozo Uno",
       number_of_courts: 3,

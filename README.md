@@ -1,6 +1,6 @@
 # PadelElite — Gestor de Pozos de Pádel
 
-Aplicación web para organizar y gestionar **pozos de pádel**: crear jugadores, sortear parejas, anotar marcadores en vivo por pista, avanzar rondas automáticamente con la regla "sube y baja" y coronar a la pareja campeona del Pozo 1 (Pista Rey).
+Aplicación web para organizar y gestionar **pozos de pádel**: crear jugadores, sortear parejas, anotar marcadores por pista, avanzar rondas automáticamente con la regla "sube y baja" y coronar a la pareja campeona del Pozo 1 (Pista Rey).
 
 Proyecto desarrollado como **Trabajo de Fin de Máster** en desarrollo de aplicaciones web con IA.
 
@@ -45,12 +45,12 @@ La clave anónima se obtiene con `supabase status`.
 
 ## Modos de acceso: Invitado y Admin
 
-La aplicación distingue dos modos de autenticación, controlados por la cookie `padel_uuid`:
+La aplicación distingue dos modos de autenticación, controlados por una **sesión de servidor** (`session_tokens`):
 
 - **Invitado** (por defecto): entra sin credenciales. Sus datos quedan aislados bajo el UUID de invitado y **están sujetos a límites de uso** (ver sección Límites).
 - **Admin**: requiere contraseña. Puede gestionar su propio conjunto de datos (UUID de admin) **sin límites**.
 
-El UUID de sesión se resuelve en el servidor con `getCurrentUserUuid()` / `getCurrentAuthMode()` (`src/infrastructure/supabase/current-user.ts`). No existe middleware de sesión: los datos se aíslan por `user_uuid` en cada consulta.
+La cookie `padel_session` guarda un **token opaco aleatorio** (256 bits) cuyo hash SHA-256 se almacena en `session_tokens`; la identidad se resuelve en el servidor consultando esa tabla en cada request (`getCurrentUserUuid()` / `getCurrentAuthMode()` en `src/infrastructure/supabase/current-user.ts`). Conocer el UUID público no basta para autenticarse como admin, y sin token válido se entra como invitado. No existe middleware de sesión: los datos se aíslan por `user_uuid` en cada consulta.
 
 ## Límites del modo invitado
 
@@ -80,11 +80,11 @@ Así, la sección "Partidos" del histórico muestra únicamente los partidos cam
 
 Gestión de secretos y acceso a datos:
 
-- **Cookie de sesión en servidor**: la cookie `padel_uuid` se fija/limpia mediante server actions (`src/app/auth/actions.ts`) con `HttpOnly; Secure; SameSite=Lax` y `Path=/`. No se escribe desde JavaScript (`document.cookie`), por lo que no es legible desde el cliente.
+- **Sesión de servidor**: la cookie `padel_session` guarda un **token opaco** (no el UUID) que se fija/limpia mediante server actions (`src/app/auth/actions.ts`) con `HttpOnly; Secure; SameSite=Lax` y `Path=/`. El hash del token vive en la tabla `session_tokens` (accesible **solo** con `service_role`, sin RLS públicas) y se valida en cada request en `src/infrastructure/supabase/session-store.ts`. No se escribe desde JavaScript (`document.cookie`).
 - **Contraseña de admin**: verificada con **bcrypt (cost 12)** en el servidor (`src/infrastructure/auth/admin-password.ts`) contra `.admin-password.hash` (gitignored) o la variable de entorno `ADMIN_PASSWORD_HASH`. No hay contraseña hardcodeada ni hash SHA-256 en el repositorio.
 - **RLS activo en todas las tablas** con políticas por propietario (`user_uuid`/`created_by`). La identidad se propaga firmando un **JWT HS256 por usuario** que viaja como `Authorization: Bearer`; la función `current_user_uuid()` lo lee de `request.jwt.claims`.
-- **Mínimo privilegio**: la app se conecta con el rol `authenticated` (rol en el JWT firmado) con DML completo; el rol anónimo `anon` (clave pública) queda con **solo `SELECT`**, que RLS filtra a nada sin un JWT de identidad. `service_role` conserva acceso total para tooling.
-- El esquema completo (tablas, RLS, políticas, grants, usuarios de sistema, matcheo de identidad) vive en **una única migración consolidada**: `supabase/migrations/20260910000000_initial_schema.sql`.
+- **Mínimo privilegio**: la app se conecta con el rol `authenticated` (rol en el JWT firmado) con DML completo; el rol anónimo `anon` (clave pública) queda con **solo `SELECT`**, que RLS filtra a nada sin un JWT de identidad. `service_role` conserva acceso total solo para el tooling de sesiones.
+- El esquema completo (tablas, RLS, políticas, grants, usuarios de sistema, matcheo de identidad) vive en la **migración consolidada** `supabase/migrations/20260910000000_initial_schema.sql`; la gestión de sesiones opacas se añade en `supabase/migrations/20260915000000_sessions.sql`.
 
 ## Scripts
 
@@ -120,7 +120,7 @@ Proyecto con **Arquitectura Limpia** y dependencias dirigidas hacia el interior:
 - **`src/application/`** — casos de uso (`services/`), DTOs y esquemas de validación Zod (`validation/schemas.ts`). Orquestan dominio e infraestructura.
 - **`src/infrastructure/`** — adaptadores Supabase que implementan las interfaces de repositorio, `service-factory.ts` y la resolución de sesión (`supabase/current-user.ts`).
 - **`src/config/`** — configuración de autenticación (`auth.ts`) y de límites del modo invitado (`limits.ts`).
-- **`src/components/`** — componentes de UI reutilizables (`AppShell`, `RoundTimer`, `LiveTournamentHeader`, `HelpDialog`, `ui/modal`).
+- **`src/components/`** — componentes de UI reutilizables (`AppShell`, `RoundTimer`, `TournamentStatusHeader`, `HelpDialog`, `ui/modal`).
 - **`src/app/**`** — páginas (server React components) y **server actions**. Las actions validan la entrada, resuelven el modo de sesión y delegan en los servicios/repositorios.
 
 ```
@@ -132,7 +132,7 @@ src/
 │   ├── sorteo/            # Sorteo de parejas (4 algoritmos)
 │   ├── historico/         # Histórico de jugadores y reincorporación
 │   ├── pozos/nuevo/       # Creación de pozo (pistas, minutos por ronda)
-│   ├── pozos/[id]/        # Detalle de pozo + marcador en vivo
+│   ├── pozos/[id]/        # Detalle de pozo + marcador
 │   └── page.tsx           # Redirige a /auth/login
 ├── components/            # AppShell, CourtCard, RoundTimer, HelpDialog, Modal...
 ├── config/                # auth.ts, limits.ts
@@ -176,16 +176,19 @@ Un **botón flotante de ayuda** (icono `?`) está disponible en todas las págin
 ## Pruebas
 
 ```bash
-# Unitarias (Vitest) — 106 tests
+# Unitarias (Vitest) — 137 tests
 npm test
 
-# E2E (Playwright) — 38 tests
+# E2E (Playwright) — 50 tests
 npm run test:e2e
+
+# Comprobación de formato (Prettier)
+npm run format:check
 ```
 
-- **Unitarias** (`src/tests/` y `tests/*.unit.spec.ts`): algoritmos puros de dominio (sorteo, emparejamiento, movimientos), validación Zod, hash de admin e integración de la capa de adaptadores — sin depender de BBDD ni de red.
-- **E2E** (`tests/`, config en `playwright.config.ts`, proyecto chromium, `workers: 1`): flujos completos de la UI (auth, dashboard, jugadores, sorteo, pozo, pozo-live, orden de pozos e histórico). Cada spec crea y limpia sus propios fixtures sobre la BBDD local mediante `tests/helpers.ts`, garantizando determinismo.
-- Toda la suite pasa: `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:e2e` y `npm run build`.
+- **Unitarias** (`src/tests/`): algoritmos puros de dominio (sorteo, emparejamiento, movimientos), validación Zod, identidad (JWT/bcrypt + rate-limit + sesiones), servicios de aplicación (draw, rondas, stats de campeones) e integración de la capa de adaptadores — sin depender de BBDD ni de red.
+- **E2E** (`tests/`, config en `playwright.config.ts`, proyecto chromium, `workers: 1`): flujos completos de la UI (auth, dashboard, jugadores, sorteo, pozo, pozo-live, orden de pozos, histórico), aislamiento RLS cross-user vía la API (`rls-isolation.spec.ts`) y la sesión de servidor frente a cookies forjadas (`auth.spec.ts`). Cada spec crea y limpia sus propios fixtures sobre la BBDD local mediante `tests/helpers.ts`, garantizando determinismo.
+- Toda la suite pasa: `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test`, `npm run test:e2e` y `npm run build`. El workflow de CI (`.github/workflows/ci.yml`) ejecuta estas comprobaciones sobre el stack local de Supabase.
 
 ## Decisiones de diseño
 

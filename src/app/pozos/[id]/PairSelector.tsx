@@ -9,6 +9,7 @@ import {
   drawCourts,
   seedRound1,
 } from "../actions";
+import PairBadge from "./PairBadge";
 
 interface DrawnPair {
   id: string;
@@ -42,23 +43,13 @@ export default function PairSelector({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedIds = new Set(
-    selectedPairs.map((sp) => sp.drawn_pair_id)
-  );
-  const hasDrawn = selectedPairs.some(
-    (sp) => sp.court_number !== null
-  );
+  const selectedIds = new Set(selectedPairs.map((sp) => sp.drawn_pair_id));
+  const hasDrawn = selectedPairs.some((sp) => sp.court_number !== null);
 
-  const selectedList = selectedPairs.filter(
-    (sp) => sp.court_number === null
-  );
+  const selectedList = selectedPairs.filter((sp) => sp.court_number === null);
 
-  const selectedDrawnPairs = allPairs.filter((p) =>
-    selectedIds.has(p.id)
-  );
-  const availablePairs = allPairs.filter(
-    (p) => !selectedIds.has(p.id)
-  );
+  const selectedDrawnPairs = allPairs.filter((p) => selectedIds.has(p.id));
+  const availablePairs = allPairs.filter((p) => !selectedIds.has(p.id));
 
   async function handleToggle(pairId: string) {
     setLoading(true);
@@ -105,14 +96,6 @@ export default function PairSelector({
 
   if (status !== "draft") return null;
 
-  function PairBadge({ number }: { number: number }) {
-    return (
-      <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary-container text-on-primary-container text-base font-bold shrink-0">
-        {number}
-      </span>
-    );
-  }
-
   return (
     <div className="space-y-4">
       {error && (
@@ -154,8 +137,7 @@ export default function PairSelector({
                 <PairBadge number={pair.pair_number} />
                 <span className="font-medium text-on-surface">
                   {pair.player1_name}
-                  {pair.is_lefty ? " (z)" : ""} &{" "}
-                  {pair.player2_name}
+                  {pair.is_lefty ? " (z)" : ""} & {pair.player2_name}
                 </span>
               </div>
               <button
@@ -194,8 +176,7 @@ export default function PairSelector({
                   <PairBadge number={pair.pair_number} />
                   <span className="font-medium text-on-surface">
                     {pair.player1_name}
-                    {pair.is_lefty ? " (z)" : ""} &{" "}
-                    {pair.player2_name}
+                    {pair.is_lefty ? " (z)" : ""} & {pair.player2_name}
                   </span>
                 </div>
                 <button

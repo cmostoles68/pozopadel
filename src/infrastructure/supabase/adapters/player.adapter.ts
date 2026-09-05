@@ -49,8 +49,13 @@ export class SupabasePlayerAdapter implements IPlayerRepository {
 
   async update(
     id: string,
-    data: { full_name: string; gender: string; dominant_hand: string; level: number },
-    userUuid: string
+    data: {
+      full_name: string;
+      gender: string;
+      dominant_hand: string;
+      level: number;
+    },
+    userUuid: string,
   ) {
     const { error } = await this.supabase
       .from("profiles")

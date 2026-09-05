@@ -11,10 +11,7 @@ async function main() {
 
   try {
     await client.connect();
-    const sql = fs.readFileSync(
-      path.join(__dirname, "seed.sql"),
-      "utf8",
-    );
+    const sql = fs.readFileSync(path.join(__dirname, "seed.sql"), "utf8");
     await client.query(sql);
     console.log("Seed aplicado correctamente.");
   } catch (err) {

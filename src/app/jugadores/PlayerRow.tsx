@@ -12,7 +12,13 @@ interface Player {
   level: number;
 }
 
-export default function PlayerRow({ player, pozosGanados }: { player: Player; pozosGanados?: number }) {
+export default function PlayerRow({
+  player,
+  pozosGanados,
+}: {
+  player: Player;
+  pozosGanados?: number;
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -119,8 +125,8 @@ export default function PlayerRow({ player, pozosGanados }: { player: Player; po
           </div>
           <div className="text-sm text-on-surface-variant">
             {player.gender === "FEMALE" ? "Mujer" : "Hombre"} ·{" "}
-            {player.dominant_hand === "LEFT" ? "Zurdo" : "Diestro"} ·
-            Nivel {player.level}
+            {player.dominant_hand === "LEFT" ? "Zurdo" : "Diestro"} · Nivel{" "}
+            {player.level}
           </div>
         </div>
       </div>

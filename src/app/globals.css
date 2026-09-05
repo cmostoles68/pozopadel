@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Material 3 design tokens (from Stitch PadelManager) */
+  /* Material 3 design tokens */
   --background: #0d131f;
   --surface: #0d131f;
   --surface-container-lowest: #080e1a;
@@ -55,7 +55,6 @@
   --color-on-secondary: var(--on-secondary);
   --color-secondary-container: var(--secondary-container);
   --color-on-secondary-container: var(--on-secondary-container);
-  --color-accent: #c3f400;
   --color-secondary-fixed-dim: var(--secondary-container-dark);
 
   --font-display: var(--font-chivo), "Segoe UI", "Helvetica Neue", Arial, sans-serif;
@@ -78,7 +77,7 @@ body {
   font-synthesis-weight: none;
 }
 
-/* ----- Stitch custom utilities ----- */
+/* Utilitarios de la app */
 html {
   font-size: 112%;
 }
@@ -101,10 +100,6 @@ body {
 
 .neon-glow {
   text-shadow: 0 0 10px rgba(195, 244, 0, 0.5);
-}
-
-.accent-bar {
-  border-left: 6px solid var(--secondary-container);
 }
 
 button,

@@ -2,21 +2,25 @@
 
 import { revalidatePath } from "next/cache";
 import { createServices } from "@/infrastructure/service-factory";
-import { getCurrentUserUuid, getCurrentAuthMode } from "@/infrastructure/supabase/current-user";
-import { createPlayerSchema, updatePlayerSchema, uuidSchema } from "@/application/validation/schemas";
+import {
+  getCurrentUserUuid,
+  getCurrentAuthMode,
+} from "@/infrastructure/supabase/current-user";
+import {
+  createPlayerSchema,
+  updatePlayerSchema,
+  uuidSchema,
+} from "@/application/validation/schemas";
 import { parseOrError } from "@/application/validation/parse";
 import { GUEST_LIMITS } from "@/config/limits";
 
 export async function createPlayer(formData: FormData) {
-  const parsed = parseOrError(
-    createPlayerSchema,
-    {
-      full_name: formData.get("full_name"),
-      gender: formData.get("gender"),
-      dominant_hand: formData.get("dominant_hand"),
-      level: formData.get("level"),
-    },
-  );
+  const parsed = parseOrError(createPlayerSchema, {
+    full_name: formData.get("full_name"),
+    gender: formData.get("gender"),
+    dominant_hand: formData.get("dominant_hand"),
+    level: formData.get("level"),
+  });
   if (!parsed.ok) return { error: parsed.error };
 
   const { playerService } = await createServices();
@@ -39,16 +43,13 @@ export async function createPlayer(formData: FormData) {
 }
 
 export async function updatePlayer(formData: FormData) {
-  const parsed = parseOrError(
-    updatePlayerSchema,
-    {
-      id: formData.get("id"),
-      full_name: formData.get("full_name"),
-      gender: formData.get("gender"),
-      dominant_hand: formData.get("dominant_hand"),
-      level: formData.get("level"),
-    },
-  );
+  const parsed = parseOrError(updatePlayerSchema, {
+    id: formData.get("id"),
+    full_name: formData.get("full_name"),
+    gender: formData.get("gender"),
+    dominant_hand: formData.get("dominant_hand"),
+    level: formData.get("level"),
+  });
   if (!parsed.ok) return { error: parsed.error };
 
   const { playerService } = await createServices();

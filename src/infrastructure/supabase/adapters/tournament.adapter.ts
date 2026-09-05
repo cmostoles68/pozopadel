@@ -21,7 +21,9 @@ export class SupabaseTournamentAdapter implements ITournamentRepository {
   async findAll(userUuid: string) {
     const { data } = await this.supabase
       .from("tournaments")
-      .select("id, title, status, number_of_courts, minutes_per_round, champion_drawn_pair_id, created_at, created_by")
+      .select(
+        "id, title, status, number_of_courts, minutes_per_round, champion_drawn_pair_id, created_at, created_by",
+      )
       .eq("created_by", userUuid)
       .order("created_at", { ascending: false });
     return ok((data ?? []) as Tournament[]);
@@ -45,7 +47,8 @@ export class SupabaseTournamentAdapter implements ITournamentRepository {
       })
       .select()
       .single();
-    if (error || !tournament) return safeErr(error?.message ?? "Error creating tournament");
+    if (error || !tournament)
+      return safeErr(error?.message ?? "Error creating tournament");
     return ok(tournament as Tournament);
   }
 
@@ -59,10 +62,17 @@ export class SupabaseTournamentAdapter implements ITournamentRepository {
     return ok(undefined);
   }
 
-  async updateChampion(id: string, userUuid: string, championDrawnPairId: string) {
+  async updateChampion(
+    id: string,
+    userUuid: string,
+    championDrawnPairId: string,
+  ) {
     const { error } = await this.supabase
       .from("tournaments")
-      .update({ status: "completed", champion_drawn_pair_id: championDrawnPairId })
+      .update({
+        status: "completed",
+        champion_drawn_pair_id: championDrawnPairId,
+      })
       .eq("id", id)
       .eq("created_by", userUuid);
     if (error) return safeErr(error);

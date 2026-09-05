@@ -142,7 +142,9 @@ export default function HelpDialog() {
         title="¿Cómo funciona?"
         className="fixed z-50 bottom-5 right-5 sm:bottom-6 sm:right-6 w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-full bg-secondary-container text-on-secondary-container shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_8px_30px_rgba(0,0,0,0.4)] border border-white/10 hover:bg-white transition-colors"
       >
-        <span className="material-symbols-outlined text-[28px] sm:text-[32px]">help</span>
+        <span className="material-symbols-outlined text-[28px] sm:text-[32px]">
+          help
+        </span>
       </button>
 
       <Modal
@@ -178,12 +180,14 @@ export default function HelpDialog() {
 
 function StepCard({ index, step }: { index: number; step: Step }) {
   return (
-      <article className="glass-panel rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden">
+    <article className="glass-panel rounded-2xl p-4 sm:p-5 space-y-3 relative overflow-hidden">
       <span className="absolute top-0 left-0 w-1 h-full bg-secondary-container/40" />
 
       <div className="flex items-start gap-3">
         <span className="shrink-0 flex items-center justify-center w-12 h-12 rounded-full bg-primary-container text-on-primary-container">
-          <span className="material-symbols-outlined text-[28px]">{step.icon}</span>
+          <span className="material-symbols-outlined text-[28px]">
+            {step.icon}
+          </span>
         </span>
 
         <div className="min-w-0 flex-1">
@@ -207,12 +211,17 @@ function StepCard({ index, step }: { index: number; step: Step }) {
         </div>
       </div>
 
-      <p className="text-base sm:text-lg text-on-surface-variant leading-relaxed">{step.body}</p>
+      <p className="text-base sm:text-lg text-on-surface-variant leading-relaxed">
+        {step.body}
+      </p>
 
       {step.bullets && step.bullets.length > 0 && (
         <ul className="space-y-2">
           {step.bullets.map((b) => (
-            <li key={b} className="flex items-start gap-2 text-base sm:text-lg text-on-surface leading-relaxed">
+            <li
+              key={b}
+              className="flex items-start gap-2 text-base sm:text-lg text-on-surface leading-relaxed"
+            >
               <span className="material-symbols-outlined text-secondary-container text-[22px] shrink-0 mt-0.5">
                 check_circle
               </span>
@@ -233,9 +242,13 @@ function StepCard({ index, step }: { index: number; step: Step }) {
                 <span className="text-sm font-bold text-on-surface-variant">
                   {String(ai + 1).padStart(2, "0")}
                 </span>
-                <span className="text-base sm:text-lg font-semibold text-on-surface">{a.title}</span>
+                <span className="text-base sm:text-lg font-semibold text-on-surface">
+                  {a.title}
+                </span>
               </div>
-              <p className="text-sm sm:text-base text-on-surface-variant leading-relaxed">{a.desc}</p>
+              <p className="text-sm sm:text-base text-on-surface-variant leading-relaxed">
+                {a.desc}
+              </p>
             </div>
           ))}
         </div>
@@ -252,8 +265,12 @@ function StepCard({ index, step }: { index: number; step: Step }) {
                 sports_tennis
               </span>
               <div>
-                <div className="text-base sm:text-lg font-semibold text-on-surface">{s.title}</div>
-                <p className="text-sm sm:text-base text-on-surface-variant leading-relaxed mt-0.5">{s.desc}</p>
+                <div className="text-base sm:text-lg font-semibold text-on-surface">
+                  {s.title}
+                </div>
+                <p className="text-sm sm:text-base text-on-surface-variant leading-relaxed mt-0.5">
+                  {s.desc}
+                </p>
               </div>
             </div>
           ))}

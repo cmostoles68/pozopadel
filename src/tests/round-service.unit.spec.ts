@@ -69,7 +69,9 @@ describe("RoundService", () => {
     return { service, repos };
   }
 
-  function courtPair(overrides: Partial<PozoRoundPair> & { id: string }): PozoRoundPair {
+  function courtPair(
+    overrides: Partial<PozoRoundPair> & { id: string },
+  ): PozoRoundPair {
     return {
       round_id: "r1",
       drawn_pair_id: "d1",
@@ -86,11 +88,15 @@ describe("RoundService", () => {
   describe("getRounds / getActiveRound / getRoundPairs", () => {
     it("delegates to the round repo", async () => {
       const { service, repos } = buildService();
-      repos.pozoRoundRepo.findByTournament.mockResolvedValue(ok([round({ id: "r1" })]));
+      repos.pozoRoundRepo.findByTournament.mockResolvedValue(
+        ok([round({ id: "r1" })]),
+      );
       repos.pozoRoundRepo.findActiveByTournament.mockResolvedValue(ok(null));
       repos.pozoRoundRepo.findRoundPairs.mockResolvedValue(ok([]));
 
-      await expect(service.getRounds("t1")).resolves.toEqual(ok([round({ id: "r1" })]));
+      await expect(service.getRounds("t1")).resolves.toEqual(
+        ok([round({ id: "r1" })]),
+      );
       await expect(service.getActiveRound("t1")).resolves.toEqual(ok(null));
       await expect(service.getRoundPairs("r1")).resolves.toEqual(ok([]));
     });
@@ -116,9 +122,14 @@ describe("RoundService", () => {
 
     it("updates each pair on the court", async () => {
       const { service, repos } = buildService();
-      repos.pozoRoundRepo.findById.mockResolvedValue(ok(round({ id: "r1", round_number: 3 })));
+      repos.pozoRoundRepo.findById.mockResolvedValue(
+        ok(round({ id: "r1", round_number: 3 })),
+      );
       repos.pozoRoundRepo.findCourtPairs.mockResolvedValue(
-        ok([courtPair({ id: "rp1", drawn_pair_id: "d1" }), courtPair({ id: "rp2", drawn_pair_id: "d2" })]),
+        ok([
+          courtPair({ id: "rp1", drawn_pair_id: "d1" }),
+          courtPair({ id: "rp2", drawn_pair_id: "d2" }),
+        ]),
       );
       repos.pozoRoundRepo.updatePairResult.mockResolvedValue(ok(undefined));
 
@@ -149,7 +160,9 @@ describe("RoundService", () => {
     it("returns ok when a single pair is on the court", async () => {
       const { service, repos } = buildService();
       repos.pozoRoundRepo.findById.mockResolvedValue(ok(round({ id: "r1" })));
-      repos.pozoRoundRepo.findCourtPairs.mockResolvedValue(ok([courtPair({ id: "rp1", drawn_pair_id: "d1" })]));
+      repos.pozoRoundRepo.findCourtPairs.mockResolvedValue(
+        ok([courtPair({ id: "rp1", drawn_pair_id: "d1" })]),
+      );
       repos.pozoRoundRepo.updatePairResult.mockResolvedValue(ok(undefined));
 
       const res = await service.saveCourtResult("r1", 1, [], "d1");
@@ -165,15 +178,24 @@ describe("RoundService", () => {
         ok(round({ id: "r1", status: "finished" })),
       );
 
-      expect(await service.checkAndStartNextRound("t1", "r1", "u1")).toEqual(ok({}));
+      expect(await service.checkAndStartNextRound("t1", "r1", "u1")).toEqual(
+        ok({}),
+      );
     });
 
     it("returns empty when a court has not finished yet", async () => {
       const { service, repos } = buildService();
-      repos.pozoRoundRepo.findById.mockResolvedValue(ok(round({ id: "r1", round_number: 1 })));
+      repos.pozoRoundRepo.findById.mockResolvedValue(
+        ok(round({ id: "r1", round_number: 1 })),
+      );
       repos.pozoRoundRepo.findRoundPairs.mockResolvedValue(
         ok([
-          courtPair({ id: "rp1", drawn_pair_id: "d1", winner_drawn_pair_id: "d1", is_finished: true }),
+          courtPair({
+            id: "rp1",
+            drawn_pair_id: "d1",
+            winner_drawn_pair_id: "d1",
+            is_finished: true,
+          }),
           courtPair({ id: "rp2", drawn_pair_id: "d2", court_number: 1 }),
         ]),
       );
@@ -185,13 +207,37 @@ describe("RoundService", () => {
 
     it("created the next round with correct movements and flips status to finished", async () => {
       const { service, repos } = buildService();
-      repos.pozoRoundRepo.findById.mockResolvedValue(ok(round({ id: "r1", round_number: 1 })));
+      repos.pozoRoundRepo.findById.mockResolvedValue(
+        ok(round({ id: "r1", round_number: 1 })),
+      );
       repos.pozoRoundRepo.findRoundPairs.mockResolvedValue(
         ok([
-          courtPair({ id: "rp1", drawn_pair_id: "d1", winner_drawn_pair_id: "d1", is_finished: true }),
-          courtPair({ id: "rp2", drawn_pair_id: "d2", winner_drawn_pair_id: "d1", is_finished: true }),
-          courtPair({ id: "rp3", drawn_pair_id: "d3", court_number: 2, winner_drawn_pair_id: "d3", is_finished: true }),
-          courtPair({ id: "rp4", drawn_pair_id: "d4", court_number: 2, winner_drawn_pair_id: "d3", is_finished: true }),
+          courtPair({
+            id: "rp1",
+            drawn_pair_id: "d1",
+            winner_drawn_pair_id: "d1",
+            is_finished: true,
+          }),
+          courtPair({
+            id: "rp2",
+            drawn_pair_id: "d2",
+            winner_drawn_pair_id: "d1",
+            is_finished: true,
+          }),
+          courtPair({
+            id: "rp3",
+            drawn_pair_id: "d3",
+            court_number: 2,
+            winner_drawn_pair_id: "d3",
+            is_finished: true,
+          }),
+          courtPair({
+            id: "rp4",
+            drawn_pair_id: "d4",
+            court_number: 2,
+            winner_drawn_pair_id: "d3",
+            is_finished: true,
+          }),
         ]),
       );
       repos.tournamentRepo.findById.mockResolvedValue(
@@ -216,20 +262,59 @@ describe("RoundService", () => {
         { round_id: "r2", drawn_pair_id: "d3", court_number: 1 },
         { round_id: "r2", drawn_pair_id: "d4", court_number: 2 },
       ]);
-      expect(repos.pozoRoundRepo.updateStatus).toHaveBeenCalledWith("r1", "finished");
+      expect(repos.pozoRoundRepo.updateStatus).toHaveBeenCalledWith(
+        "r1",
+        "finished",
+      );
     });
 
     it("uses only the courts that actually have pairs when the tournament has empty courts", async () => {
       const { service, repos } = buildService();
-      repos.pozoRoundRepo.findById.mockResolvedValue(ok(round({ id: "r1", round_number: 1 })));
+      repos.pozoRoundRepo.findById.mockResolvedValue(
+        ok(round({ id: "r1", round_number: 1 })),
+      );
       repos.pozoRoundRepo.findRoundPairs.mockResolvedValue(
         ok([
-          courtPair({ id: "rp1", drawn_pair_id: "d1", winner_drawn_pair_id: "d1", is_finished: true }),
-          courtPair({ id: "rp2", drawn_pair_id: "d2", winner_drawn_pair_id: "d1", is_finished: true }),
-          courtPair({ id: "rp3", drawn_pair_id: "d3", court_number: 2, winner_drawn_pair_id: "d3", is_finished: true }),
-          courtPair({ id: "rp4", drawn_pair_id: "d4", court_number: 2, winner_drawn_pair_id: "d3", is_finished: true }),
-          courtPair({ id: "rp5", drawn_pair_id: "d5", court_number: 3, winner_drawn_pair_id: "d5", is_finished: true }),
-          courtPair({ id: "rp6", drawn_pair_id: "d6", court_number: 3, winner_drawn_pair_id: "d5", is_finished: true }),
+          courtPair({
+            id: "rp1",
+            drawn_pair_id: "d1",
+            winner_drawn_pair_id: "d1",
+            is_finished: true,
+          }),
+          courtPair({
+            id: "rp2",
+            drawn_pair_id: "d2",
+            winner_drawn_pair_id: "d1",
+            is_finished: true,
+          }),
+          courtPair({
+            id: "rp3",
+            drawn_pair_id: "d3",
+            court_number: 2,
+            winner_drawn_pair_id: "d3",
+            is_finished: true,
+          }),
+          courtPair({
+            id: "rp4",
+            drawn_pair_id: "d4",
+            court_number: 2,
+            winner_drawn_pair_id: "d3",
+            is_finished: true,
+          }),
+          courtPair({
+            id: "rp5",
+            drawn_pair_id: "d5",
+            court_number: 3,
+            winner_drawn_pair_id: "d5",
+            is_finished: true,
+          }),
+          courtPair({
+            id: "rp6",
+            drawn_pair_id: "d6",
+            court_number: 3,
+            winner_drawn_pair_id: "d5",
+            is_finished: true,
+          }),
         ]),
       );
       repos.tournamentRepo.findById.mockResolvedValue(
@@ -250,7 +335,10 @@ describe("RoundService", () => {
       }[];
       const byCourt = new Map<number, string[]>();
       for (const c of calls) {
-        byCourt.set(c.court_number, [...(byCourt.get(c.court_number) ?? []), c.drawn_pair_id]);
+        byCourt.set(c.court_number, [
+          ...(byCourt.get(c.court_number) ?? []),
+          c.drawn_pair_id,
+        ]);
       }
       expect(byCourt).toEqual(
         new Map([
@@ -263,11 +351,23 @@ describe("RoundService", () => {
 
     it("rolls back the created round if inserting pairs fails", async () => {
       const { service, repos } = buildService();
-      repos.pozoRoundRepo.findById.mockResolvedValue(ok(round({ id: "r1", round_number: 1 })));
+      repos.pozoRoundRepo.findById.mockResolvedValue(
+        ok(round({ id: "r1", round_number: 1 })),
+      );
       repos.pozoRoundRepo.findRoundPairs.mockResolvedValue(
         ok([
-          courtPair({ id: "rp1", drawn_pair_id: "d1", winner_drawn_pair_id: "d1", is_finished: true }),
-          courtPair({ id: "rp2", drawn_pair_id: "d2", winner_drawn_pair_id: "d1", is_finished: true }),
+          courtPair({
+            id: "rp1",
+            drawn_pair_id: "d1",
+            winner_drawn_pair_id: "d1",
+            is_finished: true,
+          }),
+          courtPair({
+            id: "rp2",
+            drawn_pair_id: "d2",
+            winner_drawn_pair_id: "d1",
+            is_finished: true,
+          }),
         ]),
       );
       repos.tournamentRepo.findById.mockResolvedValue(
@@ -286,11 +386,23 @@ describe("RoundService", () => {
 
     it("returns an error when the tournament is not found", async () => {
       const { service, repos } = buildService();
-      repos.pozoRoundRepo.findById.mockResolvedValue(ok(round({ id: "r1", round_number: 1 })));
+      repos.pozoRoundRepo.findById.mockResolvedValue(
+        ok(round({ id: "r1", round_number: 1 })),
+      );
       repos.pozoRoundRepo.findRoundPairs.mockResolvedValue(
         ok([
-          courtPair({ id: "rp1", drawn_pair_id: "d1", winner_drawn_pair_id: "d1", is_finished: true }),
-          courtPair({ id: "rp2", drawn_pair_id: "d2", winner_drawn_pair_id: "d1", is_finished: true }),
+          courtPair({
+            id: "rp1",
+            drawn_pair_id: "d1",
+            winner_drawn_pair_id: "d1",
+            is_finished: true,
+          }),
+          courtPair({
+            id: "rp2",
+            drawn_pair_id: "d2",
+            winner_drawn_pair_id: "d1",
+            is_finished: true,
+          }),
         ]),
       );
       repos.tournamentRepo.findById.mockResolvedValue(ok(null));
@@ -320,13 +432,23 @@ describe("RoundService", () => {
 
     it("returns an error when court 1 has no defined champion", async () => {
       const { service, repos } = buildService();
-      repos.pozoRoundRepo.findByTournament.mockResolvedValue(ok([round({ id: "r1" })]));
+      repos.pozoRoundRepo.findByTournament.mockResolvedValue(
+        ok([round({ id: "r1" })]),
+      );
       repos.pozoRoundRepo.findCourtPairs.mockResolvedValue(
-        ok([courtPair({ id: "rp1", drawn_pair_id: "dChampion", is_finished: false })]),
+        ok([
+          courtPair({
+            id: "rp1",
+            drawn_pair_id: "dChampion",
+            is_finished: false,
+          }),
+        ]),
       );
 
       const res = await service.finalizePozo("t1", "u1");
-      expect(res).toEqual(err("La pista 1 todavía no tiene un ganador definido"));
+      expect(res).toEqual(
+        err("La pista 1 todavía no tiene un ganador definido"),
+      );
     });
 
     it("marks the winner of the latest court-1 match as champion and records final match in history", async () => {
@@ -337,31 +459,73 @@ describe("RoundService", () => {
         winner_drawn_pair_id: "dChampion",
         score_a: 6,
       });
-      repos.pozoRoundRepo.findByTournament.mockResolvedValue(ok([
-        round({ id: "r1", round_number: 1 }),
-        round({ id: "r2", round_number: 2 }),
-      ]));
+      repos.pozoRoundRepo.findByTournament.mockResolvedValue(
+        ok([
+          round({ id: "r1", round_number: 1 }),
+          round({ id: "r2", round_number: 2 }),
+        ]),
+      );
       repos.pozoRoundRepo.findCourtPairs.mockImplementation((roundId) =>
         roundId === "r2"
           ? Promise.resolve(ok([championPair, loserOnCourt1]))
           : Promise.resolve(ok([])),
       );
       repos.tournamentRepo.updateChampion.mockResolvedValue(ok(undefined));
-      repos.drawnPairRepo.findAll.mockResolvedValue(ok([
-        { id: "dChampion", player1_id: "p1", player2_id: "p2" } as unknown as DrawnPair,
-        { id: "dLoser", player1_id: "p3", player2_id: "p4" } as unknown as DrawnPair,
-      ]));
-      repos.playerRepo.findAll.mockResolvedValue(ok([
-        { id: "p1", full_name: "A", gender: "MALE", dominant_hand: "RIGHT", level: 5 } as unknown as Player,
-        { id: "p2", full_name: "B", gender: "MALE", dominant_hand: "LEFT", level: 4 } as unknown as Player,
-        { id: "p3", full_name: "C", gender: "FEMALE", dominant_hand: "RIGHT", level: 6 } as unknown as Player,
-        { id: "p4", full_name: "D", gender: "FEMALE", dominant_hand: "RIGHT", level: 3 } as unknown as Player,
-      ]));
+      repos.drawnPairRepo.findAll.mockResolvedValue(
+        ok([
+          {
+            id: "dChampion",
+            player1_id: "p1",
+            player2_id: "p2",
+          } as unknown as DrawnPair,
+          {
+            id: "dLoser",
+            player1_id: "p3",
+            player2_id: "p4",
+          } as unknown as DrawnPair,
+        ]),
+      );
+      repos.playerRepo.findAll.mockResolvedValue(
+        ok([
+          {
+            id: "p1",
+            full_name: "A",
+            gender: "MALE",
+            dominant_hand: "RIGHT",
+            level: 5,
+          } as unknown as Player,
+          {
+            id: "p2",
+            full_name: "B",
+            gender: "MALE",
+            dominant_hand: "LEFT",
+            level: 4,
+          } as unknown as Player,
+          {
+            id: "p3",
+            full_name: "C",
+            gender: "FEMALE",
+            dominant_hand: "RIGHT",
+            level: 6,
+          } as unknown as Player,
+          {
+            id: "p4",
+            full_name: "D",
+            gender: "FEMALE",
+            dominant_hand: "RIGHT",
+            level: 3,
+          } as unknown as Player,
+        ]),
+      );
       repos.matchHistoryRepo.upsert.mockResolvedValue(ok(undefined));
 
       const res = await service.finalizePozo("t1", "u1");
       expect(res).toEqual(ok(undefined));
-      expect(repos.tournamentRepo.updateChampion).toHaveBeenCalledWith("t1", "u1", "dChampion");
+      expect(repos.tournamentRepo.updateChampion).toHaveBeenCalledWith(
+        "t1",
+        "u1",
+        "dChampion",
+      );
       expect(repos.matchHistoryRepo.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           tournament_id: "t1",

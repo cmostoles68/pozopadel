@@ -18,11 +18,17 @@ export class PlayerService {
     return this.playerRepo.findById(id);
   }
 
-  async create(input: CreatePlayerInput, userUuid: string): Promise<Result<void>> {
+  async create(
+    input: CreatePlayerInput,
+    userUuid: string,
+  ): Promise<Result<void>> {
     return this.playerRepo.create({ ...input, user_uuid: userUuid });
   }
 
-  async update(input: UpdatePlayerInput, userUuid: string): Promise<Result<void>> {
+  async update(
+    input: UpdatePlayerInput,
+    userUuid: string,
+  ): Promise<Result<void>> {
     return this.playerRepo.update(
       input.id,
       {

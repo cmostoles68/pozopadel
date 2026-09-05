@@ -89,7 +89,9 @@ export default function Modal({
           </button>
         </header>
 
-        <div className="overflow-y-auto custom-scrollbar flex-1">{children}</div>
+        <div className="overflow-y-auto custom-scrollbar flex-1">
+          {children}
+        </div>
       </div>
     </div>
   );

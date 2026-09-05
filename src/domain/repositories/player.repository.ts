@@ -15,8 +15,13 @@ export interface IPlayerRepository {
   }): Promise<Result<void>>;
   update(
     id: string,
-    data: { full_name: string; gender: string; dominant_hand: string; level: number },
-    userUuid: string
+    data: {
+      full_name: string;
+      gender: string;
+      dominant_hand: string;
+      level: number;
+    },
+    userUuid: string,
   ): Promise<Result<void>>;
   delete(id: string, userUuid: string): Promise<Result<void>>;
   deleteAll(userUuid: string): Promise<Result<void>>;

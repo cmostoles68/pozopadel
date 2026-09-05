@@ -53,8 +53,16 @@ interface TechnicalMark {
  * Orden: se evalúa el primero que coincida.
  */
 const TECHNICAL_MARKS: TechnicalMark[] = [
-  { pattern: /duplicate key|duplicidad/i, message: "Ese registro ya existe. Comprueba los datos e inténtalo de nuevo." },
-  { pattern: /foreign key|referenci/i, message: "No se puede completar la acción porque hay datos relacionados. Revisa e inténtalo de nuevo." },
+  {
+    pattern: /duplicate key|duplicidad/i,
+    message:
+      "Ese registro ya existe. Comprueba los datos e inténtalo de nuevo.",
+  },
+  {
+    pattern: /foreign key|referenci/i,
+    message:
+      "No se puede completar la acción porque hay datos relacionados. Revisa e inténtalo de nuevo.",
+  },
 ];
 
 /**

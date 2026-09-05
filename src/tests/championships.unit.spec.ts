@@ -43,12 +43,7 @@ describe("countChampionshipsByDrawnPairIds", () => {
   ]);
 
   it("counts championships from completed tournaments", () => {
-    const championDrawnPairIds = [
-      "pair1",
-      "pair1",
-      "pair2",
-      "pair3",
-    ];
+    const championDrawnPairIds = ["pair1", "pair1", "pair2", "pair3"];
 
     const counts = countChampionshipsByDrawnPairIds(
       championDrawnPairIds,
@@ -64,11 +59,7 @@ describe("countChampionshipsByDrawnPairIds", () => {
   });
 
   it("ignores tournaments without a champion pair", () => {
-    const championDrawnPairIds = [
-      null,
-      undefined as unknown as null,
-      "pair1",
-    ];
+    const championDrawnPairIds = [null, undefined as unknown as null, "pair1"];
 
     const counts = countChampionshipsByDrawnPairIds(
       championDrawnPairIds,

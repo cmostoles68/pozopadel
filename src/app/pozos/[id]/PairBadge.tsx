@@ -7,8 +7,8 @@ export default function PairBadge({
 }) {
   return (
     <span
-      className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-white text-base font-bold shrink-0 ${
-        className ?? "bg-primary-container"
+      className={`inline-flex items-center justify-center rounded-full bg-primary-container text-on-primary-container text-base font-bold shrink-0 ${
+        className ?? "w-9 h-9"
       }`}
     >
       {number}

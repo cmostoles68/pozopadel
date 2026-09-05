@@ -16,7 +16,11 @@ export async function drawPairs(method: DrawMethod) {
   const result = await drawService.drawPairs(parsed.data, userUuid);
   if (!result.ok) return { error: result.error };
   revalidatePath("/sorteo");
-  return { ok: true as const, pairs: result.data.pairs, oddPlayer: result.data.oddPlayer };
+  return {
+    ok: true as const,
+    pairs: result.data.pairs,
+    oddPlayer: result.data.oddPlayer,
+  };
 }
 
 export async function clearPairs() {

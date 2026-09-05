@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from "react";
 
 function playAlarm() {
   try {
-    const ctx = new (window.AudioContext ||
+    const ctx = new (
+      window.AudioContext ||
       (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext)();
+        .webkitAudioContext
+    )();
     const notes = [880, 880, 1100, 1100];
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator();
@@ -89,9 +91,7 @@ export default function RoundTimer({
           }`}
         >
           {mm}
-          <span className={running ? "opacity-100" : "opacity-40"}>
-            :
-          </span>
+          <span className={running ? "opacity-100" : "opacity-40"}>:</span>
           {ss}
         </div>
       </div>

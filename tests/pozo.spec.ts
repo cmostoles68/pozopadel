@@ -38,9 +38,10 @@ test.describe.configure({ mode: "serial" });
 test.afterEach(async () => {
   try {
     if (createdTournaments.length) {
-      await client.query("DELETE FROM pozo_match_history WHERE tournament_id = ANY($1::uuid[])", [
-        createdTournaments,
-      ]);
+      await client.query(
+        "DELETE FROM pozo_match_history WHERE tournament_id = ANY($1::uuid[])",
+        [createdTournaments],
+      );
       await client.query("DELETE FROM tournaments WHERE id = ANY($1::uuid[])", [
         createdTournaments,
       ]);
@@ -69,7 +70,11 @@ const PAIRS = [
 
 // Creates a tournament + drawn pairs with unique high pair numbers (9000+) so
 // badge locators never collide with other fixtures' pairs.
-async function setupTournament(courts: number, pairIndexes: number[], minutes = 15) {
+async function setupTournament(
+  courts: number,
+  pairIndexes: number[],
+  minutes = 15,
+) {
   const stamp = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
 
   const tournamentId = await createTournament(client, {
@@ -108,12 +113,17 @@ function badge(page: import("@playwright/test").Page, number: number) {
 // The full row (a .flex.justify-between element) that contains the given pair's badge.
 function rowFor(page: import("@playwright/test").Page, number: number) {
   return badge(page, number).locator(
-    "xpath=ancestor::div[contains(@class, 'flex') and contains(@class, 'justify-between')][1]"
+    "xpath=ancestor::div[contains(@class, 'flex') and contains(@class, 'justify-between')][1]",
   );
 }
 
-async function clickSelect(page: import("@playwright/test").Page, number: number) {
-  await rowFor(page, number).getByRole("button", { name: "Seleccionar" }).click();
+async function clickSelect(
+  page: import("@playwright/test").Page,
+  number: number,
+) {
+  await rowFor(page, number)
+    .getByRole("button", { name: "Seleccionar" })
+    .click();
 }
 
 // The CourtCard <section> for a concrete court number + pair number.
@@ -144,7 +154,9 @@ async function registerScore(
 }
 
 test.describe("Pozo: selección de parejas y sorteo de pistas", () => {
-  test("lista las parejas sorteadas con su número en circulo", async ({ page }) => {
+  test("lista las parejas sorteadas con su número en circulo", async ({
+    page,
+  }) => {
     const { tournamentId, numbers } = await setupTournament(2, [0, 1]);
     await page.goto(`/pozos/${tournamentId}`);
 
@@ -154,14 +166,18 @@ test.describe("Pozo: selección de parejas y sorteo de pistas", () => {
     }
   });
 
-  test("selecciona una pareja y aparece en la lista de seleccionadas", async ({ page }) => {
+  test("selecciona una pareja y aparece en la lista de seleccionadas", async ({
+    page,
+  }) => {
     const { tournamentId, numbers } = await setupTournament(2, [0, 1]);
     await page.goto(`/pozos/${tournamentId}`);
 
     await clickSelect(page, numbers[0]);
 
     await expect(page.getByText("Seleccionadas (1)")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Sorteo pistas" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Sorteo pistas" }),
+    ).toBeVisible();
     await expect(badge(page, numbers[0])).toBeVisible();
   });
 
@@ -183,18 +199,22 @@ test.describe("Pozo: selección de parejas y sorteo de pistas", () => {
     await page.getByRole("button", { name: "Seleccionar todas" }).click();
 
     // The selected-pairs panel appears, indicating selection happened.
-    await expect(page.getByRole("button", { name: "Sorteo pistas" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Sorteo pistas" }),
+    ).toBeVisible();
 
     // Every one of the tournament's drawn pairs is now selected in the DB.
     const { rows: drawn } = await client.query(
       "SELECT id FROM drawn_pairs WHERE pair_number = ANY($1::int[]) AND user_uuid = $2",
-      [numbers, GUEST_UUID]
+      [numbers, GUEST_UUID],
     );
     const { rows: selected } = await client.query(
       "SELECT drawn_pair_id FROM tournament_drawn_pairs WHERE tournament_id = $1",
-      [tournamentId]
+      [tournamentId],
     );
-    const selectedIds = new Set(selected.map((r: { drawn_pair_id: string }) => r.drawn_pair_id));
+    const selectedIds = new Set(
+      selected.map((r: { drawn_pair_id: string }) => r.drawn_pair_id),
+    );
     for (const d of drawn) {
       expect(selectedIds.has(d.id)).toBe(true);
     }
@@ -227,7 +247,9 @@ test.describe("Pozo: selección de parejas y sorteo de pistas", () => {
 
     await page.getByRole("button", { name: "Sorteo pistas" }).click();
     await expect(
-      page.getByText("Hay 3 parejas pero solo 1 pistas (caben 2). Elimina alguna pareja o añade pistas.")
+      page.getByText(
+        "Hay 3 parejas pero solo 1 pistas (caben 2). Elimina alguna pareja o añade pistas.",
+      ),
     ).toBeVisible();
     await expect(page.getByTestId("round-1")).not.toBeVisible();
   });
@@ -236,7 +258,7 @@ test.describe("Pozo: selección de parejas y sorteo de pistas", () => {
 // Maps pair_number -> court_number for a given round of a tournament.
 async function roundCourtMap(
   tournamentId: string,
-  roundNumber: number
+  roundNumber: number,
 ): Promise<Map<number, number>> {
   const { rows } = await client.query(
     `SELECT dp.pair_number, rp.court_number
@@ -244,15 +266,18 @@ async function roundCourtMap(
        JOIN pozo_rounds r ON r.id = rp.round_id
        JOIN drawn_pairs dp ON dp.id = rp.drawn_pair_id
       WHERE r.tournament_id = $1 AND r.round_number = $2`,
-    [tournamentId, roundNumber]
+    [tournamentId, roundNumber],
   );
   const map = new Map<number, number>();
-  for (const row of rows) map.set(Number(row.pair_number), Number(row.court_number));
+  for (const row of rows)
+    map.set(Number(row.pair_number), Number(row.court_number));
   return map;
 }
 
 test.describe("Pozo: registro de resultados y siguiente ronda", () => {
-  test("tras sortear, muestra la ronda 1 para registrar resultados", async ({ page }) => {
+  test("tras sortear, muestra la ronda 1 para registrar resultados", async ({
+    page,
+  }) => {
     const { tournamentId, numbers } = await setupTournament(2, [0, 1, 2, 3]);
     await page.goto(`/pozos/${tournamentId}`);
 
@@ -265,12 +290,16 @@ test.describe("Pozo: registro de resultados y siguiente ronda", () => {
     await expect(round1.getByText("Pista 2")).toBeVisible();
     for (const num of numbers) {
       await expect(
-        round1.getByTestId(`court-1-pair-${num}`).or(round1.getByTestId(`court-2-pair-${num}`))
+        round1
+          .getByTestId(`court-1-pair-${num}`)
+          .or(round1.getByTestId(`court-2-pair-${num}`)),
       ).toBeVisible();
     }
   });
 
-  test("completar todas las pistas genera la ronda 2 con el sistema de ascensos", async ({ page }) => {
+  test("completar todas las pistas genera la ronda 2 con el sistema de ascensos", async ({
+    page,
+  }) => {
     const { tournamentId, numbers } = await setupTournament(2, [0, 1, 2, 3]);
     await page.goto(`/pozos/${tournamentId}`);
 
@@ -319,12 +348,21 @@ test.describe("Pozo: registro de resultados y siguiente ronda", () => {
     const [w, l] = numbers;
 
     // Click the pair number itself to mark it winner (locally, until saved).
-    await page.getByTestId(`court-1-pair-${w}`).getByText(String(w), { exact: true }).click();
-    await expect(page.getByTestId(`court-1-pair-${w}`)).toContainText("GANADOR");
-    await expect(page.getByTestId(`court-1-pair-${l}`)).not.toContainText("GANADOR");
+    await page
+      .getByTestId(`court-1-pair-${w}`)
+      .getByText(String(w), { exact: true })
+      .click();
+    await expect(page.getByTestId(`court-1-pair-${w}`)).toContainText(
+      "GANADOR",
+    );
+    await expect(page.getByTestId(`court-1-pair-${l}`)).not.toContainText(
+      "GANADOR",
+    );
   });
 
-  test("finalizar pozo desprecia la nueva ronda y corona al ganador de la pista 1 de la anterior", async ({ page }) => {
+  test("finalizar pozo desprecia la nueva ronda y corona al ganador de la pista 1 de la anterior", async ({
+    page,
+  }) => {
     const { tournamentId, numbers } = await setupTournament(1, [0, 1]);
     await page.goto(`/pozos/${tournamentId}`);
 
@@ -350,7 +388,9 @@ test.describe("Pozo: registro de resultados y siguiente ronda", () => {
 });
 
 test.describe("Pozo: temporizador de ronda", () => {
-  test("muestra el temporizador con el tiempo del pozo y arranca manualmente", async ({ page }) => {
+  test("muestra el temporizador con el tiempo del pozo y arranca manualmente", async ({
+    page,
+  }) => {
     const { tournamentId, numbers } = await setupTournament(1, [0, 1], 15);
     await page.goto(`/pozos/${tournamentId}`);
 
@@ -365,10 +405,14 @@ test.describe("Pozo: temporizador de ronda", () => {
 
     // Press to start the countdown.
     await timer.getByRole("button", { name: "Iniciar" }).click();
-    await expect(timer.getByRole("button", { name: "En curso..." })).toBeVisible();
+    await expect(
+      timer.getByRole("button", { name: "En curso..." }),
+    ).toBeVisible();
   });
 
-  test("al pulsar el temporizador en curso lo detiene y lo deja a 00:00", async ({ page }) => {
+  test("al pulsar el temporizador en curso lo detiene y lo deja a 00:00", async ({
+    page,
+  }) => {
     const { tournamentId, numbers } = await setupTournament(1, [0, 1], 15);
     await page.goto(`/pozos/${tournamentId}`);
 
@@ -377,14 +421,18 @@ test.describe("Pozo: temporizador de ronda", () => {
 
     const timer = page.getByTestId("timer-round-1");
     await timer.getByRole("button", { name: "Iniciar" }).click();
-    await expect(timer.getByRole("button", { name: "En curso..." })).toBeVisible();
+    await expect(
+      timer.getByRole("button", { name: "En curso..." }),
+    ).toBeVisible();
 
     // Tapping the running timer stops it and resets it to 00:00. Click on the
     // left part of the timer (the clock area), away from the "En curso..." button.
     await timer.click({ position: { x: 40, y: 30 } });
     await expect(timer).toContainText("00:00");
     await expect(timer).toContainText("¡Tiempo completado!");
-    await expect(timer.getByRole("button", { name: "Reiniciar" })).toBeVisible();
+    await expect(
+      timer.getByRole("button", { name: "Reiniciar" }),
+    ).toBeVisible();
   });
 
   test("avisa al llegar a cero y se detiene", async ({ page }) => {
@@ -401,12 +449,16 @@ test.describe("Pozo: temporizador de ronda", () => {
     // Starting a 0-minute timer reaches zero immediately and shows the alert.
     await timer.getByRole("button", { name: "Iniciar" }).click();
     await expect(timer).toContainText("¡Tiempo completado!");
-    await expect(timer.getByRole("button", { name: "Reiniciar" })).toBeVisible();
+    await expect(
+      timer.getByRole("button", { name: "Reiniciar" }),
+    ).toBeVisible();
   });
 });
 
 test.describe("Pozo: histórico de partidos", () => {
-  test("el histórico solo registra el ganador del pozo, no los ganadores de rondas previas", async ({ page }) => {
+  test("el histórico solo registra el ganador del pozo, no los ganadores de rondas previas", async ({
+    page,
+  }) => {
     const { tournamentId, numbers } = await setupTournament(1, [0, 1]);
     await page.goto(`/pozos/${tournamentId}`);
 
@@ -422,7 +474,7 @@ test.describe("Pozo: histórico de partidos", () => {
     // No history row must be created yet: only pozo champions are recorded.
     const afterRound = await client.query(
       "SELECT id FROM pozo_match_history WHERE tournament_id = $1",
-      [tournamentId]
+      [tournamentId],
     );
     expect(afterRound.rows).toHaveLength(0);
 
@@ -441,7 +493,7 @@ test.describe("Pozo: histórico de partidos", () => {
              JOIN drawn_pairs dpw ON dpw.id = h.winner_drawn_pair_id
              JOIN drawn_pairs dpl ON dpl.id = h.loser_drawn_pair_id
             WHERE h.tournament_id = $1`,
-          [tournamentId]
+          [tournamentId],
         );
         championRows = rows;
         return rows;
@@ -464,14 +516,19 @@ test.describe("Pozo: histórico de partidos", () => {
     expect(row.loser_player2_id).toBeTruthy();
   });
 
-  test("el sorteo evita repetir parejas que siempre ganan en el historico", async ({ page }) => {
+  test("el sorteo evita repetir parejas que siempre ganan en el historico", async ({
+    page,
+  }) => {
     const ana = profileIds.get("Ana Vega")!;
     const andres = profileIds.get("Andrés Moreno")!;
     const pablo = profileIds.get("Pablo Torres")!;
     const sara = profileIds.get("Sara Gil")!;
 
     // Record existing drawn_pairs so cleanup only removes the new draw's rows.
-    const before = await client.query("SELECT id FROM drawn_pairs WHERE user_uuid = $1", [GUEST_UUID]);
+    const before = await client.query(
+      "SELECT id FROM drawn_pairs WHERE user_uuid = $1",
+      [GUEST_UUID],
+    );
     const beforeIds = new Set(before.rows.map((r: { id: string }) => r.id));
 
     // Fabricate 3 wins so the Ana+Andrés partnership has a 100% win rate.
@@ -484,7 +541,7 @@ test.describe("Pozo: histórico de partidos", () => {
             score_winner, score_loser, user_uuid)
          VALUES (NULL, NULL, NULL, 1, $1, $2, $3, $4, 6, 4, $5)
          RETURNING id`,
-        [ana, andres, pablo, sara, GUEST_UUID]
+        [ana, andres, pablo, sara, GUEST_UUID],
       );
       historyIds.push(rows[0].id);
     }
@@ -497,7 +554,7 @@ test.describe("Pozo: histórico de partidos", () => {
       .poll(async () => {
         const { rows } = await client.query(
           "SELECT id FROM drawn_pairs WHERE user_uuid = $1 AND id <> ALL($2::uuid[])",
-          [GUEST_UUID, [...beforeIds]]
+          [GUEST_UUID, [...beforeIds]],
         );
         return rows.length > 0;
       })
@@ -509,7 +566,7 @@ test.describe("Pozo: histórico de partidos", () => {
          FROM drawn_pairs dp
         WHERE dp.user_uuid = $1 AND dp.id <> ALL($2::uuid[])
           AND (dp.player1_id = $3 OR dp.player2_id = $3)`,
-      [GUEST_UUID, [...beforeIds], ana]
+      [GUEST_UUID, [...beforeIds], ana],
     );
     for (const r of rows) {
       const partner = r.player1_id === ana ? r.player2_id : r.player1_id;
@@ -517,10 +574,12 @@ test.describe("Pozo: histórico de partidos", () => {
     }
 
     // Remove only the pairs created by this draw.
-    await client.query("DELETE FROM drawn_pairs WHERE user_uuid = $1 AND id <> ALL($2::uuid[])", [
-      GUEST_UUID,
-      [...beforeIds],
+    await client.query(
+      "DELETE FROM drawn_pairs WHERE user_uuid = $1 AND id <> ALL($2::uuid[])",
+      [GUEST_UUID, [...beforeIds]],
+    );
+    await client.query("DELETE FROM pozo_match_history WHERE id = ANY($1)", [
+      historyIds,
     ]);
-    await client.query("DELETE FROM pozo_match_history WHERE id = ANY($1)", [historyIds]);
   });
 });

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
-import LiveTournamentHeader from "@/components/LiveTournamentHeader";
+import TournamentStatusHeader from "@/components/TournamentStatusHeader";
 import RoundTimer from "@/components/RoundTimer";
 import PairSelector from "./PairSelector";
 import CourtScoring from "./CourtScoring";
@@ -8,14 +8,12 @@ import { createServices } from "@/infrastructure/service-factory";
 import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
 import { requireResult } from "@/domain/result";
 
-export default async function PozoPage(props: { params: Promise<{ id: string }> }) {
+export default async function PozoPage(props: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await props.params;
-  const {
-    tournamentService,
-    drawService,
-    roundService,
-    tournamentDrawnPairRepo,
-  } = await createServices();
+  const { tournamentService, drawService, roundService } =
+    await createServices();
   const userUuid = await getCurrentUserUuid();
 
   const tournamentRes = await tournamentService.getById(id, userUuid);
@@ -25,12 +23,12 @@ export default async function PozoPage(props: { params: Promise<{ id: string }> 
 
   const [allPairs, selectedPairs] = await Promise.all([
     drawService.getDrawnPairsWithProfiles(userUuid).then(requireResult),
-    tournamentDrawnPairRepo.findByTournament(id).then(requireResult),
+    drawService.getTournamentSelectedPairs(id).then(requireResult),
   ]);
 
   const pozoRounds = requireResult(await roundService.getRounds(id));
   const pozoRoundPairs = await Promise.all(
-    pozoRounds.map((r) => roundService.getRoundPairs(r.id).then(requireResult))
+    pozoRounds.map((r) => roundService.getRoundPairs(r.id).then(requireResult)),
   );
 
   const roundsData = pozoRounds.map((r, i) => ({
@@ -45,7 +43,8 @@ export default async function PozoPage(props: { params: Promise<{ id: string }> 
   const completed = tournament.status === "completed";
   const champion =
     completed && tournament.champion_drawn_pair_id
-      ? allPairs.find((p) => p.id === tournament.champion_drawn_pair_id) ?? null
+      ? (allPairs.find((p) => p.id === tournament.champion_drawn_pair_id) ??
+        null)
       : null;
 
   return (
@@ -57,7 +56,7 @@ export default async function PozoPage(props: { params: Promise<{ id: string }> 
               {tournament.title}
             </h2>
             <div className="mt-3">
-              <LiveTournamentHeader tournament={tournament} />
+              <TournamentStatusHeader tournament={tournament} />
             </div>
             {activePozoRound && !completed && (
               <div className="mt-3">

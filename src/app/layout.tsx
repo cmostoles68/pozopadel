@@ -17,10 +17,14 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "PadelElite - Gestor de Pozos de Pádel",
-  description: "Gestiona y compite en torneos de pádel tipo Pozo en tiempo real",
+  description: "Gestiona y compite en torneos de pádel tipo Pozo",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="es"

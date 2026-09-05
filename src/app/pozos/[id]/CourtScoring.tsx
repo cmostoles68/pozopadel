@@ -74,14 +74,19 @@ export default function CourtScoring({
     );
   }
 
-  const courts = Array.from(new Set(activeRound.pairs.map((p) => p.court_number))).sort();
+  const courts = Array.from(
+    new Set(activeRound.pairs.map((p) => p.court_number)),
+  ).sort();
   const allFinished = courts.every((court) => {
     const pairs = activeRound.pairs.filter((p) => p.court_number === court);
     return pairs.length >= 2 && pairs.every((p) => p.is_finished);
   });
 
   return (
-    <div className="space-y-8" data-testid={`round-${activeRound.round_number}`}>
+    <div
+      className="space-y-8"
+      data-testid={`round-${activeRound.round_number}`}
+    >
       {completed && champion && <ChampionBanner champion={champion} />}
 
       <div className="flex flex-col gap-3">
@@ -105,7 +110,9 @@ export default function CourtScoring({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 flex flex-col gap-6">
           {courts.map((court) => {
-            const pairs = activeRound.pairs.filter((p) => p.court_number === court);
+            const pairs = activeRound.pairs.filter(
+              (p) => p.court_number === court,
+            );
             return (
               <CourtCard
                 key={`${activeRound.id}-${court}`}
@@ -122,7 +129,7 @@ export default function CourtScoring({
                       activeRound.id,
                       court,
                       scores,
-                      winnerId
+                      winnerId,
                     );
                     if (res.error) {
                       setError(res.error);
@@ -131,7 +138,7 @@ export default function CourtScoring({
                     }
                     const next = await checkAndStartNextRound(
                       tournamentId,
-                      activeRound.id
+                      activeRound.id,
                     );
                     if (next.error) setError(next.error);
                     if (next.nextRoundNumber) router.refresh();
@@ -152,7 +159,9 @@ export default function CourtScoring({
 
       {finishedRounds.length > 0 && (
         <div className="space-y-4">
-          <h3 className="font-display text-2xl text-on-surface">Rondas anteriores</h3>
+          <h3 className="font-display text-2xl text-on-surface">
+            Rondas anteriores
+          </h3>
           {finishedRounds.map((round) => renderFinishedRound(round, pairById))}
         </div>
       )}
@@ -168,11 +177,18 @@ function ErrorNotice({ message }: { message: string }) {
   );
 }
 
-function renderFinishedRound(round: RoundData, pairById: Map<string, PairInfo>) {
-  const courts = Array.from(new Set(round.pairs.map((p) => p.court_number))).sort();
+function renderFinishedRound(
+  round: RoundData,
+  pairById: Map<string, PairInfo>,
+) {
+  const courts = Array.from(
+    new Set(round.pairs.map((p) => p.court_number)),
+  ).sort();
   return (
     <div key={round.id} className="space-y-3">
-      <h4 className="font-display text-xl text-on-surface">Ronda {round.round_number}</h4>
+      <h4 className="font-display text-xl text-on-surface">
+        Ronda {round.round_number}
+      </h4>
       {courts.map((court) => {
         const pairs = round.pairs.filter((p) => p.court_number === court);
         const ordered = pairs
@@ -180,15 +196,17 @@ function renderFinishedRound(round: RoundData, pairById: Map<string, PairInfo>) 
           .sort(
             (a, b) =>
               Number(b.winner_drawn_pair_id === b.drawn_pair_id) -
-              Number(a.winner_drawn_pair_id === a.drawn_pair_id)
+              Number(a.winner_drawn_pair_id === a.drawn_pair_id),
           );
         return (
           <div key={court} className="glass-panel rounded-2xl p-5">
             <div className="flex items-center justify-between mb-3">
-              <div className="font-display text-lg text-on-surface">Pista {court}</div>
+              <div className="font-display text-lg text-on-surface">
+                Pista {court}
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {pairs.map((p, idx) => {
+              {ordered.map((p, idx) => {
                 const info = pairById.get(p.drawn_pair_id);
                 if (!info) return null;
                 const isWinner = p.winner_drawn_pair_id === p.drawn_pair_id;
@@ -197,7 +215,9 @@ function renderFinishedRound(round: RoundData, pairById: Map<string, PairInfo>) 
                     <div className="flex items-center gap-1.5">
                       <span
                         className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-white font-bold shrink-0 ${
-                          isWinner ? "bg-secondary-fixed-dim" : "bg-surface-highest"
+                          isWinner
+                            ? "bg-secondary-fixed-dim"
+                            : "bg-surface-highest"
                         }`}
                       >
                         {info.pair_number}
@@ -210,7 +230,9 @@ function renderFinishedRound(round: RoundData, pairById: Map<string, PairInfo>) 
                     </div>
                     <span
                       className={
-                        isWinner ? "text-on-surface font-semibold" : "text-on-surface-variant"
+                        isWinner
+                          ? "text-on-surface font-semibold"
+                          : "text-on-surface-variant"
                       }
                     >
                       {info.player1_name}
@@ -234,4 +256,3 @@ function renderFinishedRound(round: RoundData, pairById: Map<string, PairInfo>) 
     </div>
   );
 }
-

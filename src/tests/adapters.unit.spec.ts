@@ -32,7 +32,19 @@ interface SupabaseResponse {
 
 function createQueryBuilder(result: SupabaseResponse): SupabaseBuilderMock {
   const entries: Record<string, unknown> = {};
-  for (const m of ["select", "eq", "order", "limit", "in", "not", "is", "insert", "update", "delete", "upsert"]) {
+  for (const m of [
+    "select",
+    "eq",
+    "order",
+    "limit",
+    "in",
+    "not",
+    "is",
+    "insert",
+    "update",
+    "delete",
+    "upsert",
+  ]) {
     entries[m] = vi.fn(() => entries);
   }
   entries["single"] = vi.fn(() => Promise.resolve(result));
@@ -114,7 +126,10 @@ describe("SupabaseTournamentAdapter", () => {
 
   it("updateStatus scopes by user and propagates errors", async () => {
     const { adapter, from } = buildAdapter();
-    const builder = createQueryBuilder({ data: null, error: { message: "no" } });
+    const builder = createQueryBuilder({
+      data: null,
+      error: { message: "no" },
+    });
     from.mockReturnValue(builder);
 
     const res = await adapter.updateStatus("t1", "u1", "completed");
@@ -197,7 +212,11 @@ describe("SupabasePlayerAdapter", () => {
     const builder = createQueryBuilder({ data: null, error: null });
     from.mockReturnValue(builder);
 
-    await adapter.update("p1", { full_name: "Ana", gender: "FEMALE", dominant_hand: "RIGHT", level: 4 }, "u1");
+    await adapter.update(
+      "p1",
+      { full_name: "Ana", gender: "FEMALE", dominant_hand: "RIGHT", level: 4 },
+      "u1",
+    );
     expect(builder.update).toHaveBeenCalledWith({
       full_name: "Ana",
       gender: "FEMALE",
@@ -227,7 +246,9 @@ describe("SupabasePlayerAdapter", () => {
 
   it("exists returns true when row present", async () => {
     const { adapter, from } = buildAdapter();
-    from.mockReturnValue(createQueryBuilder({ data: { id: "p1" }, error: null }));
+    from.mockReturnValue(
+      createQueryBuilder({ data: { id: "p1" }, error: null }),
+    );
 
     const res = await adapter.exists("p1");
     expect(res).toEqual(ok(true));
@@ -253,7 +274,10 @@ describe("SupabaseDrawnPairAdapter", () => {
   it("findAllWithProfiles returns empty for no pairs", async () => {
     const { adapter, from } = buildAdapter();
     from.mockImplementation((table: string) =>
-      createQueryBuilder({ data: table === "drawn_pairs" ? [] : [], error: null }),
+      createQueryBuilder({
+        data: table === "drawn_pairs" ? [] : [],
+        error: null,
+      }),
     );
 
     const res = await adapter.findAllWithProfiles("u1");
@@ -262,26 +286,30 @@ describe("SupabaseDrawnPairAdapter", () => {
 
   it("findAllWithProfiles enriches pairs with profile data", async () => {
     const { adapter, from } = buildAdapter();
-    from.mockImplementation(
-      (table: string) =>
-        createQueryBuilder({
-          data:
-            table === "drawn_pairs"
-              ? [
-                  {
-                    id: "d1",
-                    pair_number: 1,
-                    player1_id: "p1",
-                    player2_id: "p2",
-                    draw_method: "random",
-                  },
-                ]
-              : [
-                  { id: "p1", full_name: "Ana", level: 6, dominant_hand: "LEFT" },
-                  { id: "p2", full_name: "Luis", level: 4, dominant_hand: "RIGHT" },
-                ],
-          error: null,
-        }),
+    from.mockImplementation((table: string) =>
+      createQueryBuilder({
+        data:
+          table === "drawn_pairs"
+            ? [
+                {
+                  id: "d1",
+                  pair_number: 1,
+                  player1_id: "p1",
+                  player2_id: "p2",
+                  draw_method: "random",
+                },
+              ]
+            : [
+                { id: "p1", full_name: "Ana", level: 6, dominant_hand: "LEFT" },
+                {
+                  id: "p2",
+                  full_name: "Luis",
+                  level: 4,
+                  dominant_hand: "RIGHT",
+                },
+              ],
+        error: null,
+      }),
     );
 
     const res = await adapter.findAllWithProfiles("u1");
@@ -301,12 +329,27 @@ describe("SupabaseDrawnPairAdapter", () => {
 
   it("insert stamps rows with user_uuid and returns them", async () => {
     const { adapter, from } = buildAdapter();
-    const inserted = [{ id: "d1", pair_number: 1, player1_id: "p1", player2_id: "p2", draw_method: "random" }];
+    const inserted = [
+      {
+        id: "d1",
+        pair_number: 1,
+        player1_id: "p1",
+        player2_id: "p2",
+        draw_method: "random",
+      },
+    ];
     const builder = createQueryBuilder({ data: inserted, error: null });
     from.mockReturnValue(builder);
 
     const res = await adapter.insert(
-      [{ pair_number: 1, player1_id: "p1", player2_id: "p2", draw_method: "random" }],
+      [
+        {
+          pair_number: 1,
+          player1_id: "p1",
+          player2_id: "p2",
+          draw_method: "random",
+        },
+      ],
       "u1",
     );
     expect(res).toEqual(ok(inserted as unknown as DrawnPair[]));
@@ -331,7 +374,14 @@ describe("SupabaseTournamentDrawnPairAdapter", () => {
 
   it("findByTournament returns selected pairs", async () => {
     const { adapter, from } = buildAdapter();
-    const rows = [{ id: "s1", tournament_id: "t1", drawn_pair_id: "d1", court_number: null }];
+    const rows = [
+      {
+        id: "s1",
+        tournament_id: "t1",
+        drawn_pair_id: "d1",
+        court_number: null,
+      },
+    ];
     from.mockReturnValue(createQueryBuilder({ data: rows, error: null }));
 
     const res = await adapter.findByTournament("t1");
@@ -353,7 +403,10 @@ describe("SupabaseTournamentDrawnPairAdapter", () => {
 
   it("selectAllPairs only inserts not-yet-selected ids", async () => {
     const { adapter, from } = buildAdapter();
-    const builder = createQueryBuilder({ data: [{ drawn_pair_id: "d1" }], error: null });
+    const builder = createQueryBuilder({
+      data: [{ drawn_pair_id: "d1" }],
+      error: null,
+    });
     from.mockReturnValue(builder);
 
     await adapter.selectAllPairs("t1", ["d1", "d2", "d3"]);
@@ -365,7 +418,10 @@ describe("SupabaseTournamentDrawnPairAdapter", () => {
 
   it("selectAllPairs skips insert when everything is already selected", async () => {
     const { adapter, from } = buildAdapter();
-    const builder = createQueryBuilder({ data: [{ drawn_pair_id: "d1" }], error: null });
+    const builder = createQueryBuilder({
+      data: [{ drawn_pair_id: "d1" }],
+      error: null,
+    });
     from.mockReturnValue(builder);
 
     const res = await adapter.selectAllPairs("t1", ["d1"]);
@@ -375,7 +431,10 @@ describe("SupabaseTournamentDrawnPairAdapter", () => {
 
   it("getSelectedWithCourt filters court_number not null", async () => {
     const { adapter, from } = buildAdapter();
-    const builder = createQueryBuilder({ data: [{ id: "s1", drawn_pair_id: "d1", court_number: 2 }], error: null });
+    const builder = createQueryBuilder({
+      data: [{ id: "s1", drawn_pair_id: "d1", court_number: 2 }],
+      error: null,
+    });
     from.mockReturnValue(builder);
 
     const res = await adapter.getSelectedWithCourt("t1");
@@ -411,10 +470,16 @@ describe("SupabasePozoRoundAdapter", () => {
 
   it("createRound defaults status to in_progress", async () => {
     const { adapter, from } = buildAdapter();
-    const builder = createQueryBuilder({ data: { id: "r1", round_number: 1, status: "in_progress" }, error: null });
+    const builder = createQueryBuilder({
+      data: { id: "r1", round_number: 1, status: "in_progress" },
+      error: null,
+    });
     from.mockReturnValue(builder);
 
-    const res = await adapter.createRound({ tournament_id: "t1", round_number: 1 });
+    const res = await adapter.createRound({
+      tournament_id: "t1",
+      round_number: 1,
+    });
     expect(res.ok).toBe(true);
     expect(builder.insert).toHaveBeenCalledWith({
       tournament_id: "t1",
@@ -425,9 +490,14 @@ describe("SupabasePozoRoundAdapter", () => {
 
   it("createRound propagates errors", async () => {
     const { adapter, from } = buildAdapter();
-    from.mockReturnValue(createQueryBuilder({ data: null, error: { message: "no" } }));
+    from.mockReturnValue(
+      createQueryBuilder({ data: null, error: { message: "no" } }),
+    );
 
-    const res = await adapter.createRound({ tournament_id: "t1", round_number: 1 });
+    const res = await adapter.createRound({
+      tournament_id: "t1",
+      round_number: 1,
+    });
     expect(res).toEqual(err("no"));
   });
 
@@ -469,7 +539,9 @@ describe("SupabasePozoRoundAdapter", () => {
 
   it("findRound1IfExists returns the row or null", async () => {
     const { adapter, from } = buildAdapter();
-    from.mockReturnValue(createQueryBuilder({ data: { id: "r1" }, error: null }));
+    from.mockReturnValue(
+      createQueryBuilder({ data: { id: "r1" }, error: null }),
+    );
 
     const res = await adapter.findRound1IfExists("t1");
     expect(res).toEqual(ok({ id: "r1" } as unknown as PozoRound));
@@ -483,7 +555,15 @@ describe("SupabaseMatchHistoryAdapter", () => {
     return { adapter, from };
   }
 
-  function buildPlayerData(): Map<string, { name: string | null; gender: string | null; hand: string | null; level: number | null }> {
+  function buildPlayerData(): Map<
+    string,
+    {
+      name: string | null;
+      gender: string | null;
+      hand: string | null;
+      level: number | null;
+    }
+  > {
     const m = new Map();
     m.set("w1", { name: "Ana", gender: "FEMALE", hand: "LEFT", level: 6 });
     m.set("w2", { name: "Luis", gender: "MALE", hand: "RIGHT", level: 4 });
@@ -556,7 +636,9 @@ describe("SupabaseMatchHistoryAdapter", () => {
 
   it("upsert propagates errors", async () => {
     const { adapter, from } = buildAdapter();
-    from.mockReturnValue(createQueryBuilder({ data: null, error: { message: "conflict" } }));
+    from.mockReturnValue(
+      createQueryBuilder({ data: null, error: { message: "conflict" } }),
+    );
 
     const res = await adapter.upsert({
       tournament_id: "t1",
@@ -595,9 +677,27 @@ describe("SupabaseMatchHistoryAdapter", () => {
       loser_player2_id: "",
     };
     const history = [
-      { ...base, winner_player1_id: "p1", winner_player2_id: "p2", loser_player1_id: "p3", loser_player2_id: "p4" },
-      { ...base, winner_player1_id: "p1", winner_player2_id: "p2", loser_player1_id: "p4", loser_player2_id: "p3" },
-      { ...base, winner_player1_id: "x5", winner_player2_id: "x6", loser_player1_id: "x7", loser_player2_id: "x8" },
+      {
+        ...base,
+        winner_player1_id: "p1",
+        winner_player2_id: "p2",
+        loser_player1_id: "p3",
+        loser_player2_id: "p4",
+      },
+      {
+        ...base,
+        winner_player1_id: "p1",
+        winner_player2_id: "p2",
+        loser_player1_id: "p4",
+        loser_player2_id: "p3",
+      },
+      {
+        ...base,
+        winner_player1_id: "x5",
+        winner_player2_id: "x6",
+        loser_player1_id: "x7",
+        loser_player2_id: "x8",
+      },
     ];
     from.mockReturnValue(createQueryBuilder({ data: history, error: null }));
 
@@ -605,7 +705,13 @@ describe("SupabaseMatchHistoryAdapter", () => {
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     expect(res.data).toHaveLength(1);
-    expect(res.data[0]).toMatchObject({ a: "p1", b: "p2", wins: 2, total: 2, winRate: 1 });
+    expect(res.data[0]).toMatchObject({
+      a: "p1",
+      b: "p2",
+      wins: 2,
+      total: 2,
+      winRate: 1,
+    });
   });
 
   it("findWinningPartnerships returns empty when no history", async () => {

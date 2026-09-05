@@ -5,26 +5,14 @@ import DeleteAllPlayers from "./DeleteAllPlayers";
 import { createServices } from "@/infrastructure/service-factory";
 import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
 import { requireResult } from "@/domain/result";
-import { countChampionshipsByDrawnPairIds } from "@/domain/stats/championships";
 
 export default async function JugadoresPage() {
-  const { playerService, tournamentRepo, drawService } = await createServices();
+  const { playerService, championshipStatsService } = await createServices();
   const userUuid = await getCurrentUserUuid();
   const players = requireResult(await playerService.getAll(userUuid));
 
-  const [tournaments, allPairs] = await Promise.all([
-    tournamentRepo.findAll(userUuid).then(requireResult),
-    drawService.getDrawnPairsWithProfiles(userUuid).then(requireResult),
-  ]);
-
-  const pairMembersById = new Map<string, [string, string]>();
-  for (const p of allPairs) {
-    pairMembersById.set(p.id, [p.player1_id, p.player2_id]);
-  }
-
-  const championshipCount = countChampionshipsByDrawnPairIds(
-    tournaments.map((t) => t.champion_drawn_pair_id),
-    pairMembersById,
+  const championshipCount = requireResult(
+    await championshipStatsService.countByDrawnPairs(userUuid),
   );
 
   const playerRows = (players ?? []).map((p) => ({
@@ -44,8 +32,7 @@ export default async function JugadoresPage() {
               Jugadores
             </h1>
             <p className="text-sm text-on-surface-variant mt-1">
-              {players?.length ?? 0}
-              {" "}jugadores
+              {players?.length ?? 0} jugadores
             </p>
           </div>
           <DeleteAllPlayers />

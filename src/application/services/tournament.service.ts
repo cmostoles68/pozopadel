@@ -4,11 +4,12 @@ import type { CreateTournamentInput } from "../dto/tournament.dto";
 import type { Result } from "@/domain/result";
 
 export class TournamentService {
-  constructor(
-    private tournamentRepo: ITournamentRepository,
-  ) {}
+  constructor(private tournamentRepo: ITournamentRepository) {}
 
-  async getById(id: string, userUuid: string): Promise<Result<Tournament | null>> {
+  async getById(
+    id: string,
+    userUuid: string,
+  ): Promise<Result<Tournament | null>> {
     return this.tournamentRepo.findById(id, userUuid);
   }
 
@@ -16,7 +17,10 @@ export class TournamentService {
     return this.tournamentRepo.findAll(userUuid);
   }
 
-  async create(input: CreateTournamentInput, userUuid: string): Promise<Result<Tournament>> {
+  async create(
+    input: CreateTournamentInput,
+    userUuid: string,
+  ): Promise<Result<Tournament>> {
     return this.tournamentRepo.create({
       title: input.title,
       number_of_courts: input.numberOfCourts,

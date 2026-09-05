@@ -2,12 +2,15 @@ import type {
   IDrawnPairRepository,
   ITournamentDrawnPairRepository,
 } from "@/domain/repositories/pair.repository";
-import type { DrawnPair, TournamentDrawnPair, DrawMethod } from "@/domain/entities/pair";
+import type {
+  DrawnPair,
+  TournamentDrawnPair,
+  DrawMethod,
+} from "@/domain/entities/pair";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ok } from "@/domain/result";
 import { safeErr } from "@/application/errors";
 import type { Database } from "../database.types";
-
 
 export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
   constructor(private supabase: SupabaseClient<Database>) {}
@@ -27,7 +30,7 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
     if (pairs.data.length === 0) return ok([]);
 
     const playerIds = Array.from(
-      new Set(pairs.data.flatMap((p) => [p.player1_id, p.player2_id]))
+      new Set(pairs.data.flatMap((p) => [p.player1_id, p.player2_id])),
     );
 
     const { data: profiles } = await this.supabase
@@ -37,7 +40,9 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
       .eq("user_uuid", userUuid);
 
     const profileMap = new Map(
-      ((profiles ?? []) as Database["public"]["Tables"]["profiles"]["Row"][]).map((p) => [p.id, p])
+      (
+        (profiles ?? []) as Database["public"]["Tables"]["profiles"]["Row"][]
+      ).map((p) => [p.id, p]),
     );
 
     return ok(
@@ -62,7 +67,7 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
           avg_level: avg,
           is_lefty: isLefty,
         };
-      })
+      }),
     );
   }
 
@@ -82,7 +87,7 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
       player2_id: string;
       draw_method: DrawMethod;
     }[],
-    userUuid: string
+    userUuid: string,
   ) {
     const { data, error } = await this.supabase
       .from("drawn_pairs")
@@ -105,10 +110,12 @@ export class SupabaseTournamentDrawnPairAdapter implements ITournamentDrawnPairR
   }
 
   async selectPair(tournamentId: string, drawnPairId: string) {
-    const { error } = await this.supabase.from("tournament_drawn_pairs").insert({
-      tournament_id: tournamentId,
-      drawn_pair_id: drawnPairId,
-    });
+    const { error } = await this.supabase
+      .from("tournament_drawn_pairs")
+      .insert({
+        tournament_id: tournamentId,
+        drawn_pair_id: drawnPairId,
+      });
     if (error) return safeErr(error);
     return ok(undefined);
   }
@@ -123,10 +130,7 @@ export class SupabaseTournamentDrawnPairAdapter implements ITournamentDrawnPairR
     return ok(undefined);
   }
 
-  async selectAllPairs(
-    tournamentId: string,
-    allPairIds: string[]
-  ) {
+  async selectAllPairs(tournamentId: string, allPairIds: string[]) {
     const { data: selected } = await this.supabase
       .from("tournament_drawn_pairs")
       .select("drawn_pair_id")
@@ -136,9 +140,12 @@ export class SupabaseTournamentDrawnPairAdapter implements ITournamentDrawnPairR
 
     if (toInsert.length === 0) return ok(undefined);
 
-    const { error } = await this.supabase
-      .from("tournament_drawn_pairs")
-      .insert(toInsert.map((id) => ({ tournament_id: tournamentId, drawn_pair_id: id })));
+    const { error } = await this.supabase.from("tournament_drawn_pairs").insert(
+      toInsert.map((id) => ({
+        tournament_id: tournamentId,
+        drawn_pair_id: id,
+      })),
+    );
     if (error) return safeErr(error);
     return ok(undefined);
   }

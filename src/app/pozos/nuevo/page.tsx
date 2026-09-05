@@ -43,7 +43,10 @@ function NuevoPozoForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="glass-panel rounded-2xl p-6 space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="glass-panel rounded-2xl p-6 space-y-6"
+      >
         <div>
           <label
             htmlFor="title"

@@ -3,7 +3,7 @@ export const SYSTEM_USER_UUIDS = {
   admin: "00000000-0000-0000-0000-000000000002",
 } as const;
 
-export const AUTH_COOKIE_NAME = "padel_uuid";
+export const AUTH_COOKIE_NAME = "padel_session";
 
 export type AuthMode = "guest" | "admin";
 

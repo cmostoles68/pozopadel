@@ -23,14 +23,3 @@ export const GUEST_LIMITS = {
 } as const;
 
 export type GuestLimits = typeof GUEST_LIMITS;
-
-/** Devuelve los límites aplicables según el modo de autenticación. */
-export function getLimits(mode: "guest" | "admin"): GuestLimits | null {
-  // En modo admin no hay límites.
-  return mode === "admin" ? null : GUEST_LIMITS;
-}
-
-/** Comprueba si, dado el modo, se deben aplicar restricciones. */
-export function isLimited(mode: "guest" | "admin"): boolean {
-  return mode === "guest";
-}

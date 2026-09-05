@@ -53,7 +53,8 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
       })
       .select()
       .single();
-    if (error || !round) return safeErr(error?.message ?? "No se pudo crear la ronda");
+    if (error || !round)
+      return safeErr(error?.message ?? "No se pudo crear la ronda");
     return ok(round as PozoRound);
   }
 
@@ -84,10 +85,7 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
     return ok((data ?? []) as PozoRoundPair[]);
   }
 
-  async findCourtPairs(
-    roundId: string,
-    courtNumber: number
-  ) {
+  async findCourtPairs(roundId: string, courtNumber: number) {
     const { data } = await this.supabase
       .from("pozo_round_pairs")
       .select("*")
@@ -118,9 +116,11 @@ export class SupabasePozoRoundAdapter implements IPozoRoundRepository {
       round_id: string;
       drawn_pair_id: string;
       court_number: number;
-    }[]
+    }[],
   ) {
-    const { error } = await this.supabase.from("pozo_round_pairs").insert(pairs);
+    const { error } = await this.supabase
+      .from("pozo_round_pairs")
+      .insert(pairs);
     if (error) return safeErr(error);
     return ok(undefined);
   }

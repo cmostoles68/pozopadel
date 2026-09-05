@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeWinningPartnerships, getWinningPartnershipKeys } from "../domain/algorithms/draw";
+import { computeWinningPartnerships } from "../domain/algorithms/draw";
 
 const row = (w1: string, w2: string, l1: string, l2: string) => ({
   winner_player1_id: w1,
@@ -50,8 +50,9 @@ describe("computeWinningPartnerships", () => {
       row("a", "b", "e", "f"),
       row("b", "a", "g", "h"),
     ];
-    const keys = getWinningPartnershipKeys(history);
-    expect(keys.has("a|b")).toBe(true);
-    expect(keys.size).toBe(1);
+    const records = computeWinningPartnerships(history);
+    expect(records).toHaveLength(1);
+    expect([records[0].a, records[0].b].sort()).toEqual(["a", "b"]);
+    expect(records[0].wins).toBe(3);
   });
 });

@@ -10,7 +10,15 @@ export interface ITournamentRepository {
     minutes_per_round: number;
     user_uuid: string;
   }): Promise<Result<Tournament>>;
-  updateStatus(id: string, userUuid: string, status: string): Promise<Result<void>>;
-  updateChampion(id: string, userUuid: string, championDrawnPairId: string): Promise<Result<void>>;
+  updateStatus(
+    id: string,
+    userUuid: string,
+    status: string,
+  ): Promise<Result<void>>;
+  updateChampion(
+    id: string,
+    userUuid: string,
+    championDrawnPairId: string,
+  ): Promise<Result<void>>;
   delete(id: string, userUuid: string): Promise<Result<void>>;
 }

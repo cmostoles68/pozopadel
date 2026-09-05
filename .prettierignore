@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+coverage
+test-results
+playwright-report
+package-lock.json
+supabase/.branches
+supabase/.temp
+.env
+.env.local
+.admin-password.hash
+public

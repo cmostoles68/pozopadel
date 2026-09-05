@@ -18,10 +18,7 @@ const HASH_FILE = ".admin-password.hash";
  */
 function getAdminHash(): string | undefined {
   try {
-    const file = fs.readFileSync(
-      path.join(process.cwd(), HASH_FILE),
-      "utf8",
-    );
+    const file = fs.readFileSync(path.join(process.cwd(), HASH_FILE), "utf8");
     const fromFile = file.trim();
     if (fromFile.startsWith("$2")) return fromFile;
   } catch {
@@ -31,15 +28,57 @@ function getAdminHash(): string | undefined {
   return fromEnv && fromEnv.startsWith("$2") ? fromEnv : undefined;
 }
 
+// ---------------------------------------------------------------------------
+// Rate-limit in-memory (solo login admin)
+// ---------------------------------------------------------------------------
+const WINDOW_MS = 60_000; // 1 minuto
+const MAX_ATTEMPTS = 5;
+const loginAttempts = new Map<string, number[]>();
+
+function isRateLimited(key: string): boolean {
+  const now = Date.now();
+  const timestamps = (loginAttempts.get(key) ?? []).filter(
+    (t) => now - t < WINDOW_MS,
+  );
+  loginAttempts.set(key, timestamps);
+  return timestamps.length >= MAX_ATTEMPTS;
+}
+
+function recordAttempt(key: string): void {
+  const timestamps = loginAttempts.get(key) ?? [];
+  timestamps.push(Date.now());
+  loginAttempts.set(key, timestamps);
+}
+
 /**
  * Verifica una contraseña de administrador contra el hash bcrypt almacenado.
+ * Devuelve un resultado con éxito/error (no lanza excepciones).
  */
-export function verifyAdminPassword(password: string): boolean {
+export async function verifyAdminPassword(
+  password: string,
+  rateLimitKey?: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (rateLimitKey && isRateLimited(rateLimitKey)) {
+    return {
+      ok: false,
+      error: "Demasiados intentos. Inténtalo de nuevo en un minuto.",
+    };
+  }
+
   const hash = getAdminHash();
-  if (!hash || !password) return false;
+  if (!hash || !password) {
+    if (rateLimitKey) recordAttempt(rateLimitKey);
+    return { ok: false, error: "Contraseña incorrecta." };
+  }
+
   try {
-    return bcrypt.compareSync(password, hash);
+    const match = await bcrypt.compare(password, hash);
+    if (!match) {
+      if (rateLimitKey) recordAttempt(rateLimitKey);
+      return { ok: false, error: "Contraseña incorrecta." };
+    }
+    return { ok: true };
   } catch {
-    return false;
+    return { ok: false, error: "Error interno al verificar la contraseña." };
   }
 }

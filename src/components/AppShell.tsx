@@ -38,7 +38,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background text-on-surface font-sans">
       {/* Mobile top nav */}
       <nav className="md:hidden fixed top-0 inset-x-0 z-50 flex items-center justify-between px-4 py-3 bg-surface/60 backdrop-blur-xl border-b border-outline-variant/20">
-        <Link href="/dashboard" className="font-display text-[18px] font-bold tracking-tight text-secondary-fixed-dim">
+        <Link
+          href="/dashboard"
+          className="font-display text-[18px] font-bold tracking-tight text-secondary-fixed-dim"
+        >
           PadelElite
         </Link>
         <div className="flex items-center gap-1">
@@ -53,7 +56,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   : "text-on-surface-variant hover:bg-white hover:text-on-secondary-container"
               }`}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "20px" }}
+              >
                 {item.icon}
               </span>
             </Link>
@@ -65,7 +71,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <aside className="hidden md:flex flex-col bg-surface-lowest h-screen w-72 fixed left-0 top-0 z-40 border-r border-outline-variant/10">
         <div className="p-6 flex flex-col items-center border-b border-outline-variant/10">
           <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-secondary-container mb-3 shadow-[0_0_20px_rgba(195,244,0,0.3)] flex items-center justify-center bg-primary-container">
-            <span className="material-symbols-outlined text-secondary-container text-[48px]">sports_tennis</span>
+            <span className="material-symbols-outlined text-secondary-container text-[48px]">
+              sports_tennis
+            </span>
           </div>
           <h1 className="font-display text-[28px] text-secondary-fixed-dim text-center font-bold tracking-tight">
             PadelElite
@@ -92,8 +100,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   : "text-on-surface-variant hover:bg-white hover:text-on-secondary-container"
               }`}
             >
-              <span className="material-symbols-outlined mr-4 text-[28px]">{item.icon}</span>
-              <span className="text-[18px] font-medium tracking-wide">{item.label}</span>
+              <span className="material-symbols-outlined mr-4 text-[28px]">
+                {item.icon}
+              </span>
+              <span className="text-[18px] font-medium tracking-wide">
+                {item.label}
+              </span>
             </Link>
           ))}
         </div>
@@ -103,7 +115,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
             onClick={handleLogout}
             className="mx-2 my-1 w-[calc(100%-1rem)] flex items-center px-5 py-3 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-high/40 transition-all"
           >
-            <span className="material-symbols-outlined mr-3 text-[24px]">logout</span>
+            <span className="material-symbols-outlined mr-3 text-[24px]">
+              logout
+            </span>
             <span className="text-[18px] font-medium">Cerrar sesión</span>
           </button>
         </div>

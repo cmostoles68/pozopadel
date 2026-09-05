@@ -1,11 +1,19 @@
 import { describe, it, expect } from "vitest";
 import { err } from "../domain/result";
-import { toSafeErrorMessage, safeErr, DEFAULT_ERROR_MESSAGE } from "../application/errors";
+import {
+  toSafeErrorMessage,
+  safeErr,
+  DEFAULT_ERROR_MESSAGE,
+} from "../application/errors";
 
 describe("toSafeErrorMessage", () => {
   it("conserva los mensajes de negocio ya legibles", () => {
-    expect(toSafeErrorMessage("El nombre es obligatorio")).toBe("El nombre es obligatorio");
-    expect(toSafeErrorMessage("No hay parejas seleccionadas")).toBe("No hay parejas seleccionadas");
+    expect(toSafeErrorMessage("El nombre es obligatorio")).toBe(
+      "El nombre es obligatorio",
+    );
+    expect(toSafeErrorMessage("No hay parejas seleccionadas")).toBe(
+      "No hay parejas seleccionadas",
+    );
   });
 
   it("devuelve el mensaje genérico ante valores vacíos", () => {
@@ -17,7 +25,7 @@ describe("toSafeErrorMessage", () => {
   it("oculta errores de infraestructura (SQL / Supabase)", () => {
     const technical = [
       'duplicate key value violates unique constraint "profiles_pkey"',
-      'new row violates row-level security policy',
+      "new row violates row-level security policy",
       'relation "profiles" does not exist',
       'column "user_uuid" of relation "profiles" does not exist',
       "syntax error at or near SELECT",
@@ -31,31 +39,46 @@ describe("toSafeErrorMessage", () => {
   });
 
   it("traduce errores de duplicidad a un mensaje de usuario claro", () => {
-    expect(toSafeErrorMessage('duplicate key value violates unique constraint "profiles_pkey"')).toBe(
-      "Ese registro ya existe. Comprueba los datos e inténtalo de nuevo.",
-    );
+    expect(
+      toSafeErrorMessage(
+        'duplicate key value violates unique constraint "profiles_pkey"',
+      ),
+    ).toBe("Ese registro ya existe. Comprueba los datos e inténtalo de nuevo.");
   });
 
   it("oculta stacks y estructuras internas", () => {
-    expect(toSafeErrorMessage("Error: boom\n    at Object.<anonymous> (webpack:1:2)")).toBe(
+    expect(
+      toSafeErrorMessage(
+        "Error: boom\n    at Object.<anonymous> (webpack:1:2)",
+      ),
+    ).toBe(DEFAULT_ERROR_MESSAGE);
+    expect(toSafeErrorMessage('{"code":500,"details":"internal"}')).toBe(
       DEFAULT_ERROR_MESSAGE,
     );
-    expect(toSafeErrorMessage('{"code":500,"details":"internal"}')).toBe(DEFAULT_ERROR_MESSAGE);
   });
 });
 
 describe("safeErr", () => {
   it("devuelve un error seguro a partir de un Error", () => {
-    const res = safeErr(new Error("duplicate key value violates unique constraint"));
+    const res = safeErr(
+      new Error("duplicate key value violates unique constraint"),
+    );
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.error).toBe("Ese registro ya existe. Comprueba los datos e inténtalo de nuevo.");
+    if (!res.ok)
+      expect(res.error).toBe(
+        "Ese registro ya existe. Comprueba los datos e inténtalo de nuevo.",
+      );
   });
 
   it("devuelve un error seguro para un objeto con campo message (PostgrestError)", () => {
-    const res = safeErr({ message: 'duplicate key value violates unique constraint "profiles_pkey"' });
+    const res = safeErr({
+      message: 'duplicate key value violates unique constraint "profiles_pkey"',
+    });
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      expect(res.error).toBe("Ese registro ya existe. Comprueba los datos e inténtalo de nuevo.");
+      expect(res.error).toBe(
+        "Ese registro ya existe. Comprueba los datos e inténtalo de nuevo.",
+      );
     }
   });
 });

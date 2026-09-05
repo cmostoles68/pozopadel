@@ -25,8 +25,7 @@ function canPair(
   disallowedPairs: Set<string>,
 ): boolean {
   return (
-    leftyCompatible(a, b) &&
-    !disallowedPairs.has([a.id, b.id].sort().join("|"))
+    leftyCompatible(a, b) && !disallowedPairs.has([a.id, b.id].sort().join("|"))
   );
 }
 
@@ -46,7 +45,7 @@ export function pairPlayers(
       const usedMales = males.slice(0, count);
       const usedFemales = females.slice(0, count);
       const mixedPairs: Array<[PlayerProfile, PlayerProfile]> = usedMales.map(
-        (m, i) => [m, usedFemales[i]]
+        (m, i) => [m, usedFemales[i]],
       );
 
       const shuffledPairs = shuffleArray(mixedPairs);
@@ -85,7 +84,10 @@ export function pairPlayers(
           let found = false;
           for (let j = i + 2; j < leftovers.length; j++) {
             if (canPair(leftovers[i], leftovers[j], disallowedPairs)) {
-              [leftovers[i + 1], leftovers[j]] = [leftovers[j], leftovers[i + 1]];
+              [leftovers[i + 1], leftovers[j]] = [
+                leftovers[j],
+                leftovers[i + 1],
+              ];
               pairs.push([leftovers[i], leftovers[i + 1]]);
               found = true;
               break;
@@ -106,7 +108,11 @@ export function pairPlayers(
           for (let j = i + 2; j < all.length; j++) {
             if (
               canPair(all[i], all[j], disallowedPairs) &&
-              canPair(all[i + 1], all[j - (j === i + 2 ? 0 : 1)], disallowedPairs)
+              canPair(
+                all[i + 1],
+                all[j - (j === i + 2 ? 0 : 1)],
+                disallowedPairs,
+              )
             ) {
               [all[i + 1], all[j]] = [all[j], all[i + 1]];
               pairs.push([all[i], all[i + 1]]);
@@ -127,9 +133,9 @@ export function pairPlayers(
       const sortedMales = [...players.filter((p) => p.gender === "MALE")].sort(
         (a, b) => b.level - a.level,
       );
-      const sortedFemales = [...players.filter((p) => p.gender === "FEMALE")].sort(
-        (a, b) => b.level - a.level,
-      );
+      const sortedFemales = [
+        ...players.filter((p) => p.gender === "FEMALE"),
+      ].sort((a, b) => b.level - a.level);
 
       const count = Math.min(sortedMales.length, sortedFemales.length);
       const usedMales = sortedMales.slice(0, count);
@@ -211,10 +217,7 @@ export function computeWinningPartnerships(
   const wins = new Map<string, number>();
   const totals = new Map<string, number>();
 
-  const bump = (
-    ids: [string, string],
-    win: boolean,
-  ) => {
+  const bump = (ids: [string, string], win: boolean) => {
     const k = key(ids[0], ids[1]);
     totals.set(k, (totals.get(k) ?? 0) + 1);
     if (win) wins.set(k, (wins.get(k) ?? 0) + 1);
@@ -237,20 +240,6 @@ export function computeWinningPartnerships(
   }
 
   return result;
-}
-
-export function getWinningPartnershipKeys(
-  history: {
-    winner_player1_id: string;
-    winner_player2_id: string;
-    loser_player1_id: string;
-    loser_player2_id: string;
-  }[],
-  minMatches = 2,
-  minWinRate = 0.7,
-): Set<string> {
-  const records = computeWinningPartnerships(history, minMatches, minWinRate);
-  return new Set(records.map((r) => [r.a, r.b].sort().join("|")));
 }
 
 export function getDrawValidationError(playerCount: number): string | null {

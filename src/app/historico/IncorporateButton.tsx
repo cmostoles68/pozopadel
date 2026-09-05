@@ -4,11 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { reincorporatePlayer } from "./actions";
 
-export default function IncorporateButton({
-  playerId,
-}: {
-  playerId: string;
-}) {
+export default function IncorporateButton({ playerId }: { playerId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,9 +30,7 @@ export default function IncorporateButton({
       >
         {loading ? "Reincorporando..." : "Reincorporar"}
       </button>
-      {error && (
-        <p className="text-xs text-error mt-1">{error}</p>
-      )}
+      {error && <p className="text-xs text-error mt-1">{error}</p>}
     </div>
   );
 }

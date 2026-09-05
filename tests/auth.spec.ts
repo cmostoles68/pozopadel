@@ -1,10 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { AUTH_COOKIE_NAME, ADMIN_UUID } from "./helpers";
 
 test.describe("Login page", () => {
   test("renders guest and admin entry options", async ({ page }) => {
     await page.goto("/auth/login");
 
-    await expect(page.getByRole("heading", { name: "PadelElite" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "PadelElite" }),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: /Entrar como Invitado/ }),
     ).toBeVisible();
@@ -13,7 +16,9 @@ test.describe("Login page", () => {
     ).toBeVisible();
   });
 
-  test("admin flow shows password field and rejects wrong password", async ({ page }) => {
+  test("admin flow shows password field and rejects wrong password", async ({
+    page,
+  }) => {
     await page.goto("/auth/login");
 
     await page.getByRole("button", { name: /Entrar como Admin/ }).click();
@@ -35,7 +40,9 @@ test.describe("Login page", () => {
     await expect(page).toHaveURL(/\/dashboard/);
   });
 
-  test("admin flow accepts correct password and shows Admin badge", async ({ page }) => {
+  test("admin flow accepts correct password and shows Admin badge", async ({
+    page,
+  }) => {
     await page.goto("/auth/login");
 
     await page.getByRole("button", { name: /Entrar como Admin/ }).click();
@@ -54,5 +61,22 @@ test.describe("Login page", () => {
     await page.getByRole("button", { name: /Cerrar sesión/ }).click();
 
     await expect(page).toHaveURL(/\/auth\/login/);
+  });
+
+  test("forjar la cookie con el UUID admin NO otorga privilegios (S3)", async ({
+    page,
+  }) => {
+    await page.goto("/auth/login");
+    await page.context().addCookies([
+      {
+        name: AUTH_COOKIE_NAME,
+        value: ADMIN_UUID,
+        url: "http://localhost:3000",
+      },
+    ]);
+    await page.goto("/jugadores");
+
+    await expect(page.getByText("Invitado", { exact: true })).toBeVisible();
+    await expect(page.getByText("Admin", { exact: true })).not.toBeVisible();
   });
 });

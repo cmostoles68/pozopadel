@@ -9,7 +9,9 @@ export default async function SorteoPage() {
   const { playerService, drawService } = await createServices();
   const userUuid = await getCurrentUserUuid();
   const players = requireResult(await playerService.getAllProfiles(userUuid));
-  const pairs = requireResult(await drawService.getDrawnPairsWithProfiles(userUuid));
+  const pairs = requireResult(
+    await drawService.getDrawnPairsWithProfiles(userUuid),
+  );
   const activeMethod = pairs.length > 0 ? pairs[0].draw_method : null;
 
   return (

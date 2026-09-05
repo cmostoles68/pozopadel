@@ -99,9 +99,7 @@ export default function SorteoClient({
                 disabled={loading || playerCount < 4 || playerCount % 2 !== 0}
                 className="glass-panel rounded-xl p-4 hover:border-secondary-container transition-colors disabled:opacity-50"
               >
-                <span className="font-medium text-on-surface">
-                  {m.label}
-                </span>
+                <span className="font-medium text-on-surface">{m.label}</span>
               </button>
             ))}
           </div>
@@ -146,10 +144,7 @@ export default function SorteoClient({
                   <div className="text-sm text-on-surface-variant">
                     Nivel:{" "}
                     {pair.p1 && pair.p2
-                      ? (
-                          (pair.p1.level + pair.p2.level) /
-                          2
-                        ).toFixed(1)
+                      ? ((pair.p1.level + pair.p2.level) / 2).toFixed(1)
                       : "-"}
                   </div>
                 </div>
@@ -162,20 +157,18 @@ export default function SorteoClient({
               Re-sortear con otro método:
             </p>
             <div className="grid grid-cols-2 gap-3">
-              {METHODS.filter((m) => m.value !== activeMethod).map(
-                (m) => (
-                  <button
-                    key={m.value}
-                    onClick={() => handleDraw(m.value)}
-                    disabled={loading}
-                    className="glass-panel rounded-xl p-3 hover:border-secondary-container transition-colors disabled:opacity-50"
-                  >
-                    <span className="text-sm font-medium text-on-surface">
-                      {m.label}
-                    </span>
-                  </button>
-                )
-              )}
+              {METHODS.filter((m) => m.value !== activeMethod).map((m) => (
+                <button
+                  key={m.value}
+                  onClick={() => handleDraw(m.value)}
+                  disabled={loading}
+                  className="glass-panel rounded-xl p-3 hover:border-secondary-container transition-colors disabled:opacity-50"
+                >
+                  <span className="text-sm font-medium text-on-surface">
+                    {m.label}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         </div>

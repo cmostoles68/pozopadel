@@ -1,10 +1,5 @@
 import { test, expect } from "@playwright/test";
-import {
-  connect,
-  resetUserData,
-  createProfile,
-  GUEST_UUID,
-} from "./helpers";
+import { connect, resetUserData, createProfile, GUEST_UUID } from "./helpers";
 
 let client: Awaited<ReturnType<typeof connect>>;
 

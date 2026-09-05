@@ -23,7 +23,9 @@ export class RoundService {
     return this.pozoRoundRepo.findByTournament(tournamentId);
   }
 
-  async getActiveRound(tournamentId: string): Promise<Result<PozoRound | null>> {
+  async getActiveRound(
+    tournamentId: string,
+  ): Promise<Result<PozoRound | null>> {
     return this.pozoRoundRepo.findActiveByTournament(tournamentId);
   }
 
@@ -92,7 +94,12 @@ export class RoundService {
 
     const playerData = new Map<
       string,
-      { name: string | null; gender: string | null; hand: string | null; level: number | null }
+      {
+        name: string | null;
+        gender: string | null;
+        hand: string | null;
+        level: number | null;
+      }
     >();
 
     for (const id of playerIds) {
@@ -142,16 +149,22 @@ export class RoundService {
     for (const court of courts) {
       const courtPairs = pairs.data.filter((p) => p.court_number === court);
       if (courtPairs.length < 2) return { ok: true, data: {} };
-      if (!courtPairs.every((p) => p.is_finished)) return { ok: true, data: {} };
+      if (!courtPairs.every((p) => p.is_finished))
+        return { ok: true, data: {} };
     }
 
-    const tournament = await this.tournamentRepo.findById(tournamentId, userUuid);
+    const tournament = await this.tournamentRepo.findById(
+      tournamentId,
+      userUuid,
+    );
     if (!tournament.ok) return tournament;
     if (!tournament.data) return err("Torneo no encontrado");
 
     const results = courts.map((court) => {
       const courtPairs = pairs.data.filter((p) => p.court_number === court);
-      const winnerPair = courtPairs.find((p) => p.winner_drawn_pair_id === p.drawn_pair_id);
+      const winnerPair = courtPairs.find(
+        (p) => p.winner_drawn_pair_id === p.drawn_pair_id,
+      );
       const loserPair = courtPairs.find((p) => p !== winnerPair) ?? null;
       return {
         court_number: court,
@@ -177,20 +190,26 @@ export class RoundService {
         round_id: nextRound.data.id,
         drawn_pair_id: a.drawnPairId,
         court_number: a.court,
-      }))
+      })),
     );
     if (!inserted.ok) {
       await this.pozoRoundRepo.deleteRound(nextRound.data.id);
       return inserted;
     }
 
-    const statusRes = await this.pozoRoundRepo.updateStatus(roundId, "finished");
+    const statusRes = await this.pozoRoundRepo.updateStatus(
+      roundId,
+      "finished",
+    );
     if (!statusRes.ok) return statusRes;
 
     return { ok: true, data: { nextRoundNumber: nextRound.data.round_number } };
   }
 
-  async finalizePozo(tournamentId: string, userUuid: string): Promise<Result<void>> {
+  async finalizePozo(
+    tournamentId: string,
+    userUuid: string,
+  ): Promise<Result<void>> {
     const rounds = await this.pozoRoundRepo.findByTournament(tournamentId);
     if (!rounds.ok) return rounds;
 
@@ -210,7 +229,10 @@ export class RoundService {
     let loserScore: number | null = null;
 
     for (let i = rounds.data.length - 1; i >= 0; i--) {
-      const court1Pairs = await this.pozoRoundRepo.findCourtPairs(rounds.data[i].id, 1);
+      const court1Pairs = await this.pozoRoundRepo.findCourtPairs(
+        rounds.data[i].id,
+        1,
+      );
       if (!court1Pairs.ok) return court1Pairs;
       if (court1Pairs.data.length < 2) continue;
       const winner = court1Pairs.data.find(
@@ -234,7 +256,11 @@ export class RoundService {
       return err("La pista 1 todavía no tiene un ganador definido");
     }
 
-    const upd = await this.tournamentRepo.updateChampion(tournamentId, userUuid, champion);
+    const upd = await this.tournamentRepo.updateChampion(
+      tournamentId,
+      userUuid,
+      champion,
+    );
     if (!upd.ok) return upd;
 
     if (loserDrawnPairId) {

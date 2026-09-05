@@ -175,7 +175,12 @@ describe("parseOrError", () => {
     });
     expect(res).toEqual({
       ok: true,
-      data: { full_name: "Ana", gender: "FEMALE", dominant_hand: "RIGHT", level: 5 },
+      data: {
+        full_name: "Ana",
+        gender: "FEMALE",
+        dominant_hand: "RIGHT",
+        level: 5,
+      },
     });
   });
 

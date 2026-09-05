@@ -18,12 +18,12 @@ export default function CourtCard({
   disabled?: boolean;
   onResult: (
     winnerId: string,
-    scores: { drawnPairId: string; score: number }[]
+    scores: { drawnPairId: string; score: number }[],
   ) => void;
 }) {
   const [winnerId, setWinnerId] = useState<string | null>(
     pairs.find((p) => p.winner_drawn_pair_id === p.drawn_pair_id)
-      ?.winner_drawn_pair_id ?? null
+      ?.winner_drawn_pair_id ?? null,
   );
   const [scores, setScores] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
@@ -34,15 +34,19 @@ export default function CourtCard({
   });
 
   const ordered = pairs.slice(0, Math.max(2, pairs.length));
+  const finished = pairs.length >= 2 && pairs.every((p) => p.is_finished);
 
-  function persist(nextWinner: string | null, nextScores: Record<string, string>) {
+  function persist(
+    nextWinner: string | null,
+    nextScores: Record<string, string>,
+  ) {
     if (!nextWinner) return;
     onResult(
       nextWinner,
       pairs.map((p) => ({
         drawnPairId: p.drawn_pair_id,
         score: parseInt(nextScores[p.drawn_pair_id] ?? "0", 10) || 0,
-      }))
+      })),
     );
   }
 
@@ -61,8 +65,15 @@ export default function CourtCard({
             </span>
           </h4>
         </div>
-        <span className="bg-secondary-container/20 text-secondary-fixed-dim px-3 py-1 rounded-full text-xs border border-secondary-container/50">
-          En curso
+        <span
+          data-testid={`court-${court}-status`}
+          className={`px-3 py-1 rounded-full text-xs border ${
+            finished
+              ? "bg-surface-high/40 text-on-surface-variant border-outline-variant/40"
+              : "bg-secondary-container/20 text-secondary-fixed-dim border-secondary-container/50"
+          }`}
+        >
+          {finished ? "Completada" : "En curso"}
         </span>
       </div>
 
@@ -77,7 +88,9 @@ export default function CourtCard({
               key={p.id}
               data-testid={`court-${court}-pair-${info.pair_number}`}
               className={`relative z-10 flex flex-col items-center flex-1 rounded-xl p-3 transition-colors ${
-                isWinner ? "bg-surface-high/60 border border-secondary-container/40" : ""
+                isWinner
+                  ? "bg-surface-high/60 border border-secondary-container/40"
+                  : ""
               } ${disabled ? "cursor-default opacity-80" : "cursor-pointer"}`}
               onClick={
                 disabled
@@ -85,7 +98,8 @@ export default function CourtCard({
                   : () => {
                       setWinnerId(p.drawn_pair_id);
                     }
-              }            >
+              }
+            >
               <span
                 className={`w-10 h-10 flex items-center justify-center rounded-full font-display font-bold text-white mb-2 ${
                   isWinner ? "bg-secondary-fixed-dim" : "bg-surface-highest"
@@ -132,7 +146,9 @@ export default function CourtCard({
           disabled={disabled || loading || !winnerId}
           className="inline-flex items-center gap-2 rounded-full bg-secondary-container text-on-secondary-container px-3 py-2 text-xs font-medium hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <span className="material-symbols-outlined text-base">sports_tennis</span>
+          <span className="material-symbols-outlined text-base">
+            sports_tennis
+          </span>
           {loading ? "Guardando..." : "Registrar Marcador"}
         </button>
       </div>
@@ -154,8 +170,14 @@ function PadelCourt({ king }: { king?: boolean }) {
       <div className="absolute top-0 bottom-0 left-[84.75%] w-0 border-l-2 border-white/90"></div>
 
       {/* Línea central de campo de saque: de la red a cada línea de saque, en el centro del ancho */}
-      <div className="absolute top-1/2 -translate-y-1/2 h-0 border-t-2 border-white" style={{ left: "15.25%", right: "50%" }}></div>
-      <div className="absolute top-1/2 -translate-y-1/2 h-0 border-t-2 border-white" style={{ left: "50%", right: "15.25%" }}></div>
+      <div
+        className="absolute top-1/2 -translate-y-1/2 h-0 border-t-2 border-white"
+        style={{ left: "15.25%", right: "50%" }}
+      ></div>
+      <div
+        className="absolute top-1/2 -translate-y-1/2 h-0 border-t-2 border-white"
+        style={{ left: "50%", right: "15.25%" }}
+      ></div>
 
       {king && (
         <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl drop-shadow-lg">

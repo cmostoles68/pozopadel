@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from "node:crypto";
 import { Client } from "pg";
 
 export const DB = {
@@ -11,6 +12,28 @@ export const DB = {
 // Static test dbusers seeded by migrations/20260902100000_create_test_users.sql
 export const GUEST_UUID = "00000000-0000-0000-0000-000000000001";
 export const ADMIN_UUID = "00000000-0000-0000-0000-000000000002";
+
+// The auth cookie holds an opaque session token (not the user UUID), matching
+// src/config/auth.ts AUTH_COOKIE_NAME.
+export const AUTH_COOKIE_NAME = "padel_session";
+
+/**
+ * Issues a real server-side session for the user and returns the raw token to
+ * set as the `padel_session` cookie. Mirrors the SHA-256 hashing of
+ * src/infrastructure/supabase/session-store.ts.
+ */
+export async function issueSessionToken(
+  client: Client,
+  userUuid: string,
+): Promise<string> {
+  const token = randomBytes(32).toString("base64url");
+  await client.query(
+    `INSERT INTO session_tokens (token_hash, user_uuid, expires_at)
+     VALUES ($1, $2, NOW() + interval '30 days')`,
+    [createHash("sha256").update(token).digest("hex"), userUuid],
+  );
+  return token;
+}
 
 export async function connect(): Promise<Client> {
   const client = new Client(DB);
@@ -27,6 +50,9 @@ export async function connect(): Promise<Client> {
  *   profiles           <- referenced by drawn_pairs (CASCADE)
  */
 export async function resetUserData(client: Client, userUuid = GUEST_UUID) {
+  await client.query("DELETE FROM session_tokens WHERE user_uuid = $1", [
+    userUuid,
+  ]);
   await client.query("DELETE FROM pozo_match_history WHERE user_uuid = $1", [
     userUuid,
   ]);
@@ -131,11 +157,7 @@ export async function createRound(
   const { rows } = await client.query(
     `INSERT INTO pozo_rounds (tournament_id, round_number, status)
      VALUES ($1, $2, $3) RETURNING id`,
-    [
-      input.tournament_id,
-      input.round_number,
-      input.status ?? "in_progress",
-    ],
+    [input.tournament_id, input.round_number, input.status ?? "in_progress"],
   );
   return rows[0].id as string;
 }

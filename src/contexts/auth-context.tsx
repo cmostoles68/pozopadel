@@ -26,7 +26,7 @@ interface AuthContextValue {
   uuid: string;
   isAdmin: boolean;
   loginAsGuest: () => Promise<void>;
-  loginAsAdmin: (password: string) => Promise<boolean>;
+  loginAsAdmin: (password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -46,7 +46,9 @@ function readStored(): StoredAuth | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<AuthMode>(() => readStored()?.mode ?? "guest");
+  const [mode, setMode] = useState<AuthMode>(
+    () => readStored()?.mode ?? "guest",
+  );
 
   const persist = useCallback((nextMode: AuthMode) => {
     const payload: StoredAuth = { mode: nextMode };
@@ -60,12 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [persist]);
 
   const loginAsAdmin = useCallback(
-    async (password: string): Promise<boolean> => {
-      const ok = await serverLoginAsAdmin(password);
-      if (!ok) return false;
+    async (password: string): Promise<{ ok: boolean; error?: string }> => {
+      const result = await serverLoginAsAdmin(password);
+      if (!result.ok) return result;
       setMode("admin");
       persist("admin");
-      return true;
+      return { ok: true };
     },
     [persist],
   );

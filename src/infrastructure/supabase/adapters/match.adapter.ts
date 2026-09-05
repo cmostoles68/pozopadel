@@ -1,9 +1,22 @@
 import type { IMatchHistoryRepository } from "@/domain/repositories/match.repository";
-import type { MatchHistoryRow } from "@/domain/entities/match";
+import type {
+  MatchHistoryRow,
+  MatchHistoryPlayerSnapshot,
+} from "@/domain/entities/match";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ok } from "@/domain/result";
+import type { Result } from "@/domain/result";
 import { safeErr } from "@/application/errors";
+import { computeWinningPartnerships } from "@/domain/algorithms/draw";
 import type { Database } from "../database.types";
+
+type PlayerSlot = [
+  string,
+  string | null,
+  string | null,
+  string | null,
+  number | null,
+];
 
 export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
   constructor(private supabase: SupabaseClient<Database>) {}
@@ -103,6 +116,65 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
     return ok((data ?? []) as MatchHistoryRow[]);
   }
 
+  async findLatestPlayerSnapshot(
+    userUuid: string,
+    playerId: string,
+  ): Promise<Result<MatchHistoryPlayerSnapshot | null>> {
+    const { data } = await this.supabase
+      .from("pozo_match_history")
+      .select(
+        "winner_player1_id, winner_player1_name, winner_player1_gender, winner_player1_hand, winner_player1_level, winner_player2_id, winner_player2_name, winner_player2_gender, winner_player2_hand, winner_player2_level, loser_player1_id, loser_player1_name, loser_player1_gender, loser_player1_hand, loser_player1_level, loser_player2_id, loser_player2_name, loser_player2_gender, loser_player2_hand, loser_player2_level",
+      )
+      .eq("user_uuid", userUuid)
+      .or(
+        `winner_player1_id.eq.${playerId},winner_player2_id.eq.${playerId},loser_player1_id.eq.${playerId},loser_player2_id.eq.${playerId}`,
+      )
+      .order("created_at", { ascending: false });
+
+    for (const row of data ?? []) {
+      const slots: PlayerSlot[] = [
+        [
+          row.winner_player1_id,
+          row.winner_player1_name,
+          row.winner_player1_gender,
+          row.winner_player1_hand,
+          row.winner_player1_level,
+        ],
+        [
+          row.winner_player2_id,
+          row.winner_player2_name,
+          row.winner_player2_gender,
+          row.winner_player2_hand,
+          row.winner_player2_level,
+        ],
+        [
+          row.loser_player1_id,
+          row.loser_player1_name,
+          row.loser_player1_gender,
+          row.loser_player1_hand,
+          row.loser_player1_level,
+        ],
+        [
+          row.loser_player2_id,
+          row.loser_player2_name,
+          row.loser_player2_gender,
+          row.loser_player2_hand,
+          row.loser_player2_level,
+        ],
+      ];
+      const found = slots.find((s) => s[0] === playerId);
+      if (found) {
+        return ok({
+          full_name: found[1],
+          gender: found[2],
+          dominant_hand: found[3],
+          level: found[4],
+        });
+      }
+    }
+    return ok(null);
+  }
+
   async findWinningPartnerships(
     userUuid: string,
     minMatches = 2,
@@ -114,33 +186,8 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
         "winner_player1_id, winner_player2_id, loser_player1_id, loser_player2_id",
       )
       .eq("user_uuid", userUuid);
-    if (!history || history.length === 0) return ok([]);
-
-    const key = (a: string, b: string) => [a, b].sort().join("|");
-    const wins = new Map<string, number>();
-    const totals = new Map<string, number>();
-
-    const bump = (ids: [string, string], win: boolean) => {
-      const k = key(ids[0], ids[1]);
-      totals.set(k, (totals.get(k) ?? 0) + 1);
-      if (win) wins.set(k, (wins.get(k) ?? 0) + 1);
-    };
-
-    for (const m of history) {
-      bump([m.winner_player1_id, m.winner_player2_id], true);
-      bump([m.loser_player1_id, m.loser_player2_id], false);
-    }
-
-    const result: { a: string; b: string; wins: number; total: number; winRate: number }[] = [];
-    for (const [k, total] of totals) {
-      if (total < minMatches) continue;
-      const w = wins.get(k) ?? 0;
-      const winRate = w / total;
-      if (winRate >= minWinRate) {
-        const [a, b] = k.split("|");
-        result.push({ a, b, wins: w, total, winRate });
-      }
-    }
-    return ok(result);
+    return ok(
+      computeWinningPartnerships(history ?? [], minMatches, minWinRate),
+    );
   }
 }

@@ -21,11 +21,11 @@ export default function LoginPage() {
   async function confirmAdmin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    const ok = await loginAsAdmin(password);
-    if (ok) {
+    const result = await loginAsAdmin(password);
+    if (result.ok) {
       router.push("/dashboard");
     } else {
-      setError("Contraseña incorrecta.");
+      setError(result.error ?? "Contraseña incorrecta.");
       setPassword("");
     }
   }

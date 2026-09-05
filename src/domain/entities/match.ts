@@ -48,3 +48,11 @@ export interface PozoRoundPair {
   is_finished: boolean;
   created_at: string;
 }
+
+/** Datos denormalizados de un jugador tomados de su último registro histórico. */
+export interface MatchHistoryPlayerSnapshot {
+  full_name: string | null;
+  gender: string | null;
+  dominant_hand: string | null;
+  level: number | null;
+}

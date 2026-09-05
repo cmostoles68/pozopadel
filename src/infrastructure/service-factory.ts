@@ -12,7 +12,14 @@ import { PlayerService } from "@/application/services/player.service";
 import { TournamentService } from "@/application/services/tournament.service";
 import { DrawService } from "@/application/services/draw.service";
 import { RoundService } from "@/application/services/round.service";
+import { MatchHistoryService } from "@/application/services/match-history.service";
+import { ChampionshipStatsService } from "@/application/services/championship-stats.service";
 
+/**
+ * Assembly root (manual DI). Exposes only application services; repositories
+ * and the Supabase client stay internal so the presentation layer cannot skip
+ * the orchestration/validation of the application layer.
+ */
 export async function createServices() {
   const supabase = await createServerSupabase();
 
@@ -21,7 +28,9 @@ export async function createServices() {
   const pozoRoundRepo = new SupabasePozoRoundAdapter(supabase);
   const matchHistoryRepo = new SupabaseMatchHistoryAdapter(supabase);
   const drawnPairRepo = new SupabaseDrawnPairAdapter(supabase);
-  const tournamentDrawnPairRepo = new SupabaseTournamentDrawnPairAdapter(supabase);
+  const tournamentDrawnPairRepo = new SupabaseTournamentDrawnPairAdapter(
+    supabase,
+  );
 
   return {
     playerService: new PlayerService(playerRepo),
@@ -41,14 +50,11 @@ export async function createServices() {
       playerRepo,
       matchHistoryRepo,
     ),
-
-    // Exposed repos for read-heavy presentation pages
-    matchHistoryRepo,
-    tournamentRepo,
-    drawnPairRepo,
-    tournamentDrawnPairRepo,
-    pozoRoundRepo,
-    playerRepo,
-    supabase,
+    matchHistoryService: new MatchHistoryService(matchHistoryRepo),
+    championshipStatsService: new ChampionshipStatsService(
+      tournamentRepo,
+      drawnPairRepo,
+      matchHistoryRepo,
+    ),
   };
 }

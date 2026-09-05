@@ -1,4 +1,7 @@
-import type { IDrawnPairRepository, ITournamentDrawnPairRepository } from "@/domain/repositories/pair.repository";
+import type {
+  IDrawnPairRepository,
+  ITournamentDrawnPairRepository,
+} from "@/domain/repositories/pair.repository";
 import type { IPlayerRepository } from "@/domain/repositories/player.repository";
 import type { IMatchHistoryRepository } from "@/domain/repositories/match.repository";
 import type { IPozoRoundRepository } from "@/domain/repositories/round.repository";
@@ -7,7 +10,11 @@ import type { DrawMethod } from "@/domain/entities/pair";
 import type { TournamentDrawnPair } from "@/domain/entities/pair";
 import type { Result } from "@/domain/result";
 import { err } from "@/domain/result";
-import { pairPlayers, shuffleArray, getDrawValidationError } from "@/domain/algorithms/draw";
+import {
+  pairPlayers,
+  shuffleArray,
+  getDrawValidationError,
+} from "@/domain/algorithms/draw";
 
 export interface DrawnPairResult {
   id: string;
@@ -42,11 +49,12 @@ export class DrawService {
     const cleared = await this.drawnPairRepo.deleteAll(userUuid);
     if (!cleared.ok) return cleared;
 
-    const winningPartnerships = await this.matchHistoryRepo.findWinningPartnerships(userUuid);
+    const winningPartnerships =
+      await this.matchHistoryRepo.findWinningPartnerships(userUuid);
     if (!winningPartnerships.ok) return winningPartnerships;
 
     const disallowedPairs = new Set(
-      winningPartnerships.data.map((p) => [p.a, p.b].sort().join("|"))
+      winningPartnerships.data.map((p) => [p.a, p.b].sort().join("|")),
     );
 
     const paired = pairPlayers(players.data, method, disallowedPairs);
@@ -59,7 +67,10 @@ export class DrawService {
     }));
 
     if (pairsToInsert.length === 0) {
-      return { ok: true, data: { pairs: [], oddPlayer: players.data[0]?.full_name ?? null } };
+      return {
+        ok: true,
+        data: { pairs: [], oddPlayer: players.data[0]?.full_name ?? null },
+      };
     }
 
     const inserted = await this.drawnPairRepo.insert(pairsToInsert, userUuid);
@@ -96,27 +107,52 @@ export class DrawService {
     return this.drawnPairRepo.findAllWithProfiles(userUuid);
   }
 
-  async selectPair(tournamentId: string, drawnPairId: string): Promise<Result<void>> {
+  async getTournamentSelectedPairs(
+    tournamentId: string,
+  ): Promise<Result<TournamentDrawnPair[]>> {
+    return this.tournamentDrawnPairRepo.findByTournament(tournamentId);
+  }
+
+  async selectPair(
+    tournamentId: string,
+    drawnPairId: string,
+  ): Promise<Result<void>> {
     return this.tournamentDrawnPairRepo.selectPair(tournamentId, drawnPairId);
   }
 
-  async deselectPair(tournamentId: string, drawnPairId: string): Promise<Result<void>> {
+  async deselectPair(
+    tournamentId: string,
+    drawnPairId: string,
+  ): Promise<Result<void>> {
     return this.tournamentDrawnPairRepo.deselectPair(tournamentId, drawnPairId);
   }
 
-  async selectAllPairs(tournamentId: string, userUuid: string): Promise<Result<void>> {
+  async selectAllPairs(
+    tournamentId: string,
+    userUuid: string,
+  ): Promise<Result<void>> {
     const allPairs = await this.drawnPairRepo.findAll(userUuid);
     if (!allPairs.ok) return allPairs;
     const allPairIds = allPairs.data.map((p) => p.id);
-    return this.tournamentDrawnPairRepo.selectAllPairs(tournamentId, allPairIds);
+    return this.tournamentDrawnPairRepo.selectAllPairs(
+      tournamentId,
+      allPairIds,
+    );
   }
 
-  async drawCourts(tournamentId: string, userUuid: string): Promise<Result<void>> {
-    const tournament = await this.tournamentRepo.findById(tournamentId, userUuid);
+  async drawCourts(
+    tournamentId: string,
+    userUuid: string,
+  ): Promise<Result<void>> {
+    const tournament = await this.tournamentRepo.findById(
+      tournamentId,
+      userUuid,
+    );
     if (!tournament.ok) return tournament;
     if (!tournament.data) return err("Torneo no encontrado");
 
-    const selected = await this.tournamentDrawnPairRepo.findByTournament(tournamentId);
+    const selected =
+      await this.tournamentDrawnPairRepo.findByTournament(tournamentId);
     if (!selected.ok) return selected;
 
     if (!selected.data || selected.data.length === 0) {
@@ -138,7 +174,10 @@ export class DrawService {
     }));
 
     for (const u of updates) {
-      const res = await this.tournamentDrawnPairRepo.updateCourtNumber(u.id, u.court_number);
+      const res = await this.tournamentDrawnPairRepo.updateCourtNumber(
+        u.id,
+        u.court_number,
+      );
       if (!res.ok) return res;
     }
 
@@ -146,7 +185,8 @@ export class DrawService {
   }
 
   async clearCourtDraw(tournamentId: string): Promise<Result<void>> {
-    const cleared = await this.tournamentDrawnPairRepo.clearCourtNumbers(tournamentId);
+    const cleared =
+      await this.tournamentDrawnPairRepo.clearCourtNumbers(tournamentId);
     if (!cleared.ok) return cleared;
     return this.pozoRoundRepo.deleteByTournament(tournamentId);
   }
@@ -156,7 +196,8 @@ export class DrawService {
     if (!existing.ok) return existing;
     if (existing.data) return { ok: true, data: undefined };
 
-    const courts = await this.tournamentDrawnPairRepo.getSelectedWithCourt(tournamentId);
+    const courts =
+      await this.tournamentDrawnPairRepo.getSelectedWithCourt(tournamentId);
     if (!courts.ok) return courts;
     if (courts.data.length === 0) return { ok: true, data: undefined };
 
@@ -168,12 +209,15 @@ export class DrawService {
 
     const inserted = await this.pozoRoundRepo.insertRoundPairs(
       courts.data
-        .filter((c): c is TournamentDrawnPair & { court_number: number } => c.court_number !== null)
+        .filter(
+          (c): c is TournamentDrawnPair & { court_number: number } =>
+            c.court_number !== null,
+        )
         .map((c) => ({
           round_id: round.data.id,
           drawn_pair_id: c.drawn_pair_id,
           court_number: c.court_number,
-        }))
+        })),
     );
     return inserted;
   }

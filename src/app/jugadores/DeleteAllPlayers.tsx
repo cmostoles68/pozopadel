@@ -11,7 +11,7 @@ export default function DeleteAllPlayers() {
   async function handleDelete() {
     if (
       !confirm(
-        "¿Eliminar TODOS los jugadores? Esta acción no se puede deshacer."
+        "¿Eliminar TODOS los jugadores? Esta acción no se puede deshacer.",
       )
     )
       return;

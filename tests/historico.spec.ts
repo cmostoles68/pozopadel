@@ -1,11 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "crypto";
-import {
-  connect,
-  resetUserData,
-  createProfile,
-  GUEST_UUID,
-} from "./helpers";
+import { connect, resetUserData, createProfile, GUEST_UUID } from "./helpers";
 
 let client: Awaited<ReturnType<typeof connect>>;
 const createdHistory: string[] = [];
@@ -25,10 +20,15 @@ test.beforeAll(async () => {
 test.afterEach(async () => {
   try {
     if (createdHistory.length) {
-      await client.query("DELETE FROM pozo_match_history WHERE id = ANY($1::uuid[])", [createdHistory]);
+      await client.query(
+        "DELETE FROM pozo_match_history WHERE id = ANY($1::uuid[])",
+        [createdHistory],
+      );
     }
     if (createdProfiles.length) {
-      await client.query("DELETE FROM profiles WHERE id = ANY($1::uuid[])", [createdProfiles]);
+      await client.query("DELETE FROM profiles WHERE id = ANY($1::uuid[])", [
+        createdProfiles,
+      ]);
     }
   } finally {
     createdHistory.length = 0;
@@ -55,7 +55,16 @@ test("reincorporar a la nueva sesión a un jugador del histórico que no está e
         court_number, score_winner, score_loser, user_uuid)
      VALUES ($1, 'Jugador Fantasma', 'MALE', 'RIGHT', 5.0, $2, $3, $4, $5, $6, $7, 1, 6, 4, $8)
      RETURNING id`,
-    [ghostId, anaId, "Ana Vega", andresId, "Andrés Moreno", andresId, "Andrés Moreno", GUEST_UUID]
+    [
+      ghostId,
+      anaId,
+      "Ana Vega",
+      andresId,
+      "Andrés Moreno",
+      andresId,
+      "Andrés Moreno",
+      GUEST_UUID,
+    ],
   );
   createdHistory.push(rows[0].id);
   // Track the ghost profile for cleanup even if the test fails partway.
@@ -82,7 +91,7 @@ test("reincorporar a la nueva sesión a un jugador del histórico que no está e
     .poll(async () => {
       const { rows } = await client.query(
         "SELECT 1 FROM profiles WHERE id = $1",
-        [ghostId]
+        [ghostId],
       );
       return rows.length;
     })
@@ -91,7 +100,7 @@ test("reincorporar a la nueva sesión a un jugador del histórico que no está e
   // The re-incorporated player was created with its historic data.
   const { rows: profileRows } = await client.query(
     "SELECT full_name, gender, dominant_hand, level FROM profiles WHERE id = $1",
-    [ghostId]
+    [ghostId],
   );
   expect(profileRows).toHaveLength(1);
   expect(profileRows[0].full_name).toBe("Jugador Fantasma");

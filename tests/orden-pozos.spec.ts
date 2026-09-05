@@ -66,18 +66,25 @@ test.afterAll(async () => {
   await client.end();
 });
 
-test("ordenar por pozos ganados pone primero a los campeones", async ({ page }) => {
+test("ordenar por pozos ganados pone primero a los campeones", async ({
+  page,
+}) => {
   await page.goto("/jugadores");
   await expect(
-    page.getByText("Ordenar por pozos ganados", { exact: true })
+    page.getByText("Ordenar por pozos ganados", { exact: true }),
   ).toBeVisible();
 
   const playerNames = async () =>
-    page
-      .locator(".glass-panel.flex.items-center.justify-between .font-medium", {
-        hasText: /./,
-      })
-      .allInnerTexts();
+    (
+      await page
+        .locator(
+          ".glass-panel.flex.items-center.justify-between .font-medium",
+          {
+            hasText: /./,
+          },
+        )
+        .allInnerTexts()
+    ).map((n) => n.trim().replace(/\d+\s*pozo(s?)\s*$/, ""));
 
   // Default alphabetical order (checkbox off) -> Carlos is not first (A comes first).
   const before = (await playerNames()).map((n) => n.trim());

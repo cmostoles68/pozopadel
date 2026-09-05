@@ -31,8 +31,8 @@ export default function GlobalError({
           Algo no ha salido bien
         </h1>
         <p className="text-on-surface-variant">
-          Ha ocurrido un error inesperado al cargar esta página. Tus datos están a
-          salvo; vuelve a intentarlo en un momento.
+          Ha ocurrido un error inesperado al cargar esta página. Tus datos están
+          a salvo; vuelve a intentarlo en un momento.
         </p>
         <button
           type="button"

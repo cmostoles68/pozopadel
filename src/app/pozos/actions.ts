@@ -2,8 +2,15 @@
 
 import { redirect } from "next/navigation";
 import { createServices } from "@/infrastructure/service-factory";
-import { getCurrentUserUuid, getCurrentAuthMode } from "@/infrastructure/supabase/current-user";
-import { createTournamentSchema, saveCourtResultSchema, uuidSchema } from "@/application/validation/schemas";
+import {
+  getCurrentUserUuid,
+  getCurrentAuthMode,
+} from "@/infrastructure/supabase/current-user";
+import {
+  createTournamentSchema,
+  saveCourtResultSchema,
+  uuidSchema,
+} from "@/application/validation/schemas";
 import { parseOrError } from "@/application/validation/parse";
 import { GUEST_LIMITS } from "@/config/limits";
 import type { CourtResultInput } from "@/application/dto/round.dto";
@@ -13,18 +20,13 @@ export async function createPozo(formData: FormData) {
   const userUuid = await getCurrentUserUuid();
   const mode = await getCurrentAuthMode();
 
-  const parsed = parseOrError(
-    createTournamentSchema,
-    {
-      title: formData.get("title"),
-      numberOfCourts: formData.get("numberOfCourts"),
-      minutesPerRound: formData.get("minutesPerRound"),
-    },
-  );
+  const parsed = parseOrError(createTournamentSchema, {
+    title: formData.get("title"),
+    numberOfCourts: formData.get("numberOfCourts"),
+    minutesPerRound: formData.get("minutesPerRound"),
+  });
   if (!parsed.ok) {
-    return redirect(
-      "/pozos/nuevo?error=" + encodeURIComponent(parsed.error)
-    );
+    return redirect("/pozos/nuevo?error=" + encodeURIComponent(parsed.error));
   }
 
   if (mode === "guest") {
@@ -50,9 +52,7 @@ export async function createPozo(formData: FormData) {
 
   const result = await tournamentService.create(parsed.data, userUuid);
   if (!result.ok) {
-    return redirect(
-      "/pozos/nuevo?error=" + encodeURIComponent(result.error)
-    );
+    return redirect("/pozos/nuevo?error=" + encodeURIComponent(result.error));
   }
 
   redirect(`/pozos/${result.data.id}`);
@@ -128,10 +128,12 @@ export async function saveCourtResult(
   results: CourtResultInput[],
   winnerDrawnPairId: string,
 ) {
-  const parsed = parseOrError(
-    saveCourtResultSchema,
-    { roundId, courtNumber, results, winnerDrawnPairId },
-  );
+  const parsed = parseOrError(saveCourtResultSchema, {
+    roundId,
+    courtNumber,
+    results,
+    winnerDrawnPairId,
+  });
   if (!parsed.ok) return { error: parsed.error };
 
   const { roundService } = await createServices();
@@ -145,14 +147,21 @@ export async function saveCourtResult(
   return { ok: true as const };
 }
 
-export async function checkAndStartNextRound(tournamentId: string, roundId: string) {
+export async function checkAndStartNextRound(
+  tournamentId: string,
+  roundId: string,
+) {
   const tournament = parseOrError(uuidSchema, tournamentId);
   const round = parseOrError(uuidSchema, roundId);
   if (!tournament.ok || !round.ok) return { error: "Datos no válidos" };
 
   const { roundService } = await createServices();
   const userUuid = await getCurrentUserUuid();
-  const result = await roundService.checkAndStartNextRound(tournament.data, round.data, userUuid);
+  const result = await roundService.checkAndStartNextRound(
+    tournament.data,
+    round.data,
+    userUuid,
+  );
   if (!result.ok) return { error: result.error };
   return { ok: true as const, nextRoundNumber: result.data.nextRoundNumber };
 }
@@ -161,12 +170,12 @@ export async function finalizePozo(tournamentId: string) {
   const tournament = parseOrError(uuidSchema, tournamentId);
   if (!tournament.ok) return { error: "Datos no válidos" };
 
-  const { roundService, matchHistoryRepo } = await createServices();
+  const { roundService, matchHistoryService } = await createServices();
   const userUuid = await getCurrentUserUuid();
   const mode = await getCurrentAuthMode();
 
   if (mode === "guest") {
-    const existing = await matchHistoryRepo.findAll(userUuid);
+    const existing = await matchHistoryService.getAll(userUuid);
     if (existing.ok && existing.data.length >= GUEST_LIMITS.maxHistoryMatches) {
       return {
         error: `En modo invitado el histórico no puede superar los ${GUEST_LIMITS.maxHistoryMatches} partidos.`,

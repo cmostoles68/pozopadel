@@ -18,8 +18,12 @@ function jwtSecret(): string {
   if (secret && secret.trim().length > 0) {
     return secret;
   }
-  // Supabase local dev default; in non-local deployments SUPABASE_JWT_SECRET
-  // should always be provided via environment variables.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "SUPABASE_JWT_SECRET must be set in production. Refusing to sign tokens with a default secret.",
+    );
+  }
+  // Supabase local dev default; never use in production.
   return "super-secret-jwt-token-with-at-least-32-characters-long";
 }
 
@@ -38,6 +42,32 @@ export function signUserToken(userUuid: string): string {
     iat: now,
     exp: now + THIRTY_DAYS_SECONDS,
     user_uuid: userUuid,
+  };
+
+  const signingInput = `${base64url(JSON.stringify(header))}.${base64url(
+    JSON.stringify(payload),
+  )}`;
+  const signature = crypto
+    .createHmac("sha256", jwtSecret())
+    .update(signingInput)
+    .digest("base64url");
+
+  return `${signingInput}.${signature}`;
+}
+
+/**
+ * Signs a service JWT with role `service_role` (bypasses RLS) used exclusively
+ * by server-side tooling (e.g. the session store). Only the role claim differs
+ * from a user token; the same HMAC secret is required.
+ */
+export function signServiceRoleToken(): string {
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: HS256, typ: "JWT" };
+  const payload = {
+    iss: ISSUER,
+    role: "service_role",
+    iat: now,
+    exp: now + THIRTY_DAYS_SECONDS,
   };
 
   const signingInput = `${base64url(JSON.stringify(header))}.${base64url(

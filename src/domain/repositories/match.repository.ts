@@ -1,4 +1,7 @@
-import type { MatchHistoryRow } from "../entities/match";
+import type {
+  MatchHistoryRow,
+  MatchHistoryPlayerSnapshot,
+} from "../entities/match";
 import type { Result } from "../result";
 
 export interface IMatchHistoryRepository {
@@ -27,10 +30,21 @@ export interface IMatchHistoryRepository {
     user_uuid: string;
   }): Promise<Result<void>>;
   findAll(userUuid: string): Promise<Result<MatchHistoryRow[]>>;
-  findByTournament(tournamentId: string, userUuid: string): Promise<Result<MatchHistoryRow[]>>;
+  findByTournament(
+    tournamentId: string,
+    userUuid: string,
+  ): Promise<Result<MatchHistoryRow[]>>;
+  findLatestPlayerSnapshot(
+    userUuid: string,
+    playerId: string,
+  ): Promise<Result<MatchHistoryPlayerSnapshot | null>>;
   findWinningPartnerships(
     userUuid: string,
     minMatches?: number,
-    minWinRate?: number
-  ): Promise<Result<{ a: string; b: string; wins: number; total: number; winRate: number }[]>>;
+    minWinRate?: number,
+  ): Promise<
+    Result<
+      { a: string; b: string; wins: number; total: number; winRate: number }[]
+    >
+  >;
 }

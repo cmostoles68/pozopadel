@@ -1,16 +1,14 @@
 "use client";
 
-import type { Database } from "@/infrastructure/supabase/database.types";
+import type { Tournament } from "@/domain/entities/tournament";
 
-type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
-
-interface LiveTournamentHeaderProps {
+interface TournamentStatusHeaderProps {
   tournament: Tournament;
 }
 
-export default function LiveTournamentHeader({
+export default function TournamentStatusHeader({
   tournament,
-}: LiveTournamentHeaderProps) {
+}: TournamentStatusHeaderProps) {
   const statusConfig: Record<string, { label: string; active: boolean }> = {
     draft: { label: "En preparación", active: false },
     in_progress: { label: "En curso", active: true },

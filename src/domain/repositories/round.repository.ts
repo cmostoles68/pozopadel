@@ -4,7 +4,9 @@ import type { Result } from "../result";
 
 export interface IPozoRoundRepository {
   findByTournament(tournamentId: string): Promise<Result<PozoRound[]>>;
-  findActiveByTournament(tournamentId: string): Promise<Result<PozoRound | null>>;
+  findActiveByTournament(
+    tournamentId: string,
+  ): Promise<Result<PozoRound | null>>;
   findById(id: string): Promise<Result<PozoRound | null>>;
   createRound(data: {
     tournament_id: string;
@@ -16,7 +18,7 @@ export interface IPozoRoundRepository {
   findRoundPairs(roundId: string): Promise<Result<PozoRoundPair[]>>;
   findCourtPairs(
     roundId: string,
-    courtNumber: number
+    courtNumber: number,
   ): Promise<Result<PozoRoundPair[]>>;
   updatePairResult(data: {
     pairId: string;
@@ -28,7 +30,7 @@ export interface IPozoRoundRepository {
       round_id: string;
       drawn_pair_id: string;
       court_number: number;
-    }[]
+    }[],
   ): Promise<Result<void>>;
   deleteRound(roundId: string): Promise<Result<void>>;
   findRound1IfExists(tournamentId: string): Promise<Result<PozoRound | null>>;

@@ -1,22 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { AUTH_COOKIE_NAME, SYSTEM_USER_UUIDS } from "@/config/auth";
 import type { Database } from "./database.types";
 import { signUserToken } from "./sign-token";
+import { getCurrentUserUuid } from "./current-user";
 
 export async function createClient() {
   const cookieStore = await cookies();
 
-  // Resolve the current user (guest by default).
-  const raw = cookieStore.get(AUTH_COOKIE_NAME)?.value;
-  const userUuid =
-    raw === SYSTEM_USER_UUIDS.admin || raw === SYSTEM_USER_UUIDS.guest
-      ? raw
-      : SYSTEM_USER_UUIDS.guest;
-
-  // Sign a per-user JWT carrying the identity. PostgREST exposes it to RLS via
-  // request.jwt.claims so public.current_user_uuid() can scope rows to this
-  // guest/admin.
+  // Resolve the current user (guest by default) from the server-side session
+  // cookie, then sign a per-user JWT carrying that identity. PostgREST exposes
+  // it to RLS via request.jwt.claims so public.current_user_uuid() can scope
+  // rows to this guest/admin.
+  const userUuid = await getCurrentUserUuid();
   const userToken = signUserToken(userUuid);
 
   return createServerClient<Database>(

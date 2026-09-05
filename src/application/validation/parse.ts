@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-export function parseOrError<T>(schema: z.ZodType<T>, value: unknown): { ok: true; data: T } | { ok: false; error: string } {
+export function parseOrError<T>(
+  schema: z.ZodType<T>,
+  value: unknown,
+): { ok: true; data: T } | { ok: false; error: string } {
   const result = schema.safeParse(value);
   if (!result.success) {
     const first = result.error.issues[0];
