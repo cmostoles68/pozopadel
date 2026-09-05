@@ -346,7 +346,7 @@ UUIDs). Sin parámetros (OK, autenticadas vía `getCurrentUserUuid`):
 | Jugadores | 9/10 | Formulario inline, edición por fila, contadores, badge "pozos ganados" |
 | Sorteo (`sorteo`) | 8/10 | Cabina de selección con preview y feedback de impares |
 | Nuevo pozo (`pozos/nuevo`) | 8/10 | Formulario con error vía query param |
-| Pozo (`pozos/[id]`) | 8/10 | Pistas dibujadas en CSS, ranking, banner de campeón, badge de pista condicional |
+| Pozo (`pozos/[id]`) | 9/10 | Pistas dibujadas en CSS, ranking, banner de campeón, badge de pista condicional y **marcador digital LED con marco** (`ScoreMarker` + casilla de puntuación oscura) |
 | Histórico | 7/10 | Campeones calculados del histórico; filas densas |
 
 ### 8.2 Bugs / inconsistencias (todas resueltas en esta revisión)
@@ -369,6 +369,8 @@ UUIDs). Sin parámetros (OK, autenticadas vía `getCurrentUserUuid`):
 
 - **Pistas de pádel dibujadas en CSS** y la "Pista Rey" con corona: detalle
   curioso y efectivo.
+- **Marcador digital con marco** (`ScoreMarker` + casilla de puntuación en
+  pantalla LED): evoca el marcador electrónico real de las pistas de pádel.
 - **`ChampionBanner`** y confirmación de finalización: momentos bien diseñados.
 - **Tokens Material 3** en `@theme inline` y vocabulario visual consistente
   (`glass-panel`, `pattern-bg`, `neon-glow`).

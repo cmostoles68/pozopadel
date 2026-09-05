@@ -132,10 +132,9 @@ src/
 │   ├── sorteo/            # Sorteo de parejas (4 algoritmos)
 │   ├── historico/         # Histórico de jugadores y reincorporación
 │   ├── pozos/nuevo/       # Creación de pozo (pistas, minutos por ronda)
-│   ├── pozos/[id]/        # Detalle de pozo + marcador
+│   ├── pozos/[id]/        # Detalle de pozo + marcador digital (ScoreMarker)
 │   └── page.tsx           # Redirige a /auth/login
-├── components/            # AppShell, CourtCard, RoundTimer, HelpDialog, Modal...
-├── config/                # auth.ts, limits.ts
+├── components/            # AppShell, CourtCard, RoundTimer, HelpDialog, Modal...├── config/                # auth.ts, limits.ts
 ├── contexts/              # auth-context (cliente)
 ├── domain/                # Algoritmos + entidades + repos + Result
 ├── application/           # Servicios, DTOs, validación Zod
@@ -168,6 +167,14 @@ Disponible en la sección Sorteo, con 4 algoritmos (definidos en `src/domain/alg
 4. **Por Niveles Mixto** — combina género mixto y equilibrio de niveles.
 
 El sorteo evita repetir parejas que ya se hayan proclamado campeonas de un pozo completo (detección vía histórico de victorias).
+
+## Marcador digital
+
+Dentro de cada ronda, el número de pareja y la casilla de puntuación se muestran
+como un **marcador digital con marco** (estilo LED de pista de pádel): pantalla
+oscura con `bezel`, dígitos en el acento verde lima con brillo y resalte para la
+pareja ganadora. Componente reutilizable `ScoreMarker` en
+`src/app/pozos/[id]/ScoreMarker.tsx`.
 
 ## Ayuda integrada
 

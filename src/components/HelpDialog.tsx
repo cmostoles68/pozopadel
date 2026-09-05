@@ -265,7 +265,7 @@ function StepCard({ index, step }: { index: number; step: Step }) {
               className="flex items-start gap-2 rounded-xl bg-surface-low/60 border border-outline-variant/15 p-3"
             >
               <span className="material-symbols-outlined text-secondary-container text-[24px] shrink-0 mt-0.5">
-                sports_tennis
+                scoreboard
               </span>
               <div>
                 <div className="text-base sm:text-lg font-semibold text-on-surface">

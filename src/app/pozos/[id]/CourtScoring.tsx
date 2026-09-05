@@ -11,6 +11,7 @@ import type { PairInfo, RoundData } from "./types";
 import { toSafeErrorMessage } from "@/application/errors";
 import ChampionBanner from "./ChampionBanner";
 import CourtCard from "./CourtCard";
+import ScoreMarker from "./ScoreMarker";
 
 export default function CourtScoring({
   tournamentId,
@@ -213,15 +214,15 @@ function renderFinishedRound(
                 return (
                   <div key={p.id} className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5">
-                      <span
-                        className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-white font-bold shrink-0 ${
+                      <ScoreMarker
+                        className={
                           isWinner
-                            ? "bg-secondary-fixed-dim"
-                            : "bg-surface-highest"
-                        }`}
+                            ? "border-secondary-container/70 [box-shadow:0_0_0_1px_rgba(195,244,0,0.4),0_0_12px_rgba(195,244,0,0.35)]"
+                            : "opacity-70"
+                        }
                       >
                         {info.pair_number}
-                      </span>
+                      </ScoreMarker>
                       {isWinner && (
                         <span className="material-symbols-outlined text-[18px] text-secondary-fixed-dim">
                           sports_tennis

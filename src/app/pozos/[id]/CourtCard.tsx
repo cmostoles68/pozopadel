@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { PairInfo, RoundCourtPair } from "./types";
+import ScoreMarker from "./ScoreMarker";
 
 export default function CourtCard({
   court,
@@ -100,13 +101,15 @@ export default function CourtCard({
                     }
               }
             >
-              <span
-                className={`w-10 h-10 flex items-center justify-center rounded-full font-display font-bold text-white mb-2 ${
-                  isWinner ? "bg-secondary-fixed-dim" : "bg-surface-highest"
+              <ScoreMarker
+                className={`mb-2 ${
+                  isWinner
+                    ? "border-secondary-container/70 [box-shadow:0_0_0_1px_rgba(195,244,0,0.4),0_0_12px_rgba(195,244,0,0.35)]"
+                    : ""
                 }`}
               >
                 {info.pair_number}
-              </span>
+              </ScoreMarker>
               <span className="font-display text-base text-on-surface text-center bg-background/60 px-2 py-0.5 rounded">
                 {info.player1_name}
                 {info.is_lefty ? " (z)" : ""} / {info.player2_name}
@@ -126,7 +129,7 @@ export default function CourtCard({
                   const next = { ...scores, [p.drawn_pair_id]: e.target.value };
                   setScores(next);
                 }}
-                className="w-20 h-12 bg-surface-highest border-none rounded-xl text-center font-display text-2xl text-on-surface focus:ring-2 focus:ring-secondary-container focus:bg-surface-variant transition-colors outline-none disabled:opacity-50"
+                className="w-20 h-12 bg-black/80 border border-white/25 rounded-lg text-center font-display text-2xl font-bold text-secondary-container placeholder:text-secondary-container/40 [text-shadow:0_0_8px_rgba(195,244,0,0.5)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9)] focus:ring-2 focus:ring-secondary-container focus:border-secondary-container/60 transition-colors outline-none disabled:opacity-50"
               />
               {isWinner && (
                 <span className="text-xs text-secondary-fixed-dim font-bold mt-1">
