@@ -46,6 +46,9 @@ const STEPS: Step[] = [
     badgeTone: "primary",
     title: "Sorteo de Parejas y Algoritmos",
     body: "Forma las parejas iniciales eligiendo uno de los criterios de sorteo disponibles en la sección Sorteo.",
+    bullets: [
+      "Cualquiera que sea el criterio, el sistema tiene en cuenta los pozos anteriores: las parejas que ya se proclamaron campeonas no se vuelven a juntar en sorteos futuros.",
+    ],
     algorithms: [
       {
         title: "Aleatorio Total",
