@@ -35,9 +35,11 @@ function createQueryBuilder(result: SupabaseResponse): SupabaseBuilderMock {
   for (const m of [
     "select",
     "eq",
+    "neq",
     "order",
     "limit",
     "in",
+    "ilike",
     "not",
     "is",
     "insert",
@@ -252,6 +254,47 @@ describe("SupabasePlayerAdapter", () => {
 
     const res = await adapter.exists("p1");
     expect(res).toEqual(ok(true));
+  });
+
+  it("existsByName scopes by user and matches case-insensitively", async () => {
+    const { adapter, from } = buildAdapter();
+    const builder = createQueryBuilder({ data: { id: "p1" }, error: null });
+    from.mockReturnValue(builder);
+
+    const res = await adapter.existsByName("u1", "Ana");
+    expect(res).toEqual(ok(true));
+    expect(builder.eq).toHaveBeenCalledWith("user_uuid", "u1");
+    expect(builder.ilike).toHaveBeenCalledWith("full_name", "Ana");
+    expect(builder.neq).not.toHaveBeenCalled();
+  });
+
+  it("existsByName excludes the given id", async () => {
+    const { adapter, from } = buildAdapter();
+    const builder = createQueryBuilder({ data: null, error: null });
+    from.mockReturnValue(builder);
+
+    const res = await adapter.existsByName("u1", "Ana", "p1");
+    expect(res).toEqual(ok(false));
+    expect(builder.neq).toHaveBeenCalledWith("id", "p1");
+  });
+
+  it("existsByName escapes LIKE wildcards", async () => {
+    const { adapter, from } = buildAdapter();
+    const builder = createQueryBuilder({ data: null, error: null });
+    from.mockReturnValue(builder);
+
+    await adapter.existsByName("u1", "100% libre_");
+    expect(builder.ilike).toHaveBeenCalledWith("full_name", "100\\% libre\\_");
+  });
+
+  it("existsByName propagates errors", async () => {
+    const { adapter, from } = buildAdapter();
+    from.mockReturnValue(
+      createQueryBuilder({ data: null, error: { message: "boom" } }),
+    );
+
+    const res = await adapter.existsByName("u1", "Ana");
+    expect(res).toEqual(err("boom"));
   });
 });
 

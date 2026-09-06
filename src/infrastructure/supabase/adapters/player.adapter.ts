@@ -93,4 +93,18 @@ export class SupabasePlayerAdapter implements IPlayerRepository {
       .maybeSingle();
     return ok(!!data);
   }
+
+  async existsByName(userUuid: string, fullName: string, excludeId?: string) {
+    const escaped = fullName.replace(/[%_]/g, (c) => `\\${c}`);
+    let query = this.supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_uuid", userUuid)
+      .ilike("full_name", escaped)
+      .limit(1);
+    if (excludeId) query = query.neq("id", excludeId);
+    const { data, error } = await query.maybeSingle();
+    if (error) return safeErr(error);
+    return ok(!!data);
+  }
 }

@@ -2,6 +2,7 @@ import type { IPlayerRepository } from "@/domain/repositories/player.repository"
 import type { Player, PlayerProfile } from "@/domain/entities/player";
 import type { CreatePlayerInput, UpdatePlayerInput } from "../dto/player.dto";
 import type { Result } from "@/domain/result";
+import { err } from "@/domain/result";
 
 export class PlayerService {
   constructor(private playerRepo: IPlayerRepository) {}
@@ -22,6 +23,14 @@ export class PlayerService {
     input: CreatePlayerInput,
     userUuid: string,
   ): Promise<Result<void>> {
+    const duplicate = await this.playerRepo.existsByName(
+      userUuid,
+      input.full_name,
+    );
+    if (!duplicate.ok) return duplicate;
+    if (duplicate.data) {
+      return err("Ya existe un jugador con ese nombre.");
+    }
     return this.playerRepo.create({ ...input, user_uuid: userUuid });
   }
 
@@ -29,6 +38,15 @@ export class PlayerService {
     input: UpdatePlayerInput,
     userUuid: string,
   ): Promise<Result<void>> {
+    const duplicate = await this.playerRepo.existsByName(
+      userUuid,
+      input.full_name,
+      input.id,
+    );
+    if (!duplicate.ok) return duplicate;
+    if (duplicate.data) {
+      return err("Ya existe un jugador con ese nombre.");
+    }
     return this.playerRepo.update(
       input.id,
       {

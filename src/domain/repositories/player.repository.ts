@@ -26,4 +26,9 @@ export interface IPlayerRepository {
   delete(id: string, userUuid: string): Promise<Result<void>>;
   deleteAll(userUuid: string): Promise<Result<void>>;
   exists(id: string): Promise<Result<boolean>>;
+  existsByName(
+    userUuid: string,
+    fullName: string,
+    excludeId?: string,
+  ): Promise<Result<boolean>>;
 }
