@@ -1,6 +1,14 @@
 import { z } from "zod";
 
-export const uuidSchema = z.string().min(1).max(200);
+export const uuidSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(200)
+  .regex(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    "Identificador no válido",
+  );
 
 export const createPlayerSchema = z.object({
   id: uuidSchema.optional(),

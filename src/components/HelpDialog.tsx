@@ -22,10 +22,10 @@ const STEPS: Step[] = [
     badge: "Acceso",
     badgeTone: "primary",
     title: "Modo de acceso: Invitado vs Admin",
-    body: "Antes de empezar, elige cómo entrar desde la pantalla de acceso. Según el modo, tendrás más o menos libertad a la hora de crear y editar.",
+    body: "Por defecto entras como Invitado, que puede ver y jugar pero está sujeto a límites pensados para pruebas rápidas (p. ej. máximo 32 jugadores, 1 pozo activo y 8 pistas por pozo). Si necesitas más libertad, pulsa \"Admin\" en la barra lateral e introduce la contraseña de administrador para eliminar esos límites.",
     bullets: [
-      "Entrar como Invitado no requiere credenciales: puedes ver y jugar, pero está sujeto a límites pensados para pruebas rápidas (p. ej. máximo 32 jugadores, 1 pozo activo y 8 pistas por pozo).",
-      "Entrar como Admin requiere la contraseña de administrador y elimina esos límites: puedes crear varios pozos, superar los 32 jugadores o usar más de 8 pistas sin restricciones.",
+      "Como Invitado estás sujeto a límites (máximo 32 jugadores, 1 pozo activo y 8 pistas por pozo).",
+      "Si introduces la contraseña de administrador desde la barra lateral, eliminas esos límites y puedes crear varios pozos, superar los 32 jugadores o usar más de 8 pistas sin restricciones.",
       "Ambos modos guardan los datos en tu propio espacio: cada uno solo ve su lista de jugadores, sus pozos y su histórico.",
     ],
   },

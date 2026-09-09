@@ -9,21 +9,30 @@ function playAlarm() {
       (window as unknown as { webkitAudioContext: typeof AudioContext })
         .webkitAudioContext
     )();
-    const notes = [880, 880, 1100, 1100];
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      const start = ctx.currentTime + i * 0.35;
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.4, start + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + 0.3);
-    });
+    const dur = 2.5;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.value = 700;
+
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.35, now + 0.05);
+
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.frequency.value = 8;
+    lfoGain.gain.value = 250;
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    lfo.start(now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+    osc.stop(now + dur);
+    lfo.stop(now + dur);
   } catch {
     /* el audio no está disponible en este entorno */
   }

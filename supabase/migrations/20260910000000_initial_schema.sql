@@ -44,7 +44,7 @@ INSERT INTO public.test_users (id, username, role) VALUES
 -- Players
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name TEXT NOT NULL,
   gender TEXT CHECK (gender IN ('MALE', 'FEMALE')) NOT NULL DEFAULT 'MALE',
   dominant_hand TEXT CHECK (dominant_hand IN ('RIGHT', 'LEFT')) NOT NULL DEFAULT 'RIGHT',
@@ -60,7 +60,7 @@ CREATE INDEX IF NOT EXISTS profiles_user_uuid_idx ON public.profiles (user_uuid)
 -- Drawn pairs (sorteo)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.drawn_pairs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   pair_number INT NOT NULL,
   player1_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   player2_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
@@ -75,7 +75,7 @@ CREATE INDEX IF NOT EXISTS drawn_pairs_user_uuid_idx ON public.drawn_pairs (user
 -- Tournaments (POZOS)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.tournaments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   created_by UUID REFERENCES public.test_users(id) ON DELETE CASCADE NOT NULL,
   status TEXT CHECK (status IN ('draft', 'in_progress', 'completed')) DEFAULT 'draft' NOT NULL,
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS public.tournaments (
 -- Rounds
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.pozo_rounds (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID REFERENCES public.tournaments(id) ON DELETE CASCADE NOT NULL,
   round_number INT NOT NULL,
   status TEXT DEFAULT 'in_progress' NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS public.pozo_rounds (
 -- Round <-> pair assignment per court
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.tournament_drawn_pairs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID REFERENCES public.tournaments(id) ON DELETE CASCADE NOT NULL,
   drawn_pair_id UUID REFERENCES public.drawn_pairs(id) ON DELETE CASCADE NOT NULL,
   court_number INT,
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS public.tournament_drawn_pairs (
 );
 
 CREATE TABLE IF NOT EXISTS public.pozo_round_pairs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   round_id UUID REFERENCES public.pozo_rounds(id) ON DELETE CASCADE NOT NULL,
   drawn_pair_id UUID REFERENCES public.drawn_pairs(id) ON DELETE CASCADE NOT NULL,
   court_number INT NOT NULL,
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS public.pozo_round_pairs (
 -- data so deleted players can be re-incorporated into future draws).
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.pozo_match_history (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id UUID REFERENCES public.tournaments(id) ON DELETE SET NULL,
   round_id UUID REFERENCES public.pozo_rounds(id) ON DELETE SET NULL,
   round_number INT,
