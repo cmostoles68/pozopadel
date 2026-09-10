@@ -27,14 +27,16 @@ export default function LoginPage() {
 
   async function confirmAdmin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setLoading(true);
     setError(null);
     const result = await loginAsAdmin(password);
     if (result.ok) {
       router.push("/jugadores");
-    } else {
-      setError(result.error ?? "Contraseña incorrecta.");
-      setPassword("");
+      return;
     }
+    setLoading(false);
+    setError(result.error ?? "Contraseña incorrecta.");
+    setPassword("");
   }
 
   return (
@@ -59,9 +61,7 @@ export default function LoginPage() {
             >
               progress_activity
             </span>
-            <p className="text-sm text-on-surface-variant">
-              Entrando como invitado…
-            </p>
+            <p className="text-sm text-on-surface-variant">Cargando...</p>
           </div>
         ) : selected === null ? (
           <div className="space-y-4">
