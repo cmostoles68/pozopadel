@@ -52,7 +52,10 @@ describe("DrawService", () => {
         createRound: vi.fn(),
         insertRoundPairs: vi.fn(),
       },
-      tournamentRepo: { findById: vi.fn() },
+      tournamentRepo: {
+        findById: vi.fn(),
+        updateCourts: vi.fn(),
+      },
     };
 
     const service = new DrawService(
@@ -245,6 +248,53 @@ describe("DrawService", () => {
           (call) => call[1],
         ) as number[];
       expect(calls.sort()).toEqual([1, 1, 2, 2]);
+    });
+
+    it("updates the tournament court count when fewer courts are used", async () => {
+      const { service, repos } = buildService();
+      repos.tournamentRepo.findById.mockResolvedValue(
+        ok({ id: "t1", number_of_courts: 3 } as unknown as Tournament),
+      );
+      repos.tournamentDrawnPairRepo.findByTournament.mockResolvedValue(
+        ok(
+          [1, 2, 3].map((n) => ({
+            id: `s${n}`,
+          })) as unknown as TournamentDrawnPair[],
+        ),
+      );
+      repos.tournamentDrawnPairRepo.updateCourtNumber.mockResolvedValue(
+        ok(undefined),
+      );
+      repos.tournamentRepo.updateCourts.mockResolvedValue(ok(undefined));
+
+      const res = await service.drawCourts("t1", "u1");
+      expect(res).toEqual(ok(undefined));
+      expect(repos.tournamentRepo.updateCourts).toHaveBeenCalledWith(
+        "t1",
+        "u1",
+        2,
+      );
+    });
+
+    it("does not update the court count when it matches the configured value", async () => {
+      const { service, repos } = buildService();
+      repos.tournamentRepo.findById.mockResolvedValue(
+        ok({ id: "t1", number_of_courts: 2 } as unknown as Tournament),
+      );
+      repos.tournamentDrawnPairRepo.findByTournament.mockResolvedValue(
+        ok(
+          [1, 2, 3, 4].map((n) => ({
+            id: `s${n}`,
+          })) as unknown as TournamentDrawnPair[],
+        ),
+      );
+      repos.tournamentDrawnPairRepo.updateCourtNumber.mockResolvedValue(
+        ok(undefined),
+      );
+
+      const res = await service.drawCourts("t1", "u1");
+      expect(res).toEqual(ok(undefined));
+      expect(repos.tournamentRepo.updateCourts).not.toHaveBeenCalled();
     });
   });
 

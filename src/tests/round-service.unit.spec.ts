@@ -49,7 +49,7 @@ describe("RoundService", () => {
         updateChampion: vi.fn(),
         delete: vi.fn(),
       },
-      drawnPairRepo: { findAll: vi.fn() },
+      drawnPairRepo: { findAll: vi.fn(), archiveAll: vi.fn() },
       playerRepo: { findAll: vi.fn() },
       matchHistoryRepo: {
         upsert: vi.fn(),
@@ -518,6 +518,7 @@ describe("RoundService", () => {
         ]),
       );
       repos.matchHistoryRepo.upsert.mockResolvedValue(ok(undefined));
+      repos.drawnPairRepo.archiveAll.mockResolvedValue(ok(undefined));
 
       const res = await service.finalizePozo("t1", "u1");
       expect(res).toEqual(ok(undefined));
@@ -543,6 +544,80 @@ describe("RoundService", () => {
           user_uuid: "u1",
         }),
       );
+      expect(repos.drawnPairRepo.archiveAll).toHaveBeenCalledWith("u1");
+    });
+
+    it("archives the current draw after finalizing", async () => {
+      const { service, repos } = buildService();
+      const loserOnCourt1 = courtPair({
+        id: "rp2",
+        drawn_pair_id: "dLoser",
+        winner_drawn_pair_id: "dChampion",
+        score_a: 6,
+      });
+      repos.pozoRoundRepo.findByTournament.mockResolvedValue(
+        ok([
+          round({ id: "r1", round_number: 1 }),
+          round({ id: "r2", round_number: 2 }),
+        ]),
+      );
+      repos.pozoRoundRepo.findCourtPairs.mockImplementation((roundId) =>
+        roundId === "r2"
+          ? Promise.resolve(ok([championPair, loserOnCourt1]))
+          : Promise.resolve(ok([])),
+      );
+      repos.tournamentRepo.updateChampion.mockResolvedValue(ok(undefined));
+      repos.drawnPairRepo.findAll.mockResolvedValue(
+        ok([
+          {
+            id: "dChampion",
+            player1_id: "p1",
+            player2_id: "p2",
+          } as unknown as DrawnPair,
+          {
+            id: "dLoser",
+            player1_id: "p3",
+            player2_id: "p4",
+          } as unknown as DrawnPair,
+        ]),
+      );
+      repos.playerRepo.findAll.mockResolvedValue(ok([]));
+      repos.matchHistoryRepo.upsert.mockResolvedValue(ok(undefined));
+      repos.drawnPairRepo.archiveAll.mockResolvedValue(ok(undefined));
+
+      const res = await service.finalizePozo("t1", "u1");
+      expect(res).toEqual(ok(undefined));
+      expect(repos.drawnPairRepo.archiveAll).toHaveBeenCalledWith("u1");
+      expect(repos.matchHistoryRepo.upsert).toHaveBeenCalled();
+    });
+
+    it("returns an error if archiving the draw fails", async () => {
+      const { service, repos } = buildService();
+      const loserOnCourt1 = courtPair({
+        id: "rp2",
+        drawn_pair_id: "dLoser",
+        winner_drawn_pair_id: "dChampion",
+        score_a: 6,
+      });
+      repos.pozoRoundRepo.findByTournament.mockResolvedValue(
+        ok([
+          round({ id: "r1", round_number: 1 }),
+          round({ id: "r2", round_number: 2 }),
+        ]),
+      );
+      repos.pozoRoundRepo.findCourtPairs.mockImplementation((roundId) =>
+        roundId === "r2"
+          ? Promise.resolve(ok([championPair, loserOnCourt1]))
+          : Promise.resolve(ok([])),
+      );
+      repos.tournamentRepo.updateChampion.mockResolvedValue(ok(undefined));
+      repos.drawnPairRepo.findAll.mockResolvedValue(ok([]));
+      repos.playerRepo.findAll.mockResolvedValue(ok([]));
+      repos.matchHistoryRepo.upsert.mockResolvedValue(ok(undefined));
+      repos.drawnPairRepo.archiveAll.mockResolvedValue(err("archive failed"));
+
+      const res = await service.finalizePozo("t1", "u1");
+      expect(res).toEqual(err("archive failed"));
     });
   });
 });

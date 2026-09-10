@@ -194,6 +194,22 @@ export class DrawService {
       if (!res.ok) return res;
     }
 
+    // Si por el número de parejas hay menos pistas en uso que las configuradas,
+    // se ajusta el indicador del pozo para que refleje la realidad (tanto en
+    // vivo como en consultas posteriores: dashboard, histórico).
+    const courtsInUse = updates.reduce(
+      (max, u) => Math.max(max, u.court_number),
+      0,
+    );
+    if (courtsInUse !== tournament.data.number_of_courts) {
+      const res = await this.tournamentRepo.updateCourts(
+        tournamentId,
+        userUuid,
+        courtsInUse,
+      );
+      if (!res.ok) return res;
+    }
+
     return { ok: true, data: undefined };
   }
 

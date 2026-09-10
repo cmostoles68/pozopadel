@@ -148,6 +148,28 @@ describe("SupabaseTournamentAdapter", () => {
     const res = await adapter.delete("t1", "u1");
     expect(res).toEqual(err("fk"));
   });
+
+  it("updateCourts updates number_of_courts scoped by user", async () => {
+    const { adapter, from } = buildAdapter();
+    const builder = createQueryBuilder({ data: null, error: null });
+    from.mockReturnValue(builder);
+
+    const res = await adapter.updateCourts("t1", "u1", 2);
+    expect(res).toEqual(ok(undefined));
+    expect(builder.update).toHaveBeenCalledWith({ number_of_courts: 2 });
+    expect(builder.eq).toHaveBeenCalledWith("id", "t1");
+    expect(builder.eq).toHaveBeenCalledWith("created_by", "u1");
+  });
+
+  it("updateCourts propagates errors", async () => {
+    const { adapter, from } = buildAdapter();
+    from.mockReturnValue(
+      createQueryBuilder({ data: null, error: { message: "no" } }),
+    );
+
+    const res = await adapter.updateCourts("t1", "u1", 2);
+    expect(res).toEqual(err("no"));
+  });
 });
 
 describe("SupabasePlayerAdapter", () => {

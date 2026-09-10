@@ -238,6 +238,22 @@ test.describe("Pozo: selección de parejas y sorteo de pistas", () => {
     }
   });
 
+  test("el indicador de pistas refleja las realmente usadas", async ({
+    page,
+  }) => {
+    const { tournamentId, numbers } = await setupTournament(2, [0, 1]);
+    await page.goto(`/pozos/${tournamentId}`);
+
+    await expect(page.getByText("2 pistas")).toBeVisible();
+
+    for (const num of numbers) await clickSelect(page, num);
+    await expect(page.getByText("Seleccionadas (2)")).toBeVisible();
+
+    await page.getByRole("button", { name: "Sorteo pistas" }).click();
+    await expect(page.getByTestId("round-1")).toBeVisible();
+    await expect(page.getByText("1 pistas")).toBeVisible();
+  });
+
   test("avisa si hay mas parejas que pistas disponibles", async ({ page }) => {
     const { tournamentId, numbers } = await setupTournament(1, [0, 1, 2]);
     await page.goto(`/pozos/${tournamentId}`);
@@ -384,6 +400,27 @@ test.describe("Pozo: registro de resultados y siguiente ronda", () => {
 
     await expect(page.getByTestId("champion-banner")).toBeVisible();
     await expect(page.getByTestId("champion-banner")).toContainText(String(w));
+  });
+
+  test("finalizar un pozo deja el sorteo de parejas vacío", async ({ page }) => {
+    const { tournamentId, numbers } = await setupTournament(1, [0, 1]);
+    await page.goto(`/pozos/${tournamentId}`);
+
+    for (const num of numbers) await clickSelect(page, num);
+    await page.getByRole("button", { name: "Sorteo pistas" }).click();
+    await expect(page.getByTestId("round-1")).toBeVisible();
+
+    const [w, l] = numbers;
+    await registerScore(page, 1, w, l);
+
+    const finalize = page.getByTestId("finalize-pozo");
+    await expect(finalize).toBeEnabled();
+    await finalize.click();
+    await expect(page.getByTestId("champion-banner")).toBeVisible();
+
+    // Tras finalizar, el sorteo (panel de parejas activas) queda vacío.
+    await page.goto("/sorteo");
+    await expect(page.getByText(/No hay parejas sorteadas/)).toBeVisible();
   });
 });
 

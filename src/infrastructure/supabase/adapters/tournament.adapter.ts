@@ -62,6 +62,16 @@ export class SupabaseTournamentAdapter implements ITournamentRepository {
     return ok(undefined);
   }
 
+  async updateCourts(id: string, userUuid: string, number_of_courts: number) {
+    const { error } = await this.supabase
+      .from("tournaments")
+      .update({ number_of_courts })
+      .eq("id", id)
+      .eq("created_by", userUuid);
+    if (error) return safeErr(error);
+    return ok(undefined);
+  }
+
   async updateChampion(
     id: string,
     userUuid: string,

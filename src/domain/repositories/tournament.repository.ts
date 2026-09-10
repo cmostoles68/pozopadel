@@ -15,6 +15,11 @@ export interface ITournamentRepository {
     userUuid: string,
     status: string,
   ): Promise<Result<void>>;
+  updateCourts(
+    id: string,
+    userUuid: string,
+    number_of_courts: number,
+  ): Promise<Result<void>>;
   updateChampion(
     id: string,
     userUuid: string,

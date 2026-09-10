@@ -277,6 +277,13 @@ export class RoundService {
       if (!rec.ok) return rec;
     }
 
+    // Al finalizar, se descarta el sorteo actual de parejas (se archivan) para
+    // que el panel de sorteo quede vacío. Las parejas ya quedan referenciadas
+    // por id en las rondas/pozo, por lo que el historial y la vista del pozo
+    // finalizado se conservan.
+    const archive = await this.drawnPairRepo.archiveAll(userUuid);
+    if (!archive.ok) return archive;
+
     return ok(undefined);
   }
 }
