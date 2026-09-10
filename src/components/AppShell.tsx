@@ -66,8 +66,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
           ))}
           <button
             onClick={handleLogout}
-            aria-label="Cerrar sesión"
-            title="Cerrar sesión"
+            aria-label="cierre sesion"
+            title="cierre sesion"
             className="inline-flex items-center gap-1 rounded-full border border-outline-variant/10 bg-surface-highest/80 px-2 py-1.5 text-[10px] font-medium tracking-wide text-on-surface-variant transition-colors hover:bg-white hover:text-on-secondary-container"
           >
             <span
@@ -76,7 +76,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             >
               logout
             </span>
-            <span>Cerrar sesión</span>
+            <span>cierre sesion</span>
           </button>
         </div>
       </nav>
