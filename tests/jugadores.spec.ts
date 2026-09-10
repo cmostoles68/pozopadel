@@ -17,7 +17,7 @@ test.afterAll(async () => {
 async function addPlayer(
   page: import("@playwright/test").Page,
   name: string,
-  level = "3.5",
+  level = "3",
 ) {
   await page.getByPlaceholder("Nombre completo").fill(name);
   await page.locator('input[name="level"]').fill(level);

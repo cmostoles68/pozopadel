@@ -83,7 +83,7 @@ export default function PlayerRow({
             type="number"
             min={1}
             max={10}
-            step={0.5}
+            step={1}
             defaultValue={player.level}
             className="px-3 py-2 bg-surface-highest border border-outline-variant rounded-xl text-on-surface"
           />

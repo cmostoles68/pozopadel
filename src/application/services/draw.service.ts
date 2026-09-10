@@ -14,6 +14,7 @@ import {
   pairPlayers,
   shuffleArray,
   getDrawValidationError,
+  getLeftyDrawError,
 } from "@/domain/algorithms/draw";
 
 export interface DrawnPairResult {
@@ -44,6 +45,11 @@ export class DrawService {
     const validationError = getDrawValidationError(players.data.length);
     if (validationError) {
       return err(validationError);
+    }
+
+    const leftyError = getLeftyDrawError(players.data);
+    if (leftyError) {
+      return err(leftyError);
     }
 
     const cleared = await this.drawnPairRepo.deleteAll(userUuid);

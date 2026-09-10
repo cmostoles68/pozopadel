@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   full_name TEXT NOT NULL,
   gender TEXT CHECK (gender IN ('MALE', 'FEMALE')) NOT NULL DEFAULT 'MALE',
   dominant_hand TEXT CHECK (dominant_hand IN ('RIGHT', 'LEFT')) NOT NULL DEFAULT 'RIGHT',
-  level NUMERIC(3, 1) CHECK (level >= 1.0 AND level <= 10.0) NOT NULL DEFAULT 3.5,
+  level NUMERIC(2, 0) CHECK (level >= 1 AND level <= 10) NOT NULL DEFAULT 3,
   avatar_url TEXT,
   user_uuid UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001',
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL

@@ -4,7 +4,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -16,6 +18,10 @@ import {
 } from "@/app/auth/actions";
 
 const STORAGE_KEY = "pozopadel.auth";
+const LAST_ACTIVITY_KEY = "pozopadel.lastActivity";
+const INACTIVITY_MS = 30 * 60 * 1000;
+const ACTIVITY_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"]; // Evita mousemove para no escribir el storage a cada pixel
+const IDLE_CHECK_MS = 30_000;
 
 interface StoredAuth {
   mode: AuthMode;
@@ -46,9 +52,56 @@ function readStored(): StoredAuth | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<AuthMode>(
-    () => readStored()?.mode ?? "guest",
-  );
+  const [mode, setMode] = useState<AuthMode>("guest");
+  const lastActivityRef = useRef<number>(Date.now());
+  const activeRef = useRef(false);
+
+  useEffect(() => {
+    const stored = readStored();
+    if (stored) {
+      activeRef.current = true;
+      setMode(stored.mode);
+      const saved = Number(window.localStorage.getItem(LAST_ACTIVITY_KEY));
+      if (Number.isFinite(saved)) lastActivityRef.current = saved;
+    }
+  }, []);
+
+  const touchActivity = useCallback(() => {
+    lastActivityRef.current = Date.now();
+    if (activeRef.current) {
+      window.localStorage.setItem(
+        LAST_ACTIVITY_KEY,
+        String(lastActivityRef.current),
+      );
+    }
+  }, []);
+
+  async function closeSession() {
+    await serverLogout();
+    activeRef.current = false;
+    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(LAST_ACTIVITY_KEY);
+    setMode("guest");
+    window.location.href = "/auth/login";
+  }
+
+  useEffect(() => {
+    for (const event of ACTIVITY_EVENTS) {
+      window.addEventListener(event, touchActivity, { passive: true });
+    }
+    const interval = window.setInterval(() => {
+      const idle = Date.now() - lastActivityRef.current;
+      if (activeRef.current && idle > INACTIVITY_MS) {
+        void closeSession();
+      }
+    }, IDLE_CHECK_MS);
+    return () => {
+      for (const event of ACTIVITY_EVENTS) {
+        window.removeEventListener(event, touchActivity);
+      }
+      window.clearInterval(interval);
+    };
+  }, [touchActivity]);
 
   const persist = useCallback((nextMode: AuthMode) => {
     const payload: StoredAuth = { mode: nextMode };
@@ -59,7 +112,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await serverLoginAsGuest();
     setMode("guest");
     persist("guest");
-  }, [persist]);
+    activeRef.current = true;
+    touchActivity();
+  }, [persist, touchActivity]);
 
   const loginAsAdmin = useCallback(
     async (password: string): Promise<{ ok: boolean; error?: string }> => {
@@ -67,14 +122,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!result.ok) return result;
       setMode("admin");
       persist("admin");
+      activeRef.current = true;
+      touchActivity();
       return { ok: true };
     },
-    [persist],
+    [persist, touchActivity],
   );
 
   const logout = useCallback(async () => {
     await serverLogout();
+    activeRef.current = false;
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(LAST_ACTIVITY_KEY);
     setMode("guest");
   }, []);
 

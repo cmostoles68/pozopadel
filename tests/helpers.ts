@@ -84,7 +84,7 @@ export async function createProfile(
       input.full_name,
       input.gender ?? "MALE",
       input.dominant_hand ?? "RIGHT",
-      input.level ?? 3.5,
+      input.level ?? 3,
       input.user_uuid ?? GUEST_UUID,
     ],
   );

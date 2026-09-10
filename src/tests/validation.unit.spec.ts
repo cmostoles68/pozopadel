@@ -52,6 +52,17 @@ describe("createPlayerSchema", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("rejects a level with decimals", () => {
+    expect(
+      createPlayerSchema.safeParse({
+        full_name: "Ana",
+        gender: "FEMALE",
+        dominant_hand: "RIGHT",
+        level: 3.5,
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe("updatePlayerSchema", () => {

@@ -32,12 +32,12 @@ test.describe("Login page", () => {
     await expect(page.getByText("Contraseña incorrecta.")).toBeVisible();
   });
 
-  test("guest entry redirects to dashboard", async ({ page }) => {
+  test("guest entry redirects to players", async ({ page }) => {
     await page.goto("/auth/login");
 
     await page.getByRole("button", { name: /Entrar como Invitado/ }).click();
 
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/jugadores/);
   });
 
   test("admin flow accepts correct password and shows Admin badge", async ({
@@ -49,14 +49,14 @@ test.describe("Login page", () => {
     await page.getByLabel("Contraseña de administrador").fill("L0sp0z0s!");
     await page.getByRole("button", { name: "Entrar" }).click();
 
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/jugadores/);
     await expect(page.getByText("Admin", { exact: true })).toBeVisible();
   });
 
   test("logout returns to login page", async ({ page }) => {
     await page.goto("/auth/login");
     await page.getByRole("button", { name: /Entrar como Invitado/ }).click();
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/jugadores/);
 
     await page.getByRole("button", { name: /Cerrar sesión/ }).click();
 

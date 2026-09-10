@@ -15,7 +15,7 @@ export default function LoginPage() {
   async function enterGuest() {
     setSelected("guest");
     await loginAsGuest();
-    router.push("/dashboard");
+    router.push("/jugadores");
   }
 
   async function confirmAdmin(e: React.FormEvent<HTMLFormElement>) {
@@ -23,7 +23,7 @@ export default function LoginPage() {
     setError(null);
     const result = await loginAsAdmin(password);
     if (result.ok) {
-      router.push("/dashboard");
+      router.push("/jugadores");
     } else {
       setError(result.error ?? "Contraseña incorrecta.");
       setPassword("");

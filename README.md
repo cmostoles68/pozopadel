@@ -292,6 +292,8 @@ La aplicación distingue dos modos de autenticación controlados por una **sesi�
 
 La cookie `padel_session` guarda un **token opaco aleatorio** (256 bits) cuyo hash SHA-256 se almacena en `session_tokens`; la identidad se resuelve en el servidor en cada request (`getCurrentUserUuid()` / `getCurrentAuthMode()` en `src/infrastructure/supabase/current-user.ts`). Conocer el UUID público no basta para autenticarse como admin, y sin token válido se entra como invitado.
 
+Tras **30 minutos de inactividad** (sin clics, teclado, scroll o toques), la sesión se cierra automáticamente y la aplicación vuelve a la pantalla de acceso. El contador se gestiona en el cliente (`src/contexts/auth-context.tsx`): registra la última actividad en `localStorage` (`pozopadel.lastActivity`), comprueba cada 30 s si se ha superado el umbral y, si es así, revoca el token en el servidor, limpia el estado local y redirige a `/auth/login`. La última actividad persiste entre recargas, por lo que volver a una pestaña que llevaba más de 30 minutos parada también cierra la sesión.
+
 #### Límites del modo invitado
 Definidos de forma centralizada en `src/config/limits.ts` como `GUEST_LIMITS`:
 

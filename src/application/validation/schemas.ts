@@ -23,6 +23,7 @@ export const createPlayerSchema = z.object({
   }),
   level: z.coerce
     .number()
+    .int("El nivel debe ser un número entero")
     .min(1, "El nivel debe ser como mínimo 1")
     .max(10, "El nivel debe ser como máximo 10"),
 });

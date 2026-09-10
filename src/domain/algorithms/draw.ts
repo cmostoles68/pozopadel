@@ -29,6 +29,46 @@ function canPair(
   );
 }
 
+/**
+ * Elimina cualquier pareja "zurdo + zurdo" resultante reemparejando a sus
+ * miembros con los de otra pareja, respetando las restricciones de
+ * `canPair` (mano y parejas descalificadas). `canPair` nunca une dos zurdos,
+ * así que cada intercambio válido mantiene la propiedad.
+ */
+function repairLeftyPairs(
+  pairs: Array<[PlayerProfile, PlayerProfile]>,
+  disallowedPairs: Set<string>,
+): Array<[PlayerProfile, PlayerProfile]> {
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < pairs.length; i++) {
+      const [a1, b1] = pairs[i];
+      if (!(isLefty(a1) && isLefty(b1))) continue;
+
+      for (let j = 0; j < pairs.length; j++) {
+        if (i === j) continue;
+        const [a2, b2] = pairs[j];
+
+        if (canPair(a1, b2, disallowedPairs) && canPair(b1, a2, disallowedPairs)) {
+          pairs[i] = [a1, b2];
+          pairs[j] = [b1, a2];
+          changed = true;
+          break;
+        }
+        if (canPair(a1, a2, disallowedPairs) && canPair(b1, b2, disallowedPairs)) {
+          pairs[i] = [a1, a2];
+          pairs[j] = [b1, b2];
+          changed = true;
+          break;
+        }
+      }
+      if (changed) break;
+    }
+  }
+  return pairs;
+}
+
 export function pairPlayers(
   players: PlayerProfile[],
   method: DrawMethod,
@@ -197,6 +237,8 @@ export function pairPlayers(
     }
   }
 
+  repairLeftyPairs(pairs, disallowedPairs);
+
   return pairs;
 }
 
@@ -248,6 +290,22 @@ export function getDrawValidationError(playerCount: number): string | null {
   }
   if (playerCount % 2 !== 0) {
     return "El número de jugadores debe ser par para sortear.";
+  }
+  return null;
+}
+
+/**
+ * Comprueba que exista reparto donde nunca coincidan dos zurdos: cada zurdo
+ * debe emparejarse con un diestro, por lo que se necesita al menos tantos
+ * diestros como zurdos.
+ */
+export function getLeftyDrawError(
+  players: PlayerProfile[],
+): string | null {
+  const lefties = players.filter((p) => p.dominant_hand === "LEFT").length;
+  const righties = players.length - lefties;
+  if (lefties > righties) {
+    return `No es posible sortear sin juntar dos zurdos: hay ${lefties} zurdos y solo ${righties} diestros.`;
   }
   return null;
 }
