@@ -11,11 +11,18 @@ export default function LoginPage() {
   const [selected, setSelected] = useState<"guest" | "admin" | null>(null);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   async function enterGuest() {
-    setSelected("guest");
-    await loginAsGuest();
-    router.push("/jugadores");
+    setLoading(true);
+    setError(null);
+    try {
+      await loginAsGuest();
+      router.push("/jugadores");
+    } catch {
+      setLoading(false);
+      setError("No se pudo entrar como invitado. Inténtalo de nuevo.");
+    }
   }
 
   async function confirmAdmin(e: React.FormEvent<HTMLFormElement>) {
@@ -42,8 +49,27 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {selected === null ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-10">
+            <span
+              role="status"
+              aria-busy="true"
+              className="material-symbols-outlined animate-spin text-secondary-container"
+              style={{ fontSize: "40px" }}
+            >
+              progress_activity
+            </span>
+            <p className="text-sm text-on-surface-variant">
+              Entrando como invitado…
+            </p>
+          </div>
+        ) : selected === null ? (
           <div className="space-y-4">
+            {error && (
+              <div className="bg-error-container/20 border border-error/30 text-error rounded-xl px-4 py-3 text-sm">
+                {error}
+              </div>
+            )}
             <button
               onClick={enterGuest}
               className="w-full bg-primary text-on-primary py-4 rounded-2xl font-medium hover:bg-white transition-colors"
