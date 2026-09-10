@@ -32,7 +32,7 @@ describe("DrawService", () => {
       drawnPairRepo: {
         findAll: vi.fn(),
         findAllWithProfiles: vi.fn(),
-        deleteAll: vi.fn(),
+        archiveAll: vi.fn(),
         insert: vi.fn(),
       },
       tournamentDrawnPairRepo: {
@@ -74,7 +74,7 @@ describe("DrawService", () => {
       const res = await service.drawPairs("random", "u1");
       expect(res.ok).toBe(false);
       expect((res as { error: string }).error).toContain("al menos 4");
-      expect(repos.drawnPairRepo.deleteAll).not.toHaveBeenCalled();
+      expect(repos.drawnPairRepo.archiveAll).not.toHaveBeenCalled();
     });
 
     it("rejects an odd number of players", async () => {
@@ -97,7 +97,7 @@ describe("DrawService", () => {
     it("inserts pairs and reports no odd player for an even field", async () => {
       const { service, repos } = buildService();
       repos.playerRepo.findProfiles.mockResolvedValue(ok(makePlayers(4)));
-      repos.drawnPairRepo.deleteAll.mockResolvedValue(ok(undefined));
+      repos.drawnPairRepo.archiveAll.mockResolvedValue(ok(undefined));
       repos.matchHistoryRepo.findWinningPartnerships.mockResolvedValue(ok([]));
       repos.drawnPairRepo.insert.mockResolvedValue(
         ok([
@@ -142,23 +142,23 @@ describe("DrawService", () => {
           oddPlayer: null,
         }),
       );
-      expect(repos.drawnPairRepo.deleteAll).toHaveBeenCalledWith("u1");
+      expect(repos.drawnPairRepo.archiveAll).toHaveBeenCalledWith("u1");
       expect(repos.drawnPairRepo.insert).toHaveBeenCalled();
     });
 
-    it("propagates errors from deleteAll", async () => {
+    it("propagates errors from archiveAll", async () => {
       const { service, repos } = buildService();
       repos.playerRepo.findProfiles.mockResolvedValue(ok(makePlayers(4)));
-      repos.drawnPairRepo.deleteAll.mockResolvedValue(err("no delete"));
+      repos.drawnPairRepo.archiveAll.mockResolvedValue(err("no archive"));
 
       const res = await service.drawPairs("random", "u1");
-      expect(res).toEqual(err("no delete"));
+      expect(res).toEqual(err("no archive"));
     });
 
     it("propagates errors from findWinningPartnerships", async () => {
       const { service, repos } = buildService();
       repos.playerRepo.findProfiles.mockResolvedValue(ok(makePlayers(4)));
-      repos.drawnPairRepo.deleteAll.mockResolvedValue(ok(undefined));
+      repos.drawnPairRepo.archiveAll.mockResolvedValue(ok(undefined));
       repos.matchHistoryRepo.findWinningPartnerships.mockResolvedValue(
         err("no history"),
       );
@@ -170,7 +170,7 @@ describe("DrawService", () => {
     it("propagates errors from insert", async () => {
       const { service, repos } = buildService();
       repos.playerRepo.findProfiles.mockResolvedValue(ok(makePlayers(4)));
-      repos.drawnPairRepo.deleteAll.mockResolvedValue(ok(undefined));
+      repos.drawnPairRepo.archiveAll.mockResolvedValue(ok(undefined));
       repos.matchHistoryRepo.findWinningPartnerships.mockResolvedValue(ok([]));
       repos.drawnPairRepo.insert.mockResolvedValue(err("no insert"));
 

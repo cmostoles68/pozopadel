@@ -30,7 +30,7 @@ test.afterAll(async () => {
 
 async function playedPairNumbers(): Promise<number[]> {
   const { rows } = await client.query(
-    "SELECT pair_number FROM drawn_pairs WHERE user_uuid = $1 ORDER BY pair_number",
+    "SELECT pair_number FROM drawn_pairs WHERE user_uuid = $1 AND is_active ORDER BY pair_number",
     [GUEST_UUID],
   );
   return rows.map((r) => Number(r.pair_number));

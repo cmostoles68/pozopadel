@@ -6,6 +6,7 @@ import type {
   DrawnPair,
   TournamentDrawnPair,
   DrawMethod,
+  DrawnPairWithProfile,
 } from "@/domain/entities/pair";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ok } from "@/domain/result";
@@ -20,6 +21,7 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
       .from("drawn_pairs")
       .select("*")
       .eq("user_uuid", userUuid)
+      .eq("is_active", true)
       .order("pair_number");
     return ok((data ?? []) as DrawnPair[]);
   }
@@ -28,9 +30,24 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
     const pairs = await this.findAll(userUuid);
     if (!pairs.ok) return pairs;
     if (pairs.data.length === 0) return ok([]);
+    return this.withProfiles(userUuid, pairs.data);
+  }
+
+  async findByIdsWithProfiles(userUuid: string, ids: string[]) {
+    if (ids.length === 0) return ok([]);
+    const { data } = await this.supabase
+      .from("drawn_pairs")
+      .select("*")
+      .eq("user_uuid", userUuid)
+      .in("id", ids);
+    return this.withProfiles(userUuid, (data ?? []) as DrawnPair[]);
+  }
+
+  private async withProfiles(userUuid: string, pairs: DrawnPair[]) {
+    if (pairs.length === 0) return ok<DrawnPairWithProfile[]>([]);
 
     const playerIds = Array.from(
-      new Set(pairs.data.flatMap((p) => [p.player1_id, p.player2_id])),
+      new Set(pairs.flatMap((p) => [p.player1_id, p.player2_id])),
     );
 
     const { data: profiles } = await this.supabase
@@ -46,7 +63,7 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
     );
 
     return ok(
-      pairs.data.map((p) => {
+      pairs.map((p) => {
         const p1 = profileMap.get(p.player1_id);
         const p2 = profileMap.get(p.player2_id);
         const avg = p1?.level && p2?.level ? (p1.level + p2.level) / 2 : 0;
@@ -71,11 +88,12 @@ export class SupabaseDrawnPairAdapter implements IDrawnPairRepository {
     );
   }
 
-  async deleteAll(userUuid: string) {
+  async archiveAll(userUuid: string) {
     const { error } = await this.supabase
       .from("drawn_pairs")
-      .delete()
-      .eq("user_uuid", userUuid);
+      .update({ is_active: false })
+      .eq("user_uuid", userUuid)
+      .eq("is_active", true);
     if (error) return safeErr(error);
     return ok(undefined);
   }

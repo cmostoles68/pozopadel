@@ -370,6 +370,75 @@ describe("SupabaseDrawnPairAdapter", () => {
     });
   });
 
+  it("findAll filters to active pairs only", async () => {
+    const { adapter, from } = buildAdapter();
+    const rows = [{ id: "d1", pair_number: 1 }];
+    const builder = createQueryBuilder({ data: rows, error: null });
+    from.mockReturnValue(builder);
+
+    await adapter.findAll("u1");
+    expect(builder.eq).toHaveBeenCalledWith("user_uuid", "u1");
+    expect(builder.eq).toHaveBeenCalledWith("is_active", true);
+  });
+
+  it("findByIdsWithProfiles returns empty for no ids", async () => {
+    const { adapter, from } = buildAdapter();
+    const res = await adapter.findByIdsWithProfiles("u1", []);
+    expect(res).toEqual(ok([]));
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("findByIdsWithProfiles enriches pairs by id ignoring is_active", async () => {
+    const { adapter, from } = buildAdapter();
+    from.mockImplementation((table: string) =>
+      createQueryBuilder({
+        data:
+          table === "drawn_pairs"
+            ? [
+                {
+                  id: "d9",
+                  pair_number: 9,
+                  player1_id: "p1",
+                  player2_id: "p2",
+                  draw_method: "random",
+                },
+              ]
+            : [{ id: "p1", full_name: "Ana", level: 6, dominant_hand: "LEFT" }],
+        error: null,
+      }),
+    );
+
+    const res = await adapter.findByIdsWithProfiles("u1", ["d9"]);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.data[0]).toMatchObject({
+      id: "d9",
+      player1_name: "Ana",
+      is_lefty: true,
+    });
+  });
+
+  it("archiveAll sets is_active false scoped to user and only active rows", async () => {
+    const { adapter, from } = buildAdapter();
+    const builder = createQueryBuilder({ data: null, error: null });
+    from.mockReturnValue(builder);
+
+    await adapter.archiveAll("u1");
+    expect(builder.update).toHaveBeenCalledWith({ is_active: false });
+    expect(builder.eq).toHaveBeenCalledWith("user_uuid", "u1");
+    expect(builder.eq).toHaveBeenCalledWith("is_active", true);
+  });
+
+  it("archiveAll propagates errors", async () => {
+    const { adapter, from } = buildAdapter();
+    from.mockReturnValue(
+      createQueryBuilder({ data: null, error: { message: "fk" } }),
+    );
+
+    const res = await adapter.archiveAll("u1");
+    expect(res).toEqual(err("fk"));
+  });
+
   it("insert stamps rows with user_uuid and returns them", async () => {
     const { adapter, from } = buildAdapter();
     const inserted = [

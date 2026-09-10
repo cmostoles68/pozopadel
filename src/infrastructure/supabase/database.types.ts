@@ -39,6 +39,7 @@ export type Database = {
           created_at: string;
           draw_method: string | null;
           id: string;
+          is_active: boolean;
           pair_number: number;
           player1_id: string;
           player2_id: string;
@@ -48,6 +49,7 @@ export type Database = {
           created_at?: string;
           draw_method?: string | null;
           id?: string;
+          is_active?: boolean;
           pair_number: number;
           player1_id: string;
           player2_id: string;
@@ -57,6 +59,7 @@ export type Database = {
           created_at?: string;
           draw_method?: string | null;
           id?: string;
+          is_active?: boolean;
           pair_number?: number;
           player1_id?: string;
           player2_id?: string;

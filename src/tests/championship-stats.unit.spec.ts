@@ -18,7 +18,7 @@ function buildService(overrides?: {
       ),
     },
     drawnPairRepo: {
-      findAllWithProfiles: vi.fn(async () =>
+      findByIdsWithProfiles: vi.fn(async () =>
         overrides?.pairsErr ? err(overrides.pairsErr) : ok(pairs),
       ),
     },

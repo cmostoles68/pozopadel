@@ -11,7 +11,11 @@ export interface IDrawnPairRepository {
   findAllWithProfiles(
     userUuid: string,
   ): Promise<Result<DrawnPairWithProfile[]>>;
-  deleteAll(userUuid: string): Promise<Result<void>>;
+  findByIdsWithProfiles(
+    userUuid: string,
+    ids: string[],
+  ): Promise<Result<DrawnPairWithProfile[]>>;
+  archiveAll(userUuid: string): Promise<Result<void>>;
   insert(
     pairs: {
       pair_number: number;

@@ -21,12 +21,12 @@ export default async function PozoPage(props: {
   const tournament = tournamentRes.data;
   if (!tournament) notFound();
 
-  const [allPairs, selectedPairs] = await Promise.all([
+  const [allPairs, selectedPairs, pozoRounds] = await Promise.all([
     drawService.getDrawnPairsWithProfiles(userUuid).then(requireResult),
     drawService.getTournamentSelectedPairs(id).then(requireResult),
+    roundService.getRounds(id).then(requireResult),
   ]);
 
-  const pozoRounds = requireResult(await roundService.getRounds(id));
   const pozoRoundPairs = await Promise.all(
     pozoRounds.map((r) => roundService.getRoundPairs(r.id).then(requireResult)),
   );
@@ -38,13 +38,34 @@ export default async function PozoPage(props: {
     pairs: pozoRoundPairs[i],
   }));
 
+  const referencedPairIds = Array.from(
+    new Set(
+      pozoRoundPairs
+        .flat()
+        .map((p) => p.drawn_pair_id)
+        .concat(selectedPairs.map((sp) => sp.drawn_pair_id))
+        .concat(
+          tournament.champion_drawn_pair_id
+            ? [tournament.champion_drawn_pair_id]
+            : [],
+        ),
+    ),
+  );
+
+  const referencedPairs = requireResult(
+    await drawService.getDrawnPairsWithProfilesByIds(userUuid, referencedPairIds),
+  );
+
+  const pairById = new Map(
+    [...referencedPairs, ...allPairs].map((p) => [p.id, p]),
+  );
+
   const activePozoRound = roundsData.find((r) => r.status === "in_progress");
 
   const completed = tournament.status === "completed";
   const champion =
     completed && tournament.champion_drawn_pair_id
-      ? (allPairs.find((p) => p.id === tournament.champion_drawn_pair_id) ??
-        null)
+      ? (pairById.get(tournament.champion_drawn_pair_id) ?? null)
       : null;
 
   return (
@@ -72,14 +93,14 @@ export default async function PozoPage(props: {
 
         <PairSelector
           tournamentId={id}
-          allPairs={allPairs}
+          allPairs={[...pairById.values()]}
           selectedPairs={selectedPairs}
           status={tournament.status}
         />
 
         <CourtScoring
           tournamentId={id}
-          allPairs={allPairs}
+          allPairs={[...pairById.values()]}
           rounds={roundsData}
           completed={completed}
           champion={champion}

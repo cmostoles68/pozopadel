@@ -6,6 +6,7 @@ export interface DrawnPair {
   player1_id: string;
   player2_id: string;
   draw_method: DrawMethod;
+  is_active: boolean;
   created_at: string;
 }
 

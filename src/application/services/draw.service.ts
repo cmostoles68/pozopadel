@@ -52,7 +52,7 @@ export class DrawService {
       return err(leftyError);
     }
 
-    const cleared = await this.drawnPairRepo.deleteAll(userUuid);
+    const cleared = await this.drawnPairRepo.archiveAll(userUuid);
     if (!cleared.ok) return cleared;
 
     const winningPartnerships =
@@ -106,11 +106,18 @@ export class DrawService {
   }
 
   async clearPairs(userUuid: string): Promise<Result<void>> {
-    return this.drawnPairRepo.deleteAll(userUuid);
+    return this.drawnPairRepo.archiveAll(userUuid);
   }
 
   async getDrawnPairsWithProfiles(userUuid: string) {
     return this.drawnPairRepo.findAllWithProfiles(userUuid);
+  }
+
+  async getDrawnPairsWithProfilesByIds(
+    userUuid: string,
+    ids: string[],
+  ) {
+    return this.drawnPairRepo.findByIdsWithProfiles(userUuid, ids);
   }
 
   async getTournamentSelectedPairs(

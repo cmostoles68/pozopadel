@@ -13,10 +13,10 @@ test.afterAll(async () => {
 });
 
 test.describe("Root", () => {
-  test("redirects to auth login", async ({ page }) => {
+  test("redirects root to jugadores", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page).toHaveURL(/\/auth\/login/);
+    await expect(page).toHaveURL(/\/jugadores/);
   });
 });
 

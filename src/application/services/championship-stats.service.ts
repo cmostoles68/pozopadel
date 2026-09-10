@@ -41,11 +41,19 @@ export class ChampionshipStatsService {
   async countByDrawnPairs(
     userUuid: string,
   ): Promise<Result<Record<string, number>>> {
-    const [tournamentsRes, pairsRes] = await Promise.all([
+    const [tournamentsRes] = await Promise.all([
       this.tournamentRepo.findAll(userUuid),
-      this.drawnPairRepo.findAllWithProfiles(userUuid),
     ]);
     if (!tournamentsRes.ok) return tournamentsRes;
+
+    const championIds = tournamentsRes.data
+      .map((t) => t.champion_drawn_pair_id)
+      .filter((id): id is string => Boolean(id));
+
+    const pairsRes = await this.drawnPairRepo.findByIdsWithProfiles(
+      userUuid,
+      championIds,
+    );
     if (!pairsRes.ok) return pairsRes;
 
     const pairMembersById = new Map<string, [string, string]>();
