@@ -4,6 +4,7 @@ import TournamentStatusHeader from "@/components/TournamentStatusHeader";
 import RoundTimer from "@/components/RoundTimer";
 import PairSelector from "./PairSelector";
 import CourtScoring from "./CourtScoring";
+import type { PairInfo } from "./types";
 import { createServices } from "@/infrastructure/service-factory";
 import { getCurrentUserUuid } from "@/infrastructure/supabase/current-user";
 import { requireResult } from "@/domain/result";
@@ -12,7 +13,7 @@ export default async function PozoPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await props.params;
-  const { tournamentService, drawService, roundService } =
+  const { tournamentService, drawService, roundService, matchHistoryService } =
     await createServices();
   const userUuid = await getCurrentUserUuid();
 
@@ -21,11 +22,13 @@ export default async function PozoPage(props: {
   const tournament = tournamentRes.data;
   if (!tournament) notFound();
 
-  const [allPairs, selectedPairs, pozoRounds] = await Promise.all([
-    drawService.getDrawnPairsWithProfiles(userUuid).then(requireResult),
-    drawService.getTournamentSelectedPairs(id).then(requireResult),
-    roundService.getRounds(id).then(requireResult),
-  ]);
+  const [allPairs, selectedPairs, pozoRounds, historyRows] =
+    await Promise.all([
+      drawService.getDrawnPairsWithProfiles(userUuid).then(requireResult),
+      drawService.getTournamentSelectedPairs(id).then(requireResult),
+      roundService.getRounds(id).then(requireResult),
+      matchHistoryService.findByTournament(id, userUuid).then(requireResult),
+    ]);
 
   const pozoRoundPairs = await Promise.all(
     pozoRounds.map((r) => roundService.getRoundPairs(r.id).then(requireResult)),
@@ -63,10 +66,27 @@ export default async function PozoPage(props: {
   const activePozoRound = roundsData.find((r) => r.status === "in_progress");
 
   const completed = tournament.status === "completed";
-  const champion =
-    completed && tournament.champion_drawn_pair_id
-      ? (pairById.get(tournament.champion_drawn_pair_id) ?? null)
+  let champion: PairInfo | null = null;
+  if (completed) {
+    const championPair = tournament.champion_drawn_pair_id
+      ? pairById.get(tournament.champion_drawn_pair_id)
       : null;
+    if (championPair) {
+      champion = championPair as PairInfo;
+    } else if (historyRows.length > 0) {
+      // La pareja ganadora ya no existe (p.ej. jugadores borrados): el campeón
+      // sobrevive gracias a los datos denormalizados del histórico.
+      const row = historyRows[0];
+      champion = {
+        id: row.winner_drawn_pair_id ?? `history-${row.id}`,
+        pair_number: 0,
+        player1_name: row.winner_player1_name ?? "Jugador",
+        player2_name: row.winner_player2_name ?? "Jugador",
+        avg_level: 0,
+        is_lefty: false,
+      };
+    }
+  }
 
   return (
     <AppShell>

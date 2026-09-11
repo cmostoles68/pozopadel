@@ -269,6 +269,22 @@ test.describe("Pozo: selección de parejas y sorteo de pistas", () => {
     ).toBeVisible();
     await expect(page.getByTestId("round-1")).not.toBeVisible();
   });
+
+  test("avisa si el numero de parejas es impar", async ({ page }) => {
+    const { tournamentId, numbers } = await setupTournament(2, [0, 1, 2]);
+    await page.goto(`/pozos/${tournamentId}`);
+
+    for (const num of numbers) await clickSelect(page, num);
+    await expect(page.getByText("Seleccionadas (3)")).toBeVisible();
+
+    await page.getByRole("button", { name: "Sorteo pistas" }).click();
+    await expect(
+      page.getByText(
+        "El número de parejas seleccionadas debe ser par (hay 3) para poder repartirlas de dos en dos por pista.",
+      ),
+    ).toBeVisible();
+    await expect(page.getByTestId("round-1")).not.toBeVisible();
+  });
 });
 
 // Maps pair_number -> court_number for a given round of a tournament.

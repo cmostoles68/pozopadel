@@ -47,4 +47,7 @@ export interface IMatchHistoryRepository {
       { a: string; b: string; wins: number; total: number; winRate: number }[]
     >
   >;
+  findChampionPartnerships(
+    userUuid: string,
+  ): Promise<Result<{ a: string; b: string }[]>>;
 }

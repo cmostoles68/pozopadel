@@ -190,4 +190,22 @@ export class SupabaseMatchHistoryAdapter implements IMatchHistoryRepository {
       computeWinningPartnerships(history ?? [], minMatches, minWinRate),
     );
   }
+
+  async findChampionPartnerships(userUuid: string) {
+    const { data: history } = await this.supabase
+      .from("pozo_match_history")
+      .select("winner_player1_id, winner_player2_id")
+      .eq("user_uuid", userUuid);
+
+    const seen = new Set<string>();
+    const partnerships: { a: string; b: string }[] = [];
+    for (const row of history ?? []) {
+      const [a, b] = [row.winner_player1_id, row.winner_player2_id].sort();
+      const key = `${a}|${b}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      partnerships.push({ a, b });
+    }
+    return ok(partnerships);
+  }
 }

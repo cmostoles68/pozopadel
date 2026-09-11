@@ -12,16 +12,19 @@ export default function ChampionBanner({ champion }: { champion: PairInfo }) {
           🏆 Campeón del pozo
         </div>
         <div className="mt-4 flex items-center justify-center gap-4">
-          <PairBadge
-            number={champion.pair_number}
-            className="bg-secondary-fixed-dim w-14 h-14 text-xl"
-          />
+          {champion.pair_number > 0 && (
+            <PairBadge
+              number={champion.pair_number}
+              className="bg-secondary-fixed-dim w-14 h-14 text-xl"
+            />
+          )}
           <span className="font-display text-3xl font-bold text-on-surface">
             {champion.player1_name} &amp; {champion.player2_name}
           </span>
         </div>
         <p className="mt-3 text-sm text-secondary-fixed-dim">
-          Ganadores de la pista 1 · Pareja {champion.pair_number}
+          Ganadores de la pista 1
+          {champion.pair_number > 0 ? ` · Pareja ${champion.pair_number}` : ""}
         </p>
       </div>
     </div>

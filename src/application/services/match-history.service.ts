@@ -12,6 +12,13 @@ export class MatchHistoryService {
     return this.matchHistoryRepo.findAll(userUuid);
   }
 
+  async findByTournament(
+    tournamentId: string,
+    userUuid: string,
+  ): Promise<Result<MatchHistoryRow[]>> {
+    return this.matchHistoryRepo.findByTournament(tournamentId, userUuid);
+  }
+
   async findLatestPlayerSnapshot(
     userUuid: string,
     playerId: string,

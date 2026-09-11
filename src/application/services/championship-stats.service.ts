@@ -1,12 +1,11 @@
 import type { ITournamentRepository } from "@/domain/repositories/tournament.repository";
 import type { IDrawnPairRepository } from "@/domain/repositories/pair.repository";
 import type { IMatchHistoryRepository } from "@/domain/repositories/match.repository";
+import type { Tournament } from "@/domain/entities/tournament";
+import type { MatchHistoryRow } from "@/domain/entities/match";
 import type { Result } from "@/domain/result";
 import { ok } from "@/domain/result";
-import {
-  countChampionshipsByDrawnPairIds,
-  countChampionshipsByPairIds,
-} from "@/domain/stats/championships";
+import { countChampionshipsByPairIds } from "@/domain/stats/championships";
 
 export interface HistoryChampionPlayer {
   id: string;
@@ -37,12 +36,13 @@ export class ChampionshipStatsService {
     private matchHistoryRepo: IMatchHistoryRepository,
   ) {}
 
-  /** Campeones por jugador a partir de los pares sorteados de los torneos. */
+  /** Campeones por jugador a partir del histórico de partidos y de los pares sorteados. */
   async countByDrawnPairs(
     userUuid: string,
   ): Promise<Result<Record<string, number>>> {
-    const [tournamentsRes] = await Promise.all([
+    const [tournamentsRes, historyRes] = await Promise.all([
       this.tournamentRepo.findAll(userUuid),
+      this.matchHistoryRepo.findAll(userUuid),
     ]);
     if (!tournamentsRes.ok) return tournamentsRes;
 
@@ -61,12 +61,22 @@ export class ChampionshipStatsService {
       pairMembersById.set(p.id, [p.player1_id, p.player2_id]);
     }
 
-    return ok(
-      countChampionshipsByDrawnPairIds(
-        tournamentsRes.data.map((t) => t.champion_drawn_pair_id),
-        pairMembersById,
-      ),
-    );
+    const championPairs: [string, string][] = [];
+    for (const t of tournamentsRes.data) {
+      const members = historyRes.ok
+        ? this.findChampionMembers(historyRes.data, t)
+        : undefined;
+      if (members) {
+        championPairs.push(members);
+        continue;
+      }
+      if (t.champion_drawn_pair_id) {
+        const pairMembers = pairMembersById.get(t.champion_drawn_pair_id);
+        if (pairMembers) championPairs.push(pairMembers);
+      }
+    }
+
+    return ok(countChampionshipsByPairIds(championPairs));
   }
 
   /** Campeones por torneo y conteos desde el histórico de partidos. */
@@ -84,13 +94,7 @@ export class ChampionshipStatsService {
     const championPairs: [string, string][] = [];
 
     for (const t of tournamentsRes.data) {
-      if (!t.champion_drawn_pair_id) {
-        championsByTournament.set(t.id, null);
-        continue;
-      }
-      const row = historyRes.data.find(
-        (h) => h.winner_drawn_pair_id === t.champion_drawn_pair_id,
-      );
+      const row = this.findChampionRow(historyRes.data, t);
       if (!row) {
         championsByTournament.set(t.id, null);
         continue;
@@ -113,5 +117,32 @@ export class ChampionshipStatsService {
       counts: countChampionshipsByPairIds(championPairs),
       championsByTournament,
     });
+  }
+
+  /**
+   * Fila de histórico del torneo. Primero empareja por `tournament_id` (sobrevive
+   * aunque las parejas se borren y `champion_drawn_pair_id` quede a null); como
+   * fallback usa la pareja ganadora coincidente.
+   */
+  private findChampionRow(
+    history: MatchHistoryRow[],
+    tournament: Tournament,
+  ): MatchHistoryRow | undefined {
+    return (
+      history.find((h) => h.tournament_id === tournament.id) ??
+      (tournament.champion_drawn_pair_id
+        ? history.find(
+            (h) => h.winner_drawn_pair_id === tournament.champion_drawn_pair_id,
+          )
+        : undefined)
+    );
+  }
+
+  private findChampionMembers(
+    history: MatchHistoryRow[],
+    tournament: Tournament,
+  ): [string, string] | undefined {
+    const row = this.findChampionRow(history, tournament);
+    return row ? [row.winner_player1_id, row.winner_player2_id] : undefined;
   }
 }

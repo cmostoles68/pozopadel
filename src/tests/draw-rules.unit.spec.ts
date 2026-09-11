@@ -166,4 +166,25 @@ describe("pairPlayers never pairs two lefties", () => {
       }
     }
   });
+
+  it.each(methods)(
+    "does not reproduce a champion couple when everyone shares gender in %s",
+    (method) => {
+      const players = [
+        player("1", "RIGHT"),
+        player("2", "RIGHT"),
+        player("3", "RIGHT"),
+        player("4", "RIGHT"),
+        player("5", "RIGHT"),
+        player("6", "RIGHT"),
+      ];
+      const disallowed = new Set(["3|4"]);
+      const pairs = pairPlayers(players, method, disallowed);
+      expect(pairs).toHaveLength(3);
+      for (const [a, b] of pairs) {
+        const key = [a.id, b.id].sort().join("|");
+        expect(disallowed.has(key)).toBe(false);
+      }
+    },
+  );
 });

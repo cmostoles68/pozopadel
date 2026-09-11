@@ -8,6 +8,7 @@ import type { IPozoRoundRepository } from "@/domain/repositories/round.repositor
 import type { ITournamentRepository } from "@/domain/repositories/tournament.repository";
 import type { DrawMethod } from "@/domain/entities/pair";
 import type { TournamentDrawnPair } from "@/domain/entities/pair";
+import type { PlayerProfile } from "@/domain/entities/player";
 import type { Result } from "@/domain/result";
 import { err } from "@/domain/result";
 import {
@@ -55,15 +56,32 @@ export class DrawService {
     const cleared = await this.drawnPairRepo.archiveAll(userUuid);
     if (!cleared.ok) return cleared;
 
-    const winningPartnerships =
-      await this.matchHistoryRepo.findWinningPartnerships(userUuid);
+    const [winningPartnerships, championPartnerships] = await Promise.all([
+      this.matchHistoryRepo.findWinningPartnerships(userUuid),
+      this.matchHistoryRepo.findChampionPartnerships(userUuid),
+    ]);
     if (!winningPartnerships.ok) return winningPartnerships;
+    if (!championPartnerships.ok) return championPartnerships;
 
-    const disallowedPairs = new Set(
-      winningPartnerships.data.map((p) => [p.a, p.b].sort().join("|")),
-    );
+    const disallowedPairs = new Set([
+      ...winningPartnerships.data.map((p) => [p.a, p.b].sort().join("|")),
+      ...championPartnerships.data.map((p) => [p.a, p.b].sort().join("|")),
+    ]);
 
+    const respectsRule = (pairings: Array<[PlayerProfile, PlayerProfile]>) =>
+      pairings.every(
+        (pair) =>
+          !disallowedPairs.has([pair[0].id, pair[1].id].sort().join("|")),
+      );
+
+    // `pairPlayers` repara internamente las parejas prohibidas; si ninguna
+    // combinación respeta la regla, se descarta el sorteo en vez de violarla.
     const paired = pairPlayers(players.data, method, disallowedPairs);
+    if (!respectsRule(paired)) {
+      return err(
+        "No hay reparto de parejas que evite repetir una pareja que ya ha ganado un pozo. Añade más jugadores o cambia el método de sorteo.",
+      );
+    }
 
     const pairsToInsert = paired.map(([a, b], i) => ({
       pair_number: i + 1,
@@ -176,6 +194,12 @@ export class DrawService {
     if (selected.data.length > maxPairs) {
       return err(
         `Hay ${selected.data.length} parejas pero solo ${tournament.data.number_of_courts} pistas (caben ${maxPairs}). Elimina alguna pareja o añade pistas.`,
+      );
+    }
+
+    if (selected.data.length % 2 !== 0) {
+      return err(
+        `El número de parejas seleccionadas debe ser par (hay ${selected.data.length}) para poder repartirlas de dos en dos por pista.`,
       );
     }
 

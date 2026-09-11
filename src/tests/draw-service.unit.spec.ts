@@ -45,7 +45,10 @@ describe("DrawService", () => {
         getSelectedWithCourt: vi.fn(),
       },
       playerRepo: { findProfiles: vi.fn() },
-      matchHistoryRepo: { findWinningPartnerships: vi.fn() },
+      matchHistoryRepo: {
+        findWinningPartnerships: vi.fn(),
+        findChampionPartnerships: vi.fn(async () => ok([])),
+      },
       pozoRoundRepo: {
         deleteByTournament: vi.fn(),
         findRound1IfExists: vi.fn(),
@@ -170,6 +173,58 @@ describe("DrawService", () => {
       expect(res).toEqual(err("no history"));
     });
 
+    it("propagates errors from findChampionPartnerships", async () => {
+      const { service, repos } = buildService();
+      repos.playerRepo.findProfiles.mockResolvedValue(ok(makePlayers(4)));
+      repos.drawnPairRepo.archiveAll.mockResolvedValue(ok(undefined));
+      repos.matchHistoryRepo.findWinningPartnerships.mockResolvedValue(ok([]));
+      repos.matchHistoryRepo.findChampionPartnerships.mockResolvedValue(
+        err("no champions"),
+      );
+
+      const res = await service.drawPairs("random", "u1");
+      expect(res).toEqual(err("no champions"));
+    });
+
+    it("no sortea juntos a los jugadores de una pareja que ya ganó un pozo", async () => {
+      const { service, repos } = buildService();
+      repos.playerRepo.findProfiles.mockResolvedValue(ok(makePlayers(4)));
+      repos.drawnPairRepo.archiveAll.mockResolvedValue(ok(undefined));
+      repos.matchHistoryRepo.findWinningPartnerships.mockResolvedValue(ok([]));
+      repos.matchHistoryRepo.findChampionPartnerships.mockResolvedValue(
+        ok([{ a: "p1", b: "p2" }]),
+      );
+      repos.drawnPairRepo.insert.mockImplementation(
+      async (rows: {
+        pair_number: number;
+        player1_id: string;
+        player2_id: string;
+        draw_method: string;
+      }[]) =>
+        ok(
+          rows.map((row) => ({
+            id: `d-${row.pair_number}`,
+            pair_number: row.pair_number,
+            player1_id: row.player1_id,
+            player2_id: row.player2_id,
+            draw_method: row.draw_method,
+            created_at: "",
+          })),
+        ),
+    );
+
+      const res = await service.drawPairs("random", "u1");
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+
+      const championCouple = res.data.pairs.some(
+        (p) =>
+          (p.player1_id === "p1" && p.player2_id === "p2") ||
+          (p.player1_id === "p2" && p.player2_id === "p1"),
+      );
+      expect(championCouple).toBe(false);
+    });
+
     it("propagates errors from insert", async () => {
       const { service, repos } = buildService();
       repos.playerRepo.findProfiles.mockResolvedValue(ok(makePlayers(4)));
@@ -224,6 +279,27 @@ describe("DrawService", () => {
       expect((res as { error: string }).error).toContain("2 pistas");
     });
 
+    it("rejects an odd number of selected pairs", async () => {
+      const { service, repos } = buildService();
+      repos.tournamentRepo.findById.mockResolvedValue(
+        ok({ id: "t1", number_of_courts: 2 } as unknown as Tournament),
+      );
+      repos.tournamentDrawnPairRepo.findByTournament.mockResolvedValue(
+        ok(
+          [1, 2, 3].map((n) => ({
+            id: `s${n}`,
+          })) as unknown as TournamentDrawnPair[],
+        ),
+      );
+
+      const res = await service.drawCourts("t1", "u1");
+      expect(res.ok).toBe(false);
+      expect((res as { error: string }).error).toContain("debe ser par");
+      expect(
+        repos.tournamentDrawnPairRepo.updateCourtNumber,
+      ).not.toHaveBeenCalled();
+    });
+
     it("assigns two pairs per court", async () => {
       const { service, repos } = buildService();
       repos.tournamentRepo.findById.mockResolvedValue(
@@ -257,7 +333,7 @@ describe("DrawService", () => {
       );
       repos.tournamentDrawnPairRepo.findByTournament.mockResolvedValue(
         ok(
-          [1, 2, 3].map((n) => ({
+          [1, 2, 3, 4].map((n) => ({
             id: `s${n}`,
           })) as unknown as TournamentDrawnPair[],
         ),

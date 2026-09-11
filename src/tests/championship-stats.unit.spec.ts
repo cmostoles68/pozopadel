@@ -8,23 +8,28 @@ function buildService(overrides?: {
   tournamentErr?: string;
   historyErr?: string;
   pairsErr?: string;
+  tournaments?: typeof tournaments;
+  history?: typeof history;
+  pairs?: typeof pairs;
 }) {
   const repos: Record<string, Mock> = {
     tournamentRepo: {
       findAll: vi.fn(async () =>
         overrides?.tournamentErr
           ? err(overrides.tournamentErr)
-          : ok(tournaments),
+          : ok(overrides?.tournaments ?? tournaments),
       ),
     },
     drawnPairRepo: {
       findByIdsWithProfiles: vi.fn(async () =>
-        overrides?.pairsErr ? err(overrides.pairsErr) : ok(pairs),
+        overrides?.pairsErr
+          ? err(overrides.pairsErr)
+          : ok(overrides?.pairs ?? pairs),
       ),
     },
     matchHistoryRepo: {
       findAll: vi.fn(async () =>
-        overrides?.historyErr ? err(overrides.historyErr) : ok(history),
+        overrides?.historyErr ? err(overrides.historyErr) : ok(overrides?.history ?? history),
       ),
     },
   };
@@ -123,5 +128,51 @@ describe("ChampionshipStatsService", () => {
     const service = buildService({ historyErr: "boom histórico" });
     const result = await service.countByHistory("user-1");
     expect(result).toEqual(err("boom histórico"));
+  });
+
+  it("cuenta el campeón desde el histórico aunque champion_drawn_pair_id se haya anulado", async () => {
+    const service = buildService({
+      tournaments: [{ id: "S1", champion_drawn_pair_id: null, title: "Pozo s1" }],
+      history: [
+        {
+          tournament_id: "S1",
+          winner_drawn_pair_id: "P1",
+          winner_player1_id: "A",
+          winner_player1_name: "Ana",
+          winner_player2_id: "B",
+          winner_player2_name: "Bea",
+        },
+      ],
+    });
+    const result = await service.countByHistory("user-1");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const { counts, championsByTournament } = result.data;
+    expect(championsByTournament.get("S1")).toEqual({
+      player1: { id: "A", name: "Ana" },
+      player2: { id: "B", name: "Bea" },
+    });
+    expect(counts).toEqual({ A: 1, B: 1 });
+  });
+
+  it("cuenta el campeón en jugadores aunque las parejas se hayan borrado", async () => {
+    const service = buildService({
+      tournaments: [{ id: "S1", champion_drawn_pair_id: null, title: "Pozo s1" }],
+      history: [
+        {
+          tournament_id: "S1",
+          winner_drawn_pair_id: "P1",
+          winner_player1_id: "A",
+          winner_player1_name: "Ana",
+          winner_player2_id: "B",
+          winner_player2_name: "Bea",
+        },
+      ],
+      pairs: [],
+    });
+    const result = await service.countByDrawnPairs("user-1");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data).toEqual({ A: 1, B: 1 });
   });
 });

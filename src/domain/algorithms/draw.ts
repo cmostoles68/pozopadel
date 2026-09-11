@@ -69,6 +69,52 @@ function repairLeftyPairs(
   return pairs;
 }
 
+/**
+ * Elimina cualquier pareja que viole `canPair` (zurdo+zurdo o pareja prohibida)
+ * reemparejando a sus miembros con los de otra pareja. Igual que
+ * `repairLeftyPairs`, cada intercambio válido mantiene las restricciones; se
+ * usa sobre todo para que la rama de "sobrantes" de los métodos mixtos no
+ * deje juntos a jugadores de una pareja que ya ha ganado un pozo.
+ */
+function repairConstrainedPairs(
+  pairs: Array<[PlayerProfile, PlayerProfile]>,
+  disallowedPairs: Set<string>,
+): Array<[PlayerProfile, PlayerProfile]> {
+  const violates = (a: PlayerProfile, b: PlayerProfile) =>
+    !canPair(a, b, disallowedPairs);
+
+  let changed = true;
+  let guard = 0;
+  while (changed && guard <= pairs.length * pairs.length) {
+    changed = false;
+    guard++;
+    for (let i = 0; i < pairs.length; i++) {
+      const [a1, b1] = pairs[i];
+      if (!violates(a1, b1)) continue;
+
+      for (let j = 0; j < pairs.length; j++) {
+        if (i === j) continue;
+        const [a2, b2] = pairs[j];
+
+        if (canPair(a1, b2, disallowedPairs) && canPair(b1, a2, disallowedPairs)) {
+          pairs[i] = [a1, b2];
+          pairs[j] = [b1, a2];
+          changed = true;
+          break;
+        }
+        if (canPair(a1, a2, disallowedPairs) && canPair(b1, b2, disallowedPairs)) {
+          pairs[i] = [a1, a2];
+          pairs[j] = [b1, b2];
+          changed = true;
+          break;
+        }
+      }
+      if (changed) break;
+    }
+  }
+  return pairs;
+}
+
 export function pairPlayers(
   players: PlayerProfile[],
   method: DrawMethod,
@@ -238,6 +284,7 @@ export function pairPlayers(
   }
 
   repairLeftyPairs(pairs, disallowedPairs);
+  repairConstrainedPairs(pairs, disallowedPairs);
 
   return pairs;
 }
