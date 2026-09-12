@@ -169,6 +169,69 @@ describe("RoundService", () => {
       expect(res).toEqual(ok(undefined));
       expect(repos.matchHistoryRepo.upsert).not.toHaveBeenCalled();
     });
+
+    it("rejects a tie or lower score for the winner", async () => {
+      const { service, repos } = buildService();
+      repos.pozoRoundRepo.findById.mockResolvedValue(ok(round({ id: "r1" })));
+      repos.pozoRoundRepo.findCourtPairs.mockResolvedValue(
+        ok([
+          courtPair({ id: "rp1", drawn_pair_id: "d1" }),
+          courtPair({ id: "rp2", drawn_pair_id: "d2" }),
+        ]),
+      );
+
+      const tie = await service.saveCourtResult(
+        "r1",
+        1,
+        [
+          { drawnPairId: "d1", score: 6 },
+          { drawnPairId: "d2", score: 6 },
+        ],
+        "d1",
+      );
+      expect(tie).toEqual(
+        err("El marcador del ganador debe ser superior al del perdedor en cada pista."),
+      );
+
+      const lower = await service.saveCourtResult(
+        "r1",
+        1,
+        [
+          { drawnPairId: "d1", score: 5 },
+          { drawnPairId: "d2", score: 6 },
+        ],
+        "d1",
+      );
+      expect(lower).toEqual(
+        err("El marcador del ganador debe ser superior al del perdedor en cada pista."),
+      );
+
+      expect(repos.pozoRoundRepo.updatePairResult).not.toHaveBeenCalled();
+    });
+
+    it("accepts a strictly higher score for the winner", async () => {
+      const { service, repos } = buildService();
+      repos.pozoRoundRepo.findById.mockResolvedValue(ok(round({ id: "r1" })));
+      repos.pozoRoundRepo.findCourtPairs.mockResolvedValue(
+        ok([
+          courtPair({ id: "rp1", drawn_pair_id: "d1" }),
+          courtPair({ id: "rp2", drawn_pair_id: "d2" }),
+        ]),
+      );
+      repos.pozoRoundRepo.updatePairResult.mockResolvedValue(ok(undefined));
+
+      const res = await service.saveCourtResult(
+        "r1",
+        1,
+        [
+          { drawnPairId: "d1", score: 6 },
+          { drawnPairId: "d2", score: 4 },
+        ],
+        "d1",
+      );
+      expect(res).toEqual(ok(undefined));
+      expect(repos.pozoRoundRepo.updatePairResult).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe("checkAndStartNextRound", () => {

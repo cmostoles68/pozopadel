@@ -50,6 +50,19 @@ export class RoundService {
     const scoreMap: Record<string, number> = {};
     for (const r of results) scoreMap[r.drawnPairId] = r.score;
 
+    if (rows.data.length >= 2) {
+      const winnerScore = scoreMap[winnerDrawnPairId] ?? 0;
+      for (const row of rows.data) {
+        if (row.drawn_pair_id === winnerDrawnPairId) continue;
+        const loserScore = scoreMap[row.drawn_pair_id] ?? 0;
+        if (winnerScore <= loserScore) {
+          return err(
+            "El marcador del ganador debe ser superior al del perdedor en cada pista.",
+          );
+        }
+      }
+    }
+
     for (const row of rows.data) {
       const score = scoreMap[row.drawn_pair_id] ?? 0;
       const res = await this.pozoRoundRepo.updatePairResult({

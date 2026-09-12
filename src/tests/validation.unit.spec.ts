@@ -179,6 +179,30 @@ describe("saveCourtResultSchema", () => {
     });
     expect(res.success).toBe(false);
   });
+
+  it("rejects a tie or lower score for the winner", () => {
+    const tie = saveCourtResultSchema.safeParse({
+      roundId: "22222222-2222-2222-2222-222222222222",
+      courtNumber: 1,
+      winnerDrawnPairId: "33333333-3333-3333-3333-333333333333",
+      results: [
+        { drawnPairId: "33333333-3333-3333-3333-333333333333", score: 6 },
+        { drawnPairId: "44444444-4444-4444-4444-444444444444", score: 6 },
+      ],
+    });
+    expect(tie.success).toBe(false);
+
+    const lower = saveCourtResultSchema.safeParse({
+      roundId: "22222222-2222-2222-2222-222222222222",
+      courtNumber: 1,
+      winnerDrawnPairId: "33333333-3333-3333-3333-333333333333",
+      results: [
+        { drawnPairId: "33333333-3333-3333-3333-333333333333", score: 4 },
+        { drawnPairId: "44444444-4444-4444-4444-444444444444", score: 6 },
+      ],
+    });
+    expect(lower.success).toBe(false);
+  });
 });
 
 describe("uuidSchema (anti SQL / filter injection)", () => {

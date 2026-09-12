@@ -66,15 +66,32 @@ export const courtResultSchema = z
   )
   .min(1, "Debe haber al menos un resultado");
 
-export const saveCourtResultSchema = z.object({
-  roundId: uuidSchema,
-  courtNumber: z.coerce
-    .number()
-    .int()
-    .min(1, "El número de pista debe ser al menos 1"),
-  winnerDrawnPairId: uuidSchema,
-  results: courtResultSchema,
-});
+export const saveCourtResultSchema = z
+  .object({
+    roundId: uuidSchema,
+    courtNumber: z.coerce
+      .number()
+      .int()
+      .min(1, "El número de pista debe ser al menos 1"),
+    winnerDrawnPairId: uuidSchema,
+    results: courtResultSchema,
+  })
+  .superRefine((data, ctx) => {
+    const winnerScore =
+      data.results.find((r) => r.drawnPairId === data.winnerDrawnPairId)?.score ??
+      0;
+    const others = data.results.filter(
+      (r) => r.drawnPairId !== data.winnerDrawnPairId,
+    );
+    if (others.length > 0 && winnerScore <= Math.max(...others.map((r) => r.score))) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "El marcador del ganador debe ser superior al del perdedor en cada pista.",
+        path: ["results"],
+      });
+    }
+  });
 
 export const deleteTournamentSchema = z.object({ id: uuidSchema });
 

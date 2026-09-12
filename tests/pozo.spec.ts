@@ -392,6 +392,52 @@ test.describe("Pozo: registro de resultados y siguiente ronda", () => {
     );
   });
 
+  test("no permite registrar un marcador con el ganador por debajo o en empate", async ({
+    page,
+  }) => {
+    const { tournamentId, numbers } = await setupTournament(1, [0, 1]);
+    await page.goto(`/pozos/${tournamentId}`);
+
+    for (const num of numbers) await clickSelect(page, num);
+    await page.getByRole("button", { name: "Sorteo pistas" }).click();
+
+    await expect(page.getByTestId("round-1")).toBeVisible();
+    const [w, l] = numbers;
+
+    // Ganador con marcador INFERIOR al perdedor.
+    await page.getByTestId(`court-1-score-${w}`).fill("3");
+    await page.getByTestId(`court-1-score-${l}`).fill("6");
+    await page.getByTestId(`court-1-pair-${w}`).click();
+
+    const courtBox = courtSection(page, 1, w);
+    await expect(
+      courtBox.getByText("El marcador del ganador debe ser superior al del perdedor."),
+    ).toBeVisible();
+    await expect(
+      courtBox.getByRole("button", { name: "Registrar Marcador" }),
+    ).toBeDisabled();
+
+    // Con marcador EMPATADO tampoco se puede registrar.
+    await page.getByTestId(`court-1-score-${w}`).fill("6");
+    await page.getByTestId(`court-1-score-${l}`).fill("6");
+    await expect(
+      courtBox.getByRole("button", { name: "Registrar Marcador" }),
+    ).toBeDisabled();
+
+    // Nada se persistió en la BD.
+    const { rows } = await client.query(
+      `SELECT is_finished, score_a
+         FROM pozo_round_pairs rp
+         JOIN pozo_rounds r ON r.id = rp.round_id
+        WHERE r.tournament_id = $1`,
+      [tournamentId],
+    );
+    for (const row of rows) {
+      expect(row.is_finished).toBe(false);
+      expect(row.score_a).toBeNull();
+    }
+  });
+
   test("finalizar pozo desprecia la nueva ronda y corona al ganador de la pista 1 de la anterior", async ({
     page,
   }) => {

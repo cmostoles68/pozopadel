@@ -37,6 +37,19 @@ export default function CourtCard({
   const ordered = pairs.slice(0, Math.max(2, pairs.length));
   const finished = pairs.length >= 2 && pairs.every((p) => p.is_finished);
 
+  const winnerScore = winnerId
+    ? parseInt(scores[winnerId] ?? "0", 10) || 0
+    : 0;
+  const scoreIsValid =
+    !winnerId ||
+    pairs.length < 2 ||
+    pairs.every(
+      (p) =>
+        p.drawn_pair_id === winnerId ||
+        winnerScore >
+          (parseInt(scores[p.drawn_pair_id] ?? "0", 10) || 0),
+    );
+
   function persist(
     nextWinner: string | null,
     nextScores: Record<string, string>,
@@ -142,11 +155,16 @@ export default function CourtCard({
       </div>
 
       <div className="mt-4 flex justify-end">
+        {winnerId && !scoreIsValid && (
+          <p className="text-red-500 text-xs mr-4 self-center">
+            El marcador del ganador debe ser superior al del perdedor.
+          </p>
+        )}
         <button
           onClick={() => {
             if (winnerId) persist(winnerId, scores);
           }}
-          disabled={disabled || loading || !winnerId}
+          disabled={disabled || loading || !winnerId || !scoreIsValid}
           className="inline-flex items-center gap-2 rounded-full bg-secondary-container text-on-secondary-container px-3 py-2 text-xs font-medium hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <span className="material-symbols-outlined text-base">
